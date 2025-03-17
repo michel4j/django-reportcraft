@@ -1,35 +1,29 @@
+import re
+
 from datetime import datetime
 from crispy_forms.bootstrap import StrictButton
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Div, Field, Layout
 from django import forms
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse_lazy
 from django.utils.translation import gettext as _
+from crisp_modals.forms import ModalModelForm, HalfWidth, FullWidth, Row, ThirdWidth, QuarterWidth
 
 from . import models
 from .utils import COLOR_CHOICES
 
 
-class BodyHelper(FormHelper):
-    def __init__(self, form):
-        super().__init__(form)
-        self.form_tag = False
-        self.use_custom_control = True
-        self.form_show_errors = False
-
-
-class FooterHelper(FormHelper):
-    def __init__(self, form):
-        super().__init__(form)
-        self.form_tag = False
-        self.disable_csrf = True
-        self.form_show_errors = False
-
-
 disabled_widget = forms.HiddenInput(attrs={'readonly': True})
 
 
-class ReportForm(forms.ModelForm):
+class ThreeQuarterWidth(Div):
+    def __init__(self, *args,  style="", **kwargs):
+        super().__init__(*args, css_class=f"col-9 {style}", **kwargs)
+
+
+class ReportForm(ModalModelForm):
     class Meta:
         model = models.Report
         fields = ('title', 'slug', 'description', 'style', 'notes')
@@ -41,45 +35,34 @@ class ReportForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        pk = self.instance.pk
 
-        self.body = BodyHelper(self)
-        self.footer = FooterHelper(self)
-        if pk:
-            self.body.title = _("Edit Report")
-            self.body.form_action = reverse_lazy('edit-report', kwargs={'pk': pk})
+        if self.instance.pk:
+            self.body.form_action = reverse_lazy('edit-report', kwargs={"pk": self.instance.pk})
         else:
-            self.body.title = _("Create Report")
             self.body.form_action = reverse_lazy('new-report')
 
-        self.body.layout = Layout(
-            Div(
-                Div('title', css_class='col-12'),
-                css_class='row'
+        self.body.append(
+            Row(
+                FullWidth('title'),
             ),
-            Div(
-                Div('slug', css_class='col-6'),
-                Div('style', css_class='col-6'),
-                css_class='row'
+            Row(
+                HalfWidth('slug'), HalfWidth('style'),
             ),
-            Div(
-                Div('description', css_class='col-12'),
-                Div('notes', css_class='col-12'),
-                css_class='row'
+            Row(
+                FullWidth('description'),
             ),
-        )
-        self.footer.layout = Layout(
-            StrictButton('Revert', type='reset', value='Reset', css_class="btn btn-secondary"),
-            StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
+            Row(
+                FullWidth('notes'),
+            ),
         )
 
 
-class DataFieldForm(forms.ModelForm):
+class DataFieldForm(ModalModelForm):
     class Meta:
         model = models.DataField
         fields = (
-            'name', 'kind', 'model', 'label', 'default', 'expression', 'precision',
-            'source', 'position', 'grouped', 'filterable', 'ordering',
+            'name', 'model', 'label', 'default', 'expression', 'precision',
+            'source', 'position', 'ordering',
         )
         widgets = {
             'default': forms.TextInput(),
@@ -90,21 +73,20 @@ class DataFieldForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.body = BodyHelper(self)
-        self.footer = FooterHelper(self)
         pk = self.instance.pk
         self.fields['source'].widget = forms.HiddenInput()
-
         if pk:
             self.body.title = _("Edit Field")
             self.body.form_action = reverse_lazy(
                 'edit-source-field', kwargs={'pk': pk, 'source': self.instance.source.pk}
             )
+            self.fields['model'].queryset = self.instance.source.models.all()
         else:
             self.body.title = _("Add Field")
             self.body.form_action = reverse_lazy(
                 'add-source-field', kwargs={'source': self.initial['source']}
             )
+            self.fields['model'].queryset = models.DataModel.objects.filter(source=self.initial['source'])
 
         self.footer.layout = Layout()
         self.body.layout = Layout(
@@ -114,8 +96,7 @@ class DataFieldForm(forms.ModelForm):
                 css_class='row'
             ),
             Div(
-                Div('kind', css_class='col-4'),
-                Div(Field('model', css_class='select'), css_class="col-4"),
+                Div(Field('model', css_class='select'), css_class="col-8"),
                 Div('ordering', css_class='col-4'),
                 css_class='row'
             ),
@@ -130,25 +111,23 @@ class DataFieldForm(forms.ModelForm):
                 Field('source'),
                 css_class='row'
             ),
-            Div(
-                Div(
-                    Div('grouped', css_class='col-4'),
-                    Div('filterable', css_class='col-4'),
-                    css_class='row'
-                ),
-            ),
         )
         self.footer.layout = Layout(
             StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
         )
 
 
-class DataSourceForm(forms.ModelForm):
+class DataSourceForm(ModalModelForm):
+    group_fields = forms.CharField(required=False, help_text=_("Comma separated list of field names to group by"))
+
     class Meta:
         model = models.DataSource
         fields = (
-            'name', 'limit'
+            'name', 'group_by', 'limit', 'group_fields'
         )
+        widgets = {
+            'group_by': forms.HiddenInput,
+        }
         help_texts = {
             'limit': _("Maximum number of records"),
         }
@@ -157,30 +136,98 @@ class DataSourceForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         pk = self.instance.pk
 
-        self.body = BodyHelper(self)
-        self.footer = FooterHelper(self)
-
         if pk:
             self.body.title = u"Edit Data Source"
             self.body.form_action = reverse_lazy('edit-data-source', kwargs={'pk': pk})
+            self.fields['group_fields'].initial = ', '.join(self.instance.group_by)
         else:
             self.body.title = u"Add Data Source"
             self.body.form_action = reverse_lazy('new-data-source')
 
         self.body.layout = Layout(
             Div(
-                Div('name', css_class='col-8'),
+                Div('name', css_class='col-12'),
+                Div('group_fields', css_class='col-8'),
                 Div('limit', css_class='col-4'),
                 css_class='row'
             ),
         )
+
+    def clean(self):
+        data = super().clean()
+        group_fields = data.get('group_fields')
+        if group_fields:
+            data['group_by'] = re.split(r'\s*[,;|]\s*', group_fields)
+        return data
+
+
+class DataModelForm(ModalModelForm):
+    name = forms.CharField(required=False)
+
+    class Meta:
+        model = models.DataModel
+        fields = ('model', 'source', 'name')
+        widgets = {
+            'source': forms.HiddenInput(),
+            'name': forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.source = kwargs.pop('source')
+        super().__init__(*args, **kwargs)
+        pk = self.instance.pk
+
+        self.fields['model'].queryset = ContentType.objects.filter(app_label__in=settings.REPORT_APP_LABELS)
+
+        self.extra_fields = []
+        if self.instance.model:
+            group_fields = self.instance.get_group_fields()
+            for field_name, field in group_fields.items():
+                self.fields[field_name] = forms.CharField(required=True)
+                self.fields[field_name].help_text = f'Enter expression for {field_name} grouping'
+                if field:
+                    self.fields[field_name].initial = field.expression
+                self.extra_fields.append(field_name)
+        else:
+            for field_name in self.source.group_by:
+                self.fields[field_name] = forms.CharField(required=True)
+                self.fields[field_name].help_text = f'Enter expression for {field_name} grouping'
+                self.extra_fields.append(field_name)
+
+        if pk:
+            self.body.title = _("Edit Data Model")
+            self.body.form_action = reverse_lazy('edit-source-model', kwargs={'pk': pk, 'source': self.source.pk})
+        else:
+            self.body.title = _("Add Data Model")
+            self.body.form_action = reverse_lazy('add-source-model', kwargs={'source': self.source.pk})
+
+        extra_div = Div(*[Div(field, css_class='col-12') for field in self.extra_fields], css_class='row')
+        self.body.layout = Layout(
+            Div(
+                Div('model', css_class='col-12'),
+                css_class='row'
+            ),
+            extra_div,
+            Field('source'),
+        )
         self.footer.layout = Layout(
             StrictButton('Revert', type='reset', value='Reset', css_class="btn btn-secondary"),
-            StrictButton('Save', type='submit', name="submit", value='save', css_class='btn btn-primary'),
+            StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
         )
 
+    def clean(self):
+        data = super().clean()
+        model = data.get('model')
 
-class EntryForm(forms.ModelForm):
+        data['name'] = f'{model.app_label}.{model.model}'
+        data['groups'] = {
+            field: data[field] for field in self.extra_fields
+        }
+
+        return data
+
+
+class EntryForm(ModalModelForm):
     class Meta:
         model = models.Entry
         fields = (
@@ -196,9 +243,6 @@ class EntryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         pk = self.instance.pk
-
-        self.body = BodyHelper(self)
-        self.footer = FooterHelper(self)
 
         if pk:
             self.body.title = _("Edit Entry")
@@ -249,7 +293,7 @@ class EntryForm(forms.ModelForm):
         return cleaned_data
 
 
-class TableForm(forms.ModelForm):
+class TableForm(ModalModelForm):
     columns = forms.ModelChoiceField(label='Columns', required=True, queryset=models.DataField.objects.none())
     rows = forms.ModelMultipleChoiceField(label='Rows', required=True, queryset=models.DataField.objects.none())
     values = forms.ModelChoiceField(label='Values', required=False, queryset=models.DataField.objects.none())
@@ -270,15 +314,12 @@ class TableForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.body = BodyHelper(self)
-        self.footer = FooterHelper(self)
-
         self.body.title = _("Configure Table")
         self.body.form_action = reverse_lazy(
             'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
         )
         self.update_initial()
-        self.body.layout = Layout(
+        self.body.append(
             Div(
                 Div(Field('rows', css_class='select'), css_class='col-12'),
                 Div(Field('columns', css_class='select'), css_class='col-6'),
@@ -298,21 +339,20 @@ class TableForm(forms.ModelForm):
                 css_class='row'
             ),
         )
-        self.footer.layout = Layout(
-            StrictButton('Revert', type='reset', value='Reset', css_class="btn btn-secondary"),
-            StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
-        )
 
     def update_initial(self):
         attrs = self.instance.attrs
+        field_queryset = self.instance.source.fields.filter(
+            pk__in= self.instance.source.fields.order_by('name').distinct('name').values_list('pk')
+        )
         for field in ['columns', 'values', 'rows']:
-            self.fields[field].queryset = self.instance.source.fields.all()
+            self.fields[field].queryset = field_queryset
 
         for field in ['columns', 'values']:
             if field in attrs:
-                self.fields[field].initial = self.instance.source.fields.filter(name=attrs[field]).first()
+                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
         if 'rows' in attrs:
-            self.fields['rows'].initial = self.instance.source.fields.filter(name__in=attrs['rows'])
+            self.fields['rows'].initial = field_queryset.filter(name__in=attrs['rows'])
 
         for field in ['total_row', 'total_column', 'force_strings', 'transpose']:
             if field in attrs:
@@ -336,7 +376,7 @@ class TableForm(forms.ModelForm):
         return cleaned_data
 
 
-class BarsForm(forms.ModelForm):
+class BarsForm(ModalModelForm):
     x_axis = forms.ModelChoiceField(label='X-axis', required=True, queryset=models.DataField.objects.none())
     y_axis = forms.ModelMultipleChoiceField(label='Y-axis', required=True, queryset=models.DataField.objects.none())
     y_value = forms.ModelChoiceField(label='Values', required=False, queryset=models.DataField.objects.none())
@@ -371,15 +411,12 @@ class BarsForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.body = BodyHelper(self)
-        self.footer = FooterHelper(self)
-
         self.body.title = _("Configure Barchart")
         self.body.form_action = reverse_lazy(
             'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
         )
         self.update_initial()
-        self.body.layout = Layout(
+        self.body.append(
             Div(
                 Div(Field('x_axis', css_class='select'), css_class='col-4'),
                 Div(Field('y_axis', css_class='select'), css_class='col-8'),
@@ -415,25 +452,24 @@ class BarsForm(forms.ModelForm):
                 Field('attrs'),
             ),
         )
-        self.footer.layout = Layout(
-            StrictButton('Revert', type='reset', value='Reset', css_class="btn btn-secondary"),
-            StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
-        )
 
     def update_initial(self):
         attrs = self.instance.attrs
+        field_queryset = self.instance.source.fields.filter(
+            pk__in= self.instance.source.fields.order_by('name').distinct('name').values_list('pk')
+        )
         for field in ['x_axis', 'y_axis', 'y_value', 'stack_0', 'stack_1', 'stack_2', 'color_field', 'line', 'sort_by']:
-            self.fields[field].queryset = self.instance.source.fields.all()
+            self.fields[field].queryset = field_queryset
 
         for field in ['x_axis', 'y_value', 'line', 'color_field', 'sort_by']:
             if field in attrs:
-                self.fields[field].initial = self.instance.source.fields.filter(name=attrs[field]).first()
+                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
         if 'y_axis' in attrs:
-            self.fields['y_axis'].initial = self.instance.source.fields.filter(name__in=attrs['y_axis'])
+            self.fields['y_axis'].initial = field_queryset.filter(name__in=attrs['y_axis'])
 
         if 'stack' in attrs:
             for i, stack in enumerate(attrs['stack']):
-                self.fields[f'stack_{i}'].initial = self.instance.source.fields.filter(name__in=stack)
+                self.fields[f'stack_{i}'].initial = field_queryset.filter(name__in=stack)
 
         for field in ['x_culling', 'wrap_x_labels', 'aspect_ratio', 'sort_desc', 'limit', 'colors']:
             if field in attrs:
@@ -468,7 +504,7 @@ class BarsForm(forms.ModelForm):
         return cleaned_data
 
 
-class PlotForm(forms.ModelForm):
+class PlotForm(ModalModelForm):
     x_axis = forms.ModelChoiceField(label='X-axis', required=True, queryset=models.DataField.objects.none())
     y1_axis = forms.ModelMultipleChoiceField(label='Y1-axis', required=True, queryset=models.DataField.objects.none())
     y2_axis = forms.ModelMultipleChoiceField(label='Y2-axis', required=False, queryset=models.DataField.objects.none())
@@ -490,56 +526,44 @@ class PlotForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.body = BodyHelper(self)
-        self.footer = FooterHelper(self)
-
         self.body.title = _("Configure Plot")
         self.body.form_action = reverse_lazy(
             'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
         )
         self.update_initial()
-        self.body.layout = Layout(
-            Div(
-                Div(Field('x_axis', css_class='select'), css_class='col-6'),
-                Div('tick_precision', css_class='col-3'),
-                Div(Field('colors', css_class='select'), css_class='col-3'),
-                css_class='row'
+        self.body.append(
+            Row(
+                HalfWidth(Field('x_axis', css_class='select')),
+                ThirdWidth('tick_precision'),
+                ThirdWidth(Field('colors', css_class='select')),
             ),
-            Div(
-                Div('y1_label', css_class='col-3'),
-                Div(Field('y1_axis', css_class='select'), css_class='col-9'),
-                css_class='row'
+            Row(
+                ThirdWidth('y1_label'),
+                ThreeQuarterWidth(Field('y1_axis', css_class='select')),
             ),
-            Div(
-                Div('y2_label', css_class='col-3'),
-                Div(Field('y2_axis', css_class='select'), css_class='col-9'),
-                css_class='row'
+            Row(
+                ThirdWidth('y2_label'),
+                ThreeQuarterWidth(Field('y2_axis', css_class='select')),
             ),
-            Div(
-                Div(
-                    Div('scatter', css_class='col-4'),
-                    css_class='row'
-                ),
-                Field('attrs'),
+            Row(
+                ThirdWidth('scatter'), Field('attrs'),
             ),
-        )
-        self.footer.layout = Layout(
-            StrictButton('Revert', type='reset', value='Reset', css_class="btn btn-secondary"),
-            StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
         )
 
     def update_initial(self):
         attrs = self.instance.attrs
+        field_queryset = self.instance.source.fields.filter(
+            pk__in= self.instance.source.fields.order_by('name').distinct('name').values_list('pk')
+        )
         for field in ['x_axis', 'y1_axis', 'y2_axis']:
-            self.fields[field].queryset = self.instance.source.fields.all()
+            self.fields[field].queryset = field_queryset
 
         if 'x_axis' in attrs:
-            self.fields['x_axis'].initial = self.instance.source.fields.filter(name=attrs['x_axis']).first()
+            self.fields['x_axis'].initial = field_queryset.filter(name=attrs['x_axis']).first()
 
         if 'y_axis' in attrs:
             for i, y_group in enumerate(attrs['y_axis']):
-                self.fields[f'y{i + 1}_axis'].initial = self.instance.source.fields.filter(name__in=y_group)
+                self.fields[f'y{i + 1}_axis'].initial = field_queryset.filter(name__in=y_group)
 
         for field in ['y1_label', 'y2_label', 'tick_precision', 'scatter', 'aspect_ratio', 'colors']:
             if field in attrs:
@@ -567,7 +591,7 @@ class PlotForm(forms.ModelForm):
         return cleaned_data
 
 
-class ListForm(forms.ModelForm):
+class ListForm(ModalModelForm):
     columns = forms.ModelMultipleChoiceField(label='Columns', required=True, queryset=models.DataField.objects.none())
     order_by = forms.ModelChoiceField(label='Order By', required=False, queryset=models.DataField.objects.none())
     order_desc = forms.BooleanField(label='Descending Order', required=False)
@@ -584,49 +608,37 @@ class ListForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.body = BodyHelper(self)
-        self.footer = FooterHelper(self)
-
         self.body.title = _("Configure List")
         self.body.form_action = reverse_lazy(
             'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
         )
         self.update_initial()
-        self.body.layout = Layout(
-            Div(
-                Div(Field('columns', css_class='select'), css_class='col-12'),
-                css_class='row'
+        self.body.append(
+            Row(
+                FullWidth(Field('columns', css_class='select')),
             ),
-            Div(
-                Div(Field('order_by', css_class='select'), css_class='col-6'),
-                Div('limit', css_class='col-6'),
-                css_class='row'
+            Row(
+                HalfWidth(Field('order_by', css_class='select')), HalfWidth('limit'),
             ),
-            Div(
-                Div('order_desc', css_class='col-4'),
-                css_class='row'
+            Row(
+                ThirdWidth('order_desc'), Field('attrs'),
             ),
-            Div(
-                Field('attrs'),
-            ),
-        )
-        self.footer.layout = Layout(
-            StrictButton('Revert', type='reset', value='Reset', css_class="btn btn-secondary"),
-            StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
         )
 
     def update_initial(self):
         attrs = self.instance.attrs
+        field_queryset = self.instance.source.fields.filter(
+            pk__in=self.instance.source.fields.order_by('name').distinct('name').values_list('pk')
+        )
         for field in ['columns', 'order_by']:
-            self.fields[field].queryset = self.instance.source.fields.all()
+            self.fields[field].queryset = field_queryset
 
         if 'columns' in attrs:
-            self.fields['columns'].initial = self.instance.source.fields.filter(name__in=attrs['columns'])
+            self.fields['columns'].initial = field_queryset.filter(name__in=attrs['columns'])
 
         if 'order_by' in attrs:
             order_by, order_desc = (attrs['order_by'][1:], True) if attrs['order_by'][0] == '-' else (attrs['order_by'], False)
-            self.fields['order_by'].initial = self.instance.source.fields.filter(name=order_by).first()
+            self.fields['order_by'].initial = field_queryset.filter(name=order_by).first()
             self.fields['order_desc'].initial = order_desc
 
         if 'limit' in attrs:
@@ -652,16 +664,14 @@ class ListForm(forms.ModelForm):
         return cleaned_data
 
 
-class PieForm(forms.ModelForm):
+class PieForm(ModalModelForm):
     value = forms.ModelChoiceField(label='Value', required=True, queryset=models.DataField.objects.none())
     label = forms.ModelChoiceField(label='Label', required=True, queryset=models.DataField.objects.none())
     colors = forms.ChoiceField(label='Color Scheme', required=False, choices=COLOR_CHOICES, initial='Live8')
 
     class Meta:
         model = models.Entry
-        fields = (
-            'attrs', 'value', 'label', 'colors',
-        )
+        fields = ('attrs', 'value', 'label', 'colors')
         widgets = {
             'attrs': forms.HiddenInput(),
         }
@@ -669,38 +679,33 @@ class PieForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.body = BodyHelper(self)
-        self.footer = FooterHelper(self)
-
         self.body.title = _("Configure Pie")
         self.body.form_action = reverse_lazy(
             'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
         )
         self.update_initial()
-        self.body.layout = Layout(
-            Div(
-                Div(Field('value', css_class='select'), css_class='col-4'),
-                Div(Field('label', css_class='select'), css_class='col-4'),
-                Div(Field('colors', css_class='select'), css_class='col-4'),
-                css_class='row'
+        self.body.append(
+            Row(
+                ThirdWidth(Field('value', css_class='select')),
+                ThirdWidth(Field('label', css_class='select')),
+                ThirdWidth(Field('colors', css_class='select')),
             ),
             Div(
                 Field('attrs'),
             ),
         )
-        self.footer.layout = Layout(
-            StrictButton('Revert', type='reset', value='Reset', css_class="btn btn-secondary"),
-            StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
-        )
 
     def update_initial(self):
         attrs = self.instance.attrs
+        field_queryset = self.instance.source.fields.filter(
+            pk__in=self.instance.source.fields.order_by('name').distinct('name').values_list('pk')
+        )
         for field in ['value', 'label']:
-            self.fields[field].queryset = self.instance.source.fields.all()
+            self.fields[field].queryset = field_queryset
 
         for field in ['value', 'label']:
             if field in attrs:
-                self.fields[field].initial = self.instance.source.fields.filter(name=attrs[field]).first()
+                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
         for field in ['colors']:
             if field in attrs:
                 self.fields[field].initial = attrs[field]
@@ -720,7 +725,7 @@ class PieForm(forms.ModelForm):
         return cleaned_data
 
 
-class TimelineForm(forms.ModelForm):
+class TimelineForm(ModalModelForm):
     min_time = forms.DateTimeField(label='Start Time', required=False)
     max_time = forms.DateTimeField(label='End Time', required=False)
     start_field = forms.ModelChoiceField(label='Event Start', required=True, queryset=models.DataField.objects.none())
@@ -742,43 +747,36 @@ class TimelineForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.body = BodyHelper(self)
-        self.footer = FooterHelper(self)
-
         self.body.title = _("Configure Timeline")
         self.body.form_action = reverse_lazy(
             'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
         )
         self.update_initial()
-        self.body.layout = Layout(
-            Div(
-                Div(Field('start_field', css_class='select'), css_class='col-3'),
-                Div(Field('end_field', css_class='select'), css_class='col-3'),
-                Div(Field('label_field', css_class='select'), css_class='col-3'),
-                Div(Field('type_field', css_class='select'), css_class='col-3'),
-                css_class='row'
+        self.body.append(
+            Row(
+                QuarterWidth(Field('start_field', css_class='select')),
+                QuarterWidth(Field('end_field', css_class='select')),
+                QuarterWidth(Field('label_field', css_class='select')),
+                QuarterWidth(Field('type_field', css_class='select')),
             ),
-            Div(
-                Div(Field('min_time', css_class='datetime'), css_class='col-4'),
-                Div(Field('max_time', css_class='datetime'), css_class='col-4'),
-                Div(Field('colors', css_class='select'), css_class='col-4'),
-                css_class='row'
+            Row(
+                ThirdWidth(Field('min_time', css_class='datetime')),
+                ThirdWidth(Field('max_time', css_class='datetime')),
+                ThirdWidth(Field('colors', css_class='select')),
             ),
-        )
-        self.footer.layout = Layout(
-            StrictButton('Revert', type='reset', value='Reset', css_class="btn btn-secondary"),
-            StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
         )
 
     def update_initial(self):
         attrs = self.instance.attrs
+        field_queryset = self.instance.source.fields.filter(
+            pk__in=self.instance.source.fields.order_by('name').distinct('name').values_list('pk')
+        )
         for field in ['start_field', 'end_field', 'label_field', 'type_field']:
-            self.fields[field].queryset = self.instance.source.fields.all()
+            self.fields[field].queryset = field_queryset
 
         for field in ['start_field', 'end_field', 'label_field', 'type_field']:
             if field in attrs:
-                self.fields[field].initial = self.instance.source.fields.filter(name=attrs[field]).first()
+                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
         for field in ['colors']:
             if field in attrs:
                 self.fields[field].initial = attrs[field]
@@ -806,7 +804,7 @@ class TimelineForm(forms.ModelForm):
         return cleaned_data
 
 
-class RichTextForm(forms.ModelForm):
+class RichTextForm(ModalModelForm):
     rich_text = forms.CharField(
         label='Rich Text', required=True, widget=forms.Textarea(attrs={'rows': 15}),
         help_text=_("Use markdown syntax to format the text")
@@ -824,23 +822,15 @@ class RichTextForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.body = BodyHelper(self)
-        self.footer = FooterHelper(self)
-
         self.body.title = _("Configure Rich Text")
         self.body.form_action = reverse_lazy(
             'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
         )
         self.update_initial()
-        self.body.layout = Layout(
-            Div(
-                Div('rich_text', css_class='col-12'),
-                css_class='row'
+        self.body.append(
+            Row(
+                FullWidth('rich_text'),
             ),
-        )
-        self.footer.layout = Layout(
-            StrictButton('Revert', type='reset', value='Reset', css_class="btn btn-secondary"),
-            StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
         )
 
     def update_initial(self):

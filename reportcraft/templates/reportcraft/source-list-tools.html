@@ -1,7 +1,7 @@
-{% load reporter %}
+{% load reportcraft %}
 <a href="{% url "report-list" %}">
     {% tool_icon label='Reports' icon='icon-md bi-list-task' %}
 </a>
-<a href="#!" data-form-link="{% url "new-data-source" %}">
+<a href="#!" data-modal-url="{% url "new-data-source" %}">
     {% tool_icon label='Add Source' icon='icon-md bi-database-add' %}
 </a>

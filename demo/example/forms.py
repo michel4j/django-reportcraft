@@ -20,6 +20,7 @@ class PersonForm(ModalModelForm):
             self.body.form_action = reverse('person-edit', kwargs={"pk": self.instance.pk})
         else:
             self.body.form_action = reverse('person-add')
+
         self.body.append(
             Row(
                 ThirdWidth('first_name'), ThirdWidth('last_name'), ThirdWidth('age'),

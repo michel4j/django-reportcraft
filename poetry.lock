@@ -93,14 +93,14 @@ django = ">=4.2"
 
 [[package]]
 name = "django-itemlist"
-version = "2025.3.6"
+version = "2025.3.11"
 description = "A customizable Django Admin ChangeList-like app for use outside of the admin."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "django_itemlist-2025.3.6-py3-none-any.whl", hash = "sha256:42bb0ea5d01676ed45fb49ee9ce836a5e81e56a6c1e26d63a6cf095a5afe544b"},
-    {file = "django_itemlist-2025.3.6.tar.gz", hash = "sha256:696ad1ea695a09f267730f1f962356bb25e659a1b8c4885d763fda3b3bffe3ba"},
+    {file = "django_itemlist-2025.3.11-py3-none-any.whl", hash = "sha256:2735a64b50dca3122b7e72c86365709749d885ef84c93978caf353e9b4fe3305"},
+    {file = "django_itemlist-2025.3.11.tar.gz", hash = "sha256:adf4ba620e1aa1dbc62e005d1ff509eab03408b7e7071c452bda1f625b7e1346"},
 ]
 
 [package.dependencies]
@@ -244,4 +244,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "41a59b871797c70a4734acd0c522f759d03539572122c23a6f0335a394378695"
+content-hash = "169f123111c76c710bd77ae20e7479df5fc683c7b0c1ee35d9af9763669a5ca9"

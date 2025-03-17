@@ -1,9 +1,7 @@
 {% extends "reportcraft/base.html" %}
-{% load humanize %}
-{% load markup %}
-{% load reporter %}
+{% load reportcraft %}
 {% load static %}
-{% load icons %}
+
 
 {% block extra_css %}
     {{ block.super }}
@@ -14,16 +12,13 @@
     </style>
 {% endblock %}
 
-{% block page_heading %}
-    <h3 class="text-condensed">
-        <strong class="text-muted">{{ object.title }}</strong>
-    </h3>
-    <span class="text-muted">
-        {{ object.description }}
-    </span>
-{% endblock %}
 
-{% block object_tools %}
+{% block page-title %}
+    {{ object.title }}
+{% endblock %}
+{% block page-subtitle %}{{ object.description }}{% endblock %}
+
+{% block page-tools %}
     <a href="{% url "report-list" %}">
         {% tool_icon label='Reports' icon='icon-md bi-list-task' %}
     </a>
@@ -33,18 +28,18 @@
     <a href="{% url "report-view" slug=report.slug %}">
         {% tool_icon label='Preview' icon='icon-md bi-eye' %}
     </a>
-    <a href="#!" data-form-link="{% url "edit-report" report.pk %}">
+    <a href="#!" data-modal-url="{% url "edit-report" report.pk %}">
         {% tool_icon label='Edit' icon='icon-md bi-pencil' %}
     </a>
-    <a href="#!" data-form-link="{% url "delete-report" report.pk %}">
+    <a href="#!" data-modal-url="{% url "delete-report" report.pk %}">
         {% tool_icon label='Delete' icon='icon-md bi-trash3' %}
     </a>
-    <a href="#!" data-form-link="{% url "add-report-entry" report=report.pk %}">
+    <a href="#!" data-modal-url="{% url "add-report-entry" report=report.pk %}">
         {% tool_icon label='Add Entry' icon='icon-md bi-plus-square-dotted' %}
     </a>
 {% endblock %}
 
-{% block full %}
+{% block content %}
     <div class="row report-editor ">
             <div class="col-12">
             <div class="card alert-info bg-info-subtle mb-4">
@@ -65,7 +60,7 @@
                     <div class="card-header py-2 d-flex align-items-center justify-content-between entry-{{ entry.kind }}">
                         {{ entry.title }}
                         <div class="toolbox ml-auto pr-0">
-                            <a href="#!" data-form-link="{% url 'configure-report-entry' report=report.pk pk=entry.pk %}" title="Configure">
+                            <a href="#!" data-modal-url="{% url 'configure-report-entry' report=report.pk pk=entry.pk %}" title="Configure">
                                 {% tool_icon icon='bi-sliders icon-sm' %}
                             </a>
                             {% if entry.source %}
@@ -73,10 +68,10 @@
                                 {% tool_icon icon='bi-database icon-sm' %}
                             </a>
                             {% endif %}
-                            <a href="#!" data-form-link="{% url 'edit-report-entry' report=report.pk pk=entry.pk %}" title="Edit Entry">
+                            <a href="#!" data-modal-url="{% url 'edit-report-entry' report=report.pk pk=entry.pk %}" title="Edit Entry">
                                 {% tool_icon icon='bi-pencil icon-sm' %}
                             </a>
-                            <a href="#!" data-form-link="{% url 'delete-report-entry' report=report.pk pk=entry.pk %}" title="Delete">
+                            <a href="#!" data-modal-url="{% url 'delete-report-entry' report=report.pk pk=entry.pk %}" title="Delete">
                                 {% tool_icon icon='bi-trash3 icon-sm' %}
                             </a>
                         </div>

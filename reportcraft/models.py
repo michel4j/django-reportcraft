@@ -1,8 +1,8 @@
 from collections import defaultdict
-
 from django.apps import apps
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models import Case, When, Value, CharField, QuerySet
+from django.db.models import Case, When, Value, CharField, QuerySet, F
 from django.db.models.functions import Round, Abs, Sign
 from django.utils.text import gettext_lazy as _
 from typing import Any
@@ -28,29 +28,22 @@ class WithChoices(Case):
         super().__init__(*whens, output_field=CharField())
 
 
-class DataModel(models.Model):
-    """
-    Model definition for DataModel. This model is used to define allowed data models
-    and corresponding fields for the reportcraft app.
-    """
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
-    name = models.CharField(max_length=150)
-    fields = models.JSONField(default=list, blank=True, null=True)
-
-    def __str__(self):
-        return self.name
-
-
 class DataSource(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     name = models.CharField(max_length=50)
+    group_by = models.JSONField(_("Group Fields"), default=list, blank=True, null=True)
     filters = models.JSONField(default=dict, blank=True)
     limit = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return self.name
+
+    def groups_fields(self):
+        return self.fields.filter(name__in=self.group_by)
+
+    def non_group_fields(self):
+        return self.fields.exclude(name__in=self.group_by)
 
     def get_labels(self):
         return {field.name: field.label for field in self.fields.all()}
@@ -69,28 +62,27 @@ class DataSource(models.Model):
             queryset = queryset.filter(**filters)
 
         # Add annotations
+        group_by = group_by if group_by is not None else list(self.group_by)
+        annotate_filter = {'name__in': group_by} if group_by else {}
         annotations = {
             field.name: field.get_expression()
-            for field in self.fields.filter(model__name=model_name, kind=DataField.FieldType.ANNOTATION)
+            for field in self.fields.filter(model__name=model_name, **annotate_filter)
         }
 
         # Add aggregations and handle grouping
-        group_fields: list = (
-            group_by or list(self.fields.filter(grouped=True).values_list('name', flat=True).distinct())
-        )
         aggregations = {}
-        if group_fields:
+        if group_by:
             aggregations = {
                 field.name: field.get_expression()
-                for field in self.fields.filter(model__name=model_name, kind=DataField.FieldType.AGGREGATION)
+                for field in self.fields.exclude(name__in=group_by).filter(model__name=model_name)
             }
 
-        if annotations and not group_fields:
+        if annotations and not aggregations:
             queryset = queryset.annotate(**annotations)
-        elif annotations and group_fields:
-            queryset = queryset.annotate(**annotations).values(*group_fields).annotate(**aggregations)
-        elif group_fields:
-            queryset.values(*group_fields).annotate(**aggregations)
+        elif annotations and aggregations:
+            queryset = queryset.annotate(**annotations).values(*group_by).annotate(**aggregations)
+        elif group_by:
+            queryset.values(*group_by).annotate(**aggregations)
 
         # Apply sorting
         order_fields = self.fields.annotate(
@@ -126,24 +118,44 @@ class DataSource(models.Model):
         return data
 
 
+class DataModel(models.Model):
+    """
+    Model definition for DataModel. This model is used to define allowed data models
+    and corresponding fields for the reportcraft app.
+    """
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)    
+    model = models.ForeignKey(ContentType, on_delete=models.SET_NULL, null=True)
+    name = models.CharField(max_length=150)
+    source = models.ForeignKey(DataSource, on_delete=models.CASCADE, related_name='models')
+
+    def get_group_fields(self):
+        group_names = list(self.source.group_by)
+        if group_names:
+            fields = {
+                field.name: field for field in self.fields.all()
+            }
+            return {name: fields.get(name, None) for name in group_names}
+        return {}
+
+    def __str__(self):
+        return self.name
+
+
 class DataField(models.Model):
     class FieldType(models.TextChoices):
         ANNOTATION = 'annotation', _('Annotation')
         AGGREGATION = 'aggregation', _('Aggregation')
-
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     name = models.SlugField(max_length=50)
-    kind = models.CharField(max_length=50, choices=FieldType.choices, default=FieldType.ANNOTATION)
-    model = models.ForeignKey(DataModel, on_delete=models.CASCADE)
+    model = models.ForeignKey(DataModel, on_delete=models.CASCADE, related_name='fields')
     label = models.CharField(max_length=100, null=True)
     default = models.JSONField(null=True, blank=True)
     expression = models.TextField(default="", blank=True)
     precision = models.IntegerField(null=True, blank=True)
     position = models.IntegerField(default=0)
-    grouped = models.BooleanField(default=False)
     ordering = models.IntegerField(null=True, blank=True)
-    filterable = models.BooleanField(default=False)
     source = models.ForeignKey(DataSource, on_delete=models.CASCADE, related_name='fields')
 
     class Meta:
