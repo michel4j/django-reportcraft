@@ -14,28 +14,29 @@
     </style>
 {% endblock %}
 
+{% block page-pretitle %}Data Source{% endblock %}
 {% block page-title %}
-    Data Source - {{ object.name }}
+    {{ object.name }}
 {% endblock %}
 
 {% block page-tools %}
     <a href="{% url "report-list" %}">
-        {% tool_icon label='Reports' icon='icon-md bi-list-task' %}
+        {% tool_icon label='Reports' icon='icon-md ti-list-details' %}
     </a>
     <a href="{% url "data-source-list" %}">
-        {% tool_icon label='Data Sources' icon='icon-md bi-database' %}
+        {% tool_icon label='Sources' icon='icon-md ti-database' %}
     </a>
     <a href="#!" data-modal-url="{% url "edit-data-source" source.pk %}">
-        {% tool_icon label='Edit' icon='icon-md bi-pencil' %}
+        {% tool_icon label='Edit' icon='icon-md ti-pencil' %}
     </a>
     <a href="#!" data-modal-url="{% url "delete-data-source" source.pk %}">
-        {% tool_icon label='Delete' icon='icon-md bi-trash3' %}
+        {% tool_icon label='Delete' icon='icon-md ti-trash-x' %}
     </a>
     <a href="#!" data-modal-url="{% url "add-source-model" source=source.pk %}">
-        {% tool_icon label='Add Model' icon='icon-md bi-database-add' %}
+        {% tool_icon label='Add Model' icon='icon-md ti-database-plus' %}
     </a>
     <a href="#!" data-modal-url="{% url "add-source-field" source=source.pk %}">
-        {% tool_icon label='Add Field' icon='icon-md bi-node-plus' %}
+        {% tool_icon label='Add Field' icon='icon-md ti-table-plus' %}
     </a>
 {% endblock %}
 
@@ -48,7 +49,7 @@
                         <div class="card-header py-2 d-flex align-items-center">
                             <h4 class="my-0"><span class="text-muted">Models</span></h4>
                         </div>
-                        <table class="table table-sm table-ruled">
+                        <table class="table">
                             <thead>
                             <tr>
                                 <th class="col-2 pl-3">App</th>
@@ -68,20 +69,20 @@
                                         {% if group_field %}
                                         <td class="text-monospace text-md">{{ group_field.expression }}</td>
                                         {% else %}
-                                        <td class="text-danger"><a href="#!" data-modal-url="{% url 'add-group-field' source=source.pk group=field_name %}">Undefined</a></td>
+                                        <td class="text-danger"><a href="#0" data-modal-url="{% url 'add-group-field' source=source.pk group=field_name %}">Undefined</a></td>
                                         {% endif %}
                                     {% endfor %}
                                     <td>
-                                        <div class="tools-box ml-auto pr-0">
-                                            <a href="#!"
+                                        <div class="toolbox ml-auto pr-0">
+                                            <a href="#0"
                                                data-modal-url="{% url 'edit-source-model' source=source.pk pk=src_model.pk %}"
                                                title="Edit">
-                                                {% tool_icon icon='bi-pencil' %}
+                                                {% tool_icon icon='ti-pencil' %}
                                             </a>
-                                            <a href="#!"
+                                            <a href="#0"
                                                data-modal-url="{% url 'delete-source-model' source=source.pk pk=src_model.pk %}"
                                                title="Delete">
-                                                {% tool_icon icon='bi-x-lg' %}
+                                                {% tool_icon icon='ti-x' %}
                                             </a>
                                         </div>
                                 </tr>
@@ -101,7 +102,7 @@
                             <div class="card-header py-2 d-flex align-items-center">
                                 <h4 class="my-0"><span class="text-muted">Fields</span></h4>
                             </div>
-                            <table class="table table-sm table-ruled">
+                            <table class="table">
                                 <thead>
                                 <tr>
                                     <th class="col-2 pl-3">Name</th>
@@ -119,16 +120,16 @@
                                         <td>{{ field.model }}</td>
                                         <td class="text-monospace text-md">{{ field.expression }}</td>
                                         <td>
-                                            <div class="tools-box ml-auto pr-0">
-                                                <a href="#!"
+                                            <div class="toolbox ml-auto pr-0">
+                                                <a href="#0"
                                                    data-modal-url="{% url 'edit-source-field' source=source.pk pk=field.pk %}"
                                                    title="Edit">
-                                                    {% tool_icon icon='bi-pencil' %}
+                                                    {% tool_icon icon='ti-pencil' %}
                                                 </a>
-                                                <a href="#!"
+                                                <a href="#0"
                                                    data-modal-url="{% url 'delete-source-field' source=source.pk pk=field.pk %}"
                                                    title="Delete">
-                                                    {% tool_icon icon='bi-x-lg' %}
+                                                    {% tool_icon icon='ti-x' %}
                                                 </a>
                                             </div>
                                     </tr>

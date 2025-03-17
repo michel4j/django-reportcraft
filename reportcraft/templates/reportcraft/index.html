@@ -4,8 +4,8 @@
 {% load reportcraft %}
 {% block page-title %}Reports{% endblock %}
 {% block page-tools %}
-    <a href="#!" data-modal-url="{% url "new-report" %}">
-        {% tool_icon label='Add Report' icon='icon-md bi-file-earmark-plus' %}
+    <a href="#0" data-modal-url="{% url "new-report" %}">
+        {% tool_icon label='Add Report' icon='icon-md ti-square-plus' %}
     </a>
 {% endblock %}
 
@@ -26,13 +26,11 @@
                         <a href="{% url "report-view" slug=report.slug %}">{{ report.title }}</a>{% if report.description %} &mdash;
                         <span class="text-muted text-md">{{ report.description }}</span>{% endif %}
                     </div>
-                    {% if user.is_superuser %}
                     <div class="toolbox">
                         <a href="{% url 'report-editor' report.pk %}" title="Edit Report">
-                          {% tool_icon icon='bi-pencil' %}
+                          {% tool_icon icon='ti-pencil' %}
                         </a>
                     </div>
-                    {% endif %}
                 </li>
             {% endfor %}
         </ul>

@@ -8,12 +8,6 @@ from itemlist.filters import YearLimitFilterFactory, MonthFilterFactory, Quarter
 
 
 # Create your views here.
-class PersonList(ListView):
-    model = Person
-    template_name = 'example/person_list.html'
-    paginate_by = 15
-
-
 class FancyPersonList(ItemListView):
     model = Person
     template_name = 'list.html'
@@ -29,12 +23,7 @@ class FancyPersonList(ItemListView):
     list_title = 'Fancy People'
     link_url = 'person-edit'
     link_attr = 'data-modal-url'
-    paginate_by = 15
-
-
-class InstitutionList(ListView):
-    model = Institution
-    template_name = 'example/institution_list.html'
+    tool_template = 'example/people-tools.html'
     paginate_by = 15
 
 
@@ -48,12 +37,7 @@ class FancyInstitutionList(ItemListView):
     link_url = 'institution-edit'
     link_attr = 'data-modal-url'
     link_field = 'name'
-    paginate_by = 15
-
-
-class SubjectList(ListView):
-    model = Subject
-    template_name = 'example/subject_list.html'
+    tool_template = 'example/institutions-tools.html'
     paginate_by = 15
 
 
@@ -65,6 +49,7 @@ class FancySubjectList(ItemListView):
     list_title = 'Fancy Subjects'
     link_url = 'subject-edit'
     link_attr = 'data-modal-url'
+    tool_template = 'example/subjects-tools.html'
     paginate_by = 15
 
 

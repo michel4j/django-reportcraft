@@ -35,21 +35,24 @@ $web-font-path: "https://fonts.googleapis.com/css?family=Fira+Code|Fira+Sans+Con
     font-size: 3em;
 }
 
-.toolbox {
+.toolbox, .page-tools {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-evenly;
   line-height: 1;
+  gap: 0.5em;
   text-align: center;
 
   > * {
+    flex-grow: 1;
+    flex-basis: 0;
     text-decoration: none;
     display: inline-block;
     text-align: center;
     padding: 0 0.125em;
     &:first-child {
-      border-left: 1px solid var(--gray-alpha);
+      //border-left: 1px solid rgba(0,0,0,0.1);
       padding-left: 0.5em;
     }
     &:last-child {
@@ -64,24 +67,11 @@ $web-font-path: "https://fonts.googleapis.com/css?family=Fira+Code|Fira+Sans+Con
     display: inline-block;
     align-self: stretch;
     width: 1px;
-    border-left: 1px solid var(--gray-alpha);
+    border-left: 1px solid rgba(0,0,0,0.1);
     margin: 0 0.25em;
     & + .separator, &:last-child {
       display: none !important;
     }
-  }
-}
-.tool-icon {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  margin: 0.25em 0;
-  > .icon-label {
-    font-size: 0.85rem;
-    color: inherit;
-    //line-height: 0.75;
-    min-width: 3rem;
-    padding-top: 0.5rem;
   }
 }
 

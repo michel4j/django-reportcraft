@@ -5,14 +5,9 @@ from .views import HomeView
 
 urlpatterns = [
     path("", HomeView.as_view(), name="home"),
-    path('people/', views.PersonList.as_view(), name='person-list'),
-    path('institutions/', views.InstitutionList.as_view(), name='institution-list'),
-    path('subjects/', views.SubjectList.as_view(), name='subject-list'),
-
-    path('fancy/people/', views.FancyPersonList.as_view(), name='fancy-person-list'),
-    path('fancy/institutions/', views.FancyInstitutionList.as_view(), name='fancy-institution-list'),
-    path('fancy/subjects/', views.FancySubjectList.as_view(), name='fancy-subject-list'),
-
+    path('people/', views.FancyPersonList.as_view(), name='person-list'),
+    path('institutions/', views.FancyInstitutionList.as_view(), name='institution-list'),
+    path('subjects/', views.FancySubjectList.as_view(), name='subject-list'),
     path('people/<int:pk>/edit/', views.EditPerson.as_view(), name='person-edit'),
     path('people/add/', views.AddPerson.as_view(), name='person-add'),
     path('institutions/<int:pk>/edit/', views.EditInstitution.as_view(), name='institution-edit'),

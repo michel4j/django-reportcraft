@@ -342,9 +342,8 @@ class TableForm(ModalModelForm):
 
     def update_initial(self):
         attrs = self.instance.attrs
-        field_queryset = self.instance.source.fields.filter(
-            pk__in= self.instance.source.fields.order_by('name').distinct('name').values_list('pk')
-        )
+        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
+        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
         for field in ['columns', 'values', 'rows']:
             self.fields[field].queryset = field_queryset
 
@@ -455,9 +454,8 @@ class BarsForm(ModalModelForm):
 
     def update_initial(self):
         attrs = self.instance.attrs
-        field_queryset = self.instance.source.fields.filter(
-            pk__in= self.instance.source.fields.order_by('name').distinct('name').values_list('pk')
-        )
+        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
+        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
         for field in ['x_axis', 'y_axis', 'y_value', 'stack_0', 'stack_1', 'stack_2', 'color_field', 'line', 'sort_by']:
             self.fields[field].queryset = field_queryset
 
@@ -552,9 +550,8 @@ class PlotForm(ModalModelForm):
 
     def update_initial(self):
         attrs = self.instance.attrs
-        field_queryset = self.instance.source.fields.filter(
-            pk__in= self.instance.source.fields.order_by('name').distinct('name').values_list('pk')
-        )
+        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
+        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
         for field in ['x_axis', 'y1_axis', 'y2_axis']:
             self.fields[field].queryset = field_queryset
 
@@ -627,9 +624,8 @@ class ListForm(ModalModelForm):
 
     def update_initial(self):
         attrs = self.instance.attrs
-        field_queryset = self.instance.source.fields.filter(
-            pk__in=self.instance.source.fields.order_by('name').distinct('name').values_list('pk')
-        )
+        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
+        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
         for field in ['columns', 'order_by']:
             self.fields[field].queryset = field_queryset
 
@@ -697,9 +693,8 @@ class PieForm(ModalModelForm):
 
     def update_initial(self):
         attrs = self.instance.attrs
-        field_queryset = self.instance.source.fields.filter(
-            pk__in=self.instance.source.fields.order_by('name').distinct('name').values_list('pk')
-        )
+        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
+        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
         for field in ['value', 'label']:
             self.fields[field].queryset = field_queryset
 
@@ -768,9 +763,8 @@ class TimelineForm(ModalModelForm):
 
     def update_initial(self):
         attrs = self.instance.attrs
-        field_queryset = self.instance.source.fields.filter(
-            pk__in=self.instance.source.fields.order_by('name').distinct('name').values_list('pk')
-        )
+        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
+        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
         for field in ['start_field', 'end_field', 'label_field', 'type_field']:
             self.fields[field].queryset = field_queryset
 

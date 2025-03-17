@@ -12,7 +12,7 @@
     </style>
 {% endblock %}
 
-
+{% block page-pretitle %}Report{% endblock %}
 {% block page-title %}
     {{ object.title }}
 {% endblock %}
@@ -20,22 +20,22 @@
 
 {% block page-tools %}
     <a href="{% url "report-list" %}">
-        {% tool_icon label='Reports' icon='icon-md bi-list-task' %}
+        {% tool_icon label='Reports' icon='icon-md ti-list-details' %}
     </a>
     <a href="{% url "data-source-list" %}">
-        {% tool_icon label='Data Sources' icon='icon-md bi-database icon-md' %}
+        {% tool_icon label='Sources' icon='icon-md ti-database icon-md' %}
     </a>
     <a href="{% url "report-view" slug=report.slug %}">
-        {% tool_icon label='Preview' icon='icon-md bi-eye' %}
+        {% tool_icon label='Preview' icon='icon-md ti-live-view' %}
     </a>
-    <a href="#!" data-modal-url="{% url "edit-report" report.pk %}">
-        {% tool_icon label='Edit' icon='icon-md bi-pencil' %}
+    <a href="#0" data-modal-url="{% url "edit-report" report.pk %}">
+        {% tool_icon label='Edit' icon='icon-md ti-pencil' %}
     </a>
-    <a href="#!" data-modal-url="{% url "delete-report" report.pk %}">
-        {% tool_icon label='Delete' icon='icon-md bi-trash3' %}
+    <a href="#0" data-modal-url="{% url "delete-report" report.pk %}">
+        {% tool_icon label='Delete' icon='icon-md ti-trash-x' %}
     </a>
-    <a href="#!" data-modal-url="{% url "add-report-entry" report=report.pk %}">
-        {% tool_icon label='Add Entry' icon='icon-md bi-plus-square-dotted' %}
+    <a href="#0" data-modal-url="{% url "add-report-entry" report=report.pk %}">
+        {% tool_icon label='Add Entry' icon='icon-md ti-photo-plus' %}
     </a>
 {% endblock %}
 

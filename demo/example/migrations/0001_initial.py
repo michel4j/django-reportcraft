@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
             name='Institution',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100, unique=True, verbose_name='Name')),
+                ('name', models.CharField(max_length=250, unique=True, verbose_name='Name')),
                 ('city', models.CharField(max_length=200)),
                 ('country', models.CharField(max_length=200)),
                 ('created', models.DateTimeField(auto_now_add=True)),
