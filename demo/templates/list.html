@@ -1,0 +1,9 @@
+{% extends "itemlist/item_list.html" %}
+
+{% block page-title %}{{ list_title }}{% endblock %}
+{% block bread-crumbs %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ list_title }}</li>
+    </ol>
+{% endblock %}

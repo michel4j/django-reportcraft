@@ -1,0 +1,62 @@
+[project]
+name = "django-reportcraft"
+description = "A Django reusable App for dynamically designing and generating reports."
+authors = [
+    {name = "Michel Fodje",email = "michel4j@gmail.com"}
+]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "django (>=4.2.20,<6.0.0)",
+    "django-crisp-modals (>=2025.3.25,<2026.0.0)",
+    "django-itemlist (>=2025.3.6,<2026.0.0)",
+    "pyparsing (>=3.2.1,<4.0.0)",
+    "pygments (>=2.19.1,<3.0.0)"
+]
+classifiers = [
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/michel4j/django-reportcraft"
+Issues = "https://github.com/michel4j/django-reportcraft/issues"
+
+[tool.poetry]
+packages = [
+    { include = "reportcraft", from = "." },
+]
+version = "0.0.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+[tool.poetry.group.dev.dependencies]
+django-crisp-modals = ">=2025.3.15,<2026.0.0"
+
+[tool.poetry.requires-plugins]
+poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+format = "{base}.{revision}{distance}"
