@@ -2,7 +2,6 @@ import re
 
 from datetime import datetime
 from crispy_forms.bootstrap import StrictButton
-from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Div, Field, Layout
 from django import forms
 from django.conf import settings
@@ -155,21 +154,18 @@ class DataSourceForm(ModalModelForm):
 
     def clean(self):
         data = super().clean()
-        group_fields = data.get('group_fields')
-        if group_fields:
-            data['group_by'] = re.split(r'\s*[,;|]\s*', group_fields)
+        group_fields = data.pop('group_fields', "")
+        data['group_by'] = re.split(r'\s*[,;|]\s*', group_fields) if group_fields else []
         return data
 
 
 class DataModelForm(ModalModelForm):
-    name = forms.CharField(required=False)
-
     class Meta:
         model = models.DataModel
         fields = ('model', 'source', 'name')
         widgets = {
-            'source': forms.HiddenInput(),
-            'name': forms.HiddenInput(),
+            'source': forms.HiddenInput,
+            'name': forms.HiddenInput,
         }
 
     def __init__(self, *args, **kwargs):
@@ -179,20 +175,22 @@ class DataModelForm(ModalModelForm):
 
         self.fields['model'].queryset = ContentType.objects.filter(app_label__in=settings.REPORT_APP_LABELS)
 
-        self.extra_fields = []
+        self.extra_fields = {}
         if self.instance.model:
             group_fields = self.instance.get_group_fields()
             for field_name, field in group_fields.items():
-                self.fields[field_name] = forms.CharField(required=True)
-                self.fields[field_name].help_text = f'Enter expression for {field_name} grouping'
+                group_name = f'{field_name}__group'
+                self.fields[group_name] = forms.CharField(label=_(f'{field_name.title()} Group'), required=True)
+                self.fields[group_name].help_text = f'Enter expression for {field_name} grouping'
                 if field:
-                    self.fields[field_name].initial = field.expression
-                self.extra_fields.append(field_name)
+                    self.fields[group_name].initial = field.expression
+                self.extra_fields[field_name] = group_name
         else:
             for field_name in self.source.group_by:
-                self.fields[field_name] = forms.CharField(required=True)
-                self.fields[field_name].help_text = f'Enter expression for {field_name} grouping'
-                self.extra_fields.append(field_name)
+                group_name = f'{field_name}__group'
+                self.fields[group_name] = forms.CharField(label=_(f'{field_name.title()} Group'), required=True)
+                self.fields[group_name].help_text = f'Enter expression for {field_name} grouping'
+                self.extra_fields[field_name] = group_name
 
         if pk:
             self.body.title = _("Edit Data Model")
@@ -201,7 +199,7 @@ class DataModelForm(ModalModelForm):
             self.body.title = _("Add Data Model")
             self.body.form_action = reverse_lazy('add-source-model', kwargs={'source': self.source.pk})
 
-        extra_div = Div(*[Div(field, css_class='col-12') for field in self.extra_fields], css_class='row')
+        extra_div = Div(*[Div(field, css_class='col-12') for field in self.extra_fields.values()], css_class='row')
         self.body.layout = Layout(
             Div(
                 Div('model', css_class='col-12'),
@@ -209,6 +207,7 @@ class DataModelForm(ModalModelForm):
             ),
             extra_div,
             Field('source'),
+            Field('name'),
         )
         self.footer.layout = Layout(
             StrictButton('Revert', type='reset', value='Reset', css_class="btn btn-secondary"),
@@ -217,13 +216,11 @@ class DataModelForm(ModalModelForm):
 
     def clean(self):
         data = super().clean()
-        model = data.get('model')
 
-        data['name'] = f'{model.app_label}.{model.model}'
+        data['name'] = f'{data["model"].app_label}.{data["model"].model.title()}'
         data['groups'] = {
-            field: data[field] for field in self.extra_fields
+            field: data[group] for field, group in self.extra_fields.items()
         }
-
         return data
 
 

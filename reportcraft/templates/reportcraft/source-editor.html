@@ -42,7 +42,7 @@
 
 {% block content %}
     <div class="row report-editor ">
-        <div class="col-12">
+        <div class="col-9 col-xs-12">
             <div class="row">
                 <div class="col-12">
                     <div class="card mb-3">
@@ -52,19 +52,19 @@
                         <table class="table">
                             <thead>
                             <tr>
-                                <th class="col-2 pl-3">App</th>
-                                <th class="col-3">Model</th>
+                                <th>App</th>
+                                <th>Model</th>
                                 {% for group_field in source.group_by %}
                                     <th>{{ group_field|title }}<span class="hidden-xs text-muted">&nbsp;&middot;&nbsp;Group</span></th>
                                 {% endfor %}
-                                <th class="col-1">Edit</th>
+                                <th>&nbsp;</th>
                             </tr>
                             </thead>
                             <tbody>
                             {% for src_model in source.models.all %}
                                 <tr>
-                                    <td class="col-2 pl-3">{{ src_model.model.app_label }}</td>
-                                    <td>{{ src_model.model.model }}</td>
+                                    <td>{{ src_model.model.app_label }}</td>
+                                    <td>{{ src_model.name }}</td>
                                     {% for field_name, group_field in src_model.get_group_fields.items %}
                                         {% if group_field %}
                                         <td class="text-monospace text-md">{{ group_field.expression }}</td>
@@ -72,8 +72,8 @@
                                         <td class="text-danger"><a href="#0" data-modal-url="{% url 'add-group-field' source=source.pk group=field_name %}">Undefined</a></td>
                                         {% endif %}
                                     {% endfor %}
-                                    <td>
-                                        <div class="toolbox ml-auto pr-0">
+                                    <td class="d-flex align-children-end">
+                                        <div class="toolbox ms-auto pr-0">
                                             <a href="#0"
                                                data-modal-url="{% url 'edit-source-model' source=source.pk pk=src_model.pk %}"
                                                title="Edit">
@@ -100,16 +100,18 @@
                 <div class="col-12">
                         <div class="card mb-3">
                             <div class="card-header py-2 d-flex align-items-center">
-                                <h4 class="my-0"><span class="text-muted">Fields</span></h4>
+                                <h4 class="my-0">
+                                    <span class="text-muted">Fields</span>
+                                </h4>
                             </div>
                             <table class="table">
                                 <thead>
                                 <tr>
-                                    <th class="col-2 pl-3">Name</th>
-                                    <th class="col-2">Label</th>
-                                    <th class="col-2">Model</th>
+                                    <th>Name</th>
+                                    <th>Label</th>
+                                    <th>Model</th>
                                     <th>Expression</th>
-                                    <th class="col-1">Edit</th>
+                                    <th>&nbsp;</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -119,8 +121,8 @@
                                         <td>{{ field.label }}</td>
                                         <td>{{ field.model }}</td>
                                         <td class="text-monospace text-md">{{ field.expression }}</td>
-                                        <td>
-                                            <div class="toolbox ml-auto pr-0">
+                                        <td class="d-flex align-children-end">
+                                            <div class="toolbox ms-auto pr-0">
                                                 <a href="#0"
                                                    data-modal-url="{% url 'edit-source-field' source=source.pk pk=field.pk %}"
                                                    title="Edit">
@@ -140,6 +142,22 @@
                 </div>
             </div>
 
+        </div>
+        <div class="col-3 hidden-xs">
+            <div class="card mb-3">
+                <div class="card-header py-2 d-flex align-items-center">
+                    <h4 class="my-0"><span class="text-muted">Reports</span></h4>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for report in source.reports %}
+                        <li class="list-group-item">
+                        <a href="{% url 'report-editor' pk=report.pk %}">
+                            {{ report }}
+                        </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
     </div>
 {% endblock %}

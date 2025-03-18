@@ -30,7 +30,7 @@ class ReportData(View):
             raise Http404('Report not found')
 
         return {
-            'title': report.title,
+            'report-title': report.title,
             'description': report.description,
             'style': f"row {report.style}",
             'content': [block.generate(*args, **kwargs) for block in report.entries.all()],
@@ -57,8 +57,11 @@ class ReportList(ItemListView):
 class DataSourceList(ItemListView):
     model = models.DataSource
     list_filters = ['created', 'modified']
-    list_columns = ['name', 'limit']
+    list_columns = ['name', 'limit', 'group_by']
     list_search = ['fields__name', 'entries__title']
+    list_transforms = {
+        'group_by': lambda x, y: ', '.join(x) or '-',
+    }
     ordering = ['-created']
     paginate_by = 25
     template_name = 'reportcraft/list.html'
@@ -124,6 +127,12 @@ class EditDataSource(ModalUpdateView):
 
     def get_success_url(self):
         return reverse('source-editor', kwargs={'pk': self.object.pk})
+
+    def form_valid(self, form):
+        data = form.cleaned_data
+        self.object.group_by = data.get('group_by', [])
+        self.object.save()
+        return super().form_valid(form)
 
 
 class EditSourceField(ModalUpdateView):
@@ -213,7 +222,7 @@ class EditEntry(ModalUpdateView):
     model = models.Entry
 
     def get_success_url(self):
-        return reverse('report-editor', kwargs={'pk': self.object.report.pk})
+        return reverse_lazy('report-editor', kwargs={'pk': self.object.report.pk})
 
     def get_initial(self):
         initial = super().get_initial()
@@ -227,10 +236,12 @@ class DeleteSourceModel(ModalDeleteView):
 
 class DeleteReport(ModalDeleteView):
     model = models.Report
+    success_url = reverse_lazy('report-list')
 
 
 class DeleteDataSource(ModalDeleteView):
     model = models.DataSource
+    success_url = reverse_lazy('data-source-list')
 
 
 class DeleteEntry(ModalDeleteView):

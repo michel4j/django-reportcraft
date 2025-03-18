@@ -113,6 +113,11 @@ caption, figcaption {
   text-align: left;
 }
 
+section {
+  border-top: 1px solid rgba(0,0,0,0.1);
+  padding: 2em 0;
+}
+
 .report-viewer {
   counter-reset: figures tables;
 

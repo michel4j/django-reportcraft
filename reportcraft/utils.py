@@ -9,7 +9,7 @@ import threading
 from django.core.cache import cache
 from django.apps import apps
 from django.db import models
-from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q
+from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q, Case, When, CharField
 from django.db.models.functions import (
     Greatest, Least, Concat, Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan,
     ATan2, Mod, Sign, Trunc, Radians, Degrees, Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
@@ -20,6 +20,26 @@ from functools import wraps
 from pyparsing import *
 from pyparsing.exceptions import ParseException
 from typing import Any, Sequence
+
+
+class DisplayName(Case):
+    """
+    Queries display names for a Django choices field
+    """
+
+    def __init__(self, model_name: str | V, field_ref: str | F, condition=None, then=None, **lookups):
+
+        if isinstance(model_name, V):
+            model_name = model_name.value
+
+        if isinstance(field_ref, F):
+            field_ref = field_ref.name
+
+        model = apps.get_model(model_name)
+        field_name = field_ref.split('__')[-1]
+        choices = dict(model._meta.get_field(field_name).flatchoices)
+        whens = [When(**{field_ref: k, 'then': V(v)}) for k, v in choices.items()]
+        super().__init__(*whens, output_field=CharField())
 
 
 class Hours(models.Func):
@@ -117,7 +137,6 @@ class ShiftEnd(models.Func):
         )
 
 
-
 EXPRESSIONS = [
     "Sum(Metrics.Citations) + Avg(Metrics.Mentions)",
     "Sum(Metrics.Citations - Metrics.Mentions)",
@@ -141,7 +160,7 @@ ALLOWED_FUNCTIONS = [
     Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan, ATan2, Mod, Sign, Trunc,
     ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek,
     Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
-    Radians, Degrees, Hours, Minutes, ShiftStart, ShiftEnd, Q
+    Radians, Degrees, Hours, Minutes, ShiftStart, ShiftEnd, Q, DisplayName
 ]
 
 FUNCTIONS = {

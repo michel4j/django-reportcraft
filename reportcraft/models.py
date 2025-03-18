@@ -17,17 +17,6 @@ VALUE_TYPES = {
 }
 
 
-# Create your models here.
-class WithChoices(Case):
-    """Queries display names for a Django choices field"""
-
-    def __init__(self, model, field_ref, condition=None, then=None, **lookups):
-        field_name = field_ref.split('__')[-1]
-        choices = dict(model._meta.get_field(field_name).flatchoices)
-        whens = [When(**{field_ref: k, 'then': Value(v)}) for k, v in choices.items()]
-        super().__init__(*whens, output_field=CharField())
-
-
 class DataSource(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
@@ -39,6 +28,9 @@ class DataSource(models.Model):
     def __str__(self):
         return self.name
 
+    def reports(self):
+        return Report.objects.filter(pk__in=self.entries.values_list('report__pk', flat=True)).order_by('-modified')
+
     def groups_fields(self):
         return self.fields.filter(name__in=self.group_by)
 
@@ -49,11 +41,9 @@ class DataSource(models.Model):
         return {field.name: field.label for field in self.fields.all()}
 
     def get_queryset(self, model_name, filters=None, group_by=None, order_by=None) -> QuerySet:
-
         model: Any = apps.get_model(model_name)
         queryset = model.objects.all()
         field_names = [f.name for f in model._meta.get_fields()]
-
 
         # Apply static filters
         if self.filters:
@@ -128,7 +118,7 @@ class DataModel(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)    
     model = models.ForeignKey(ContentType, on_delete=models.SET_NULL, null=True)
-    name = models.CharField(max_length=150)
+    name = models.CharField(max_length=150, blank=True, null=True)
     source = models.ForeignKey(DataSource, on_delete=models.CASCADE, related_name='models')
 
     def get_group_fields(self):
@@ -141,7 +131,7 @@ class DataModel(models.Model):
         return {}
 
     def __str__(self):
-        return self.name
+        return f'{self.model.app_label}.{self.model.name.title()}'
 
 
 class DataField(models.Model):
@@ -228,26 +218,36 @@ class Entry(models.Model):
         return self.title
 
     def generate(self, *args, **kwargs):
-        if not self.attrs:
-            info = {}
-        elif self.kind == self.Types.BARS:
-            info = self.generate_bars(*args, **kwargs)
-        elif self.kind == self.Types.TABLE:
-            info = self.generate_table(*args, **kwargs)
-        elif self.kind == self.Types.LIST:
-            info = self.generate_list(*args, **kwargs)
-        elif self.kind == self.Types.PLOT:
-            info = self.generate_plot(*args, **kwargs)
-        elif self.kind == self.Types.PIE:
-            info = self.generate_pie(*args, **kwargs)
-        elif self.kind == self.Types.HISTOGRAM:
-            info = self.generate_histogram(*args, **kwargs)
-        elif self.kind == self.Types.TIMELINE:
-            info = self.generate_timeline(*args, **kwargs)
-        elif self.kind == self.Types.TEXT:
-            info = self.generate_text(*args, **kwargs)
-        else:
-            info = {}
+        try:
+            if not self.attrs:
+                info = {}
+            elif self.kind == self.Types.BARS:
+                info = self.generate_bars(*args, **kwargs)
+            elif self.kind == self.Types.TABLE:
+                info = self.generate_table(*args, **kwargs)
+            elif self.kind == self.Types.LIST:
+                info = self.generate_list(*args, **kwargs)
+            elif self.kind == self.Types.PLOT:
+                info = self.generate_plot(*args, **kwargs)
+            elif self.kind == self.Types.PIE:
+                info = self.generate_pie(*args, **kwargs)
+            elif self.kind == self.Types.HISTOGRAM:
+                info = self.generate_histogram(*args, **kwargs)
+            elif self.kind == self.Types.TIMELINE:
+                info = self.generate_timeline(*args, **kwargs)
+            elif self.kind == self.Types.TEXT:
+                info = self.generate_text(*args, **kwargs)
+            else:
+                info = {}
+        except Exception:
+            info = {
+                'title': self.title,
+                'description': self.description,
+                'kind': 'richtext',
+                'style': self.style,
+                'text': "### Error !\n\nAn error occurred while generating this report entry.",
+                'notes': self.notes
+            }
 
         return info
 

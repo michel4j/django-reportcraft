@@ -13,10 +13,10 @@
     <li class="breadcrumb-item active" aria-current="page">{{ report.title }}</li>
   </ol>
 {% endblock %}
+{% block page-pretitle %}Report{% endblock %}
+{% block page-title %}{{ report.title }}{% endblock %}
 {% block content %}
-    <div class="row">
-        <div id="report-entry" class="col p-5 "></div>
-    </div>
+    <div id="report-entry"></div>
 {% endblock %}
 
 {% block extra_js %}

@@ -48,7 +48,7 @@ const contentTemplate = _.template(
 );
 
 const sectionTemplate = _.template(
-    '<section id="section-<%= id %>" <% let style = section.style || "col-12"; %>' +
+    '<section id="section-<%= id %>" <% let style = section.style || "row"; %>' +
     '       class="<%= style %>">' +
     '       <%  if (section.title)  {%>' +
     '       <h3 class="section-title col-12"><%= section.title %></h3>' +

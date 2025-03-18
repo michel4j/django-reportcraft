@@ -2,7 +2,7 @@
 {% load static %}
 
 {% load reportcraft %}
-{% block page-title %}Reports{% endblock %}
+{% block page-title %}All Reports{% endblock %}
 {% block page-tools %}
     <a href="#0" data-modal-url="{% url "new-report" %}">
         {% tool_icon label='Add Report' icon='icon-md ti-square-plus' %}
@@ -10,7 +10,6 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
     {% include "itemlist/filters.html" %}
     <div class="row">
     <ul class="list-group list-group-flush col mt-3">
@@ -29,7 +28,6 @@
             </li>
         {% endfor %}
     </ul>
-    </div>
 {% include "itemlist/pagination.html" %}
 </div>
 {% endblock %}
