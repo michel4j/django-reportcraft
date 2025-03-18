@@ -1,1 +1,118 @@
-{% extends 'bs5.html' %}
+{% load static %}
+{% load settings %}
+{% get_setting "SITE_THEME" as site_theme %}
+<!doctype html>
+<html lang="en" class="{% block html_class %}{% endblock %}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{% block page_title %}{% endblock %}</title>
+    <link rel="icon" href="{% static 'img/icon.ico' %}">
+
+    <!-- Styles -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Fira+Sans:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
+{% if site_theme == 'tabler' %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/css/tabler.min.css"/>
+{% else %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+{% endif %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.15.2/css/selectize.bootstrap5.min.css" integrity="sha512-Ars0BmSwpsUJnWMw+KoUKGKunT7+T8NGK0ORRKj+HT8naZzLSIQoOSIIM3oyaJljgLxFi0xImI5oZkAWEFARSA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            {% if site_theme == 'tabler' %}
+             --tblr-font-sans-serif: "Fira Sans";
+             --tblr-font-monospace: "Fira Code";
+             --tblr-border-radius: 4px;
+             --tblr-border-radius-sm: 3px;
+             --tblr-border-radius-lg: 6px;
+             --tblr-border-radius-xl: 0.75rem;
+             --tblr-border-radius-xxl: 1.25rem;
+             --tblr-border-radius-2xl: var(--tblr-border-radius-xxl);
+             --tblr-border-radius-pill: 100rem;
+             --demo-border-color: var(--tblr-border-color, rgba(0, 0, 0, 0.125));
+             --demo-border-radius: var(--tblr-border-radius, 0.25rem);
+            {% else %}
+            --bs-font-sans-serif: "Fira Sans";
+            --bs-font-monospace: "Fira Code";
+            --bs-border-radius: 0.25rem;
+            --bs-body-font-size: 0.95rem;
+            --bs-breadcrumb-font-size: 0.85rem;
+            --demo-border-color: var(--bs-border-color, rgba(0, 0, 0, 0.125));
+            --demo-border-radius: var(--bs-border-radius, 0.25rem);
+            {% endif %}
+            --demo-icon-font: "tabler-icons";
+            --demo-mono-font: "Fira Code";
+        }
+        pre {
+            background: inherit;
+            color: inherit;
+        }
+    </style>
+    <link rel="stylesheet" href="{% static 'example/demo.min.css' %}" type="text/css"/>
+    {% block site_css %}{% endblock %}
+    {% block extra_css %}{% endblock %}
+    {% block pre_js %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %} bg-light p-5">
+<div class="container-fluid bg-white p-5">
+    {% block body %}
+        {% block content-header %}
+        <nav aria-label="breadcrumb">
+        {% block bread-crumbs %}{% endblock %}
+        </nav>
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col">
+                    <div class="page-pretitle">{% block page-pretitle %}{% endblock %}</div>
+                    <h2 class="page-title">{% block page-title %}{% endblock %}</h2>
+                    <div class="page-subtitle">{% block page-subtitle %}{% endblock %}</div>
+                </div>
+                <div class="page-tools col-auto ms-auto d-flex flex-row">
+                    {% block page-tools %}{% endblock %}
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+
+        <div class="row">
+            <div class="col">
+                {% block object_status %}{% endblock %}
+                {% block content %}
+                {% endblock %}
+            </div>
+        </div>
+    {% endblock %}
+</div>
+
+    <div id="modal-target"></div>
+{% block post_js %}{% endblock %}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+{% if site_theme == 'tabler' %}
+<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.1.1/dist/js/tabler.min.js"></script>
+{% else %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+{% endif %}
+<script src="https://cdn.jsdelivr.net/npm/jquery-form@4.3.0/dist/jquery.form.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.15.2/js/selectize.min.js" integrity="sha512-IOebNkvA/HZjMM7MxL0NYeLYEalloZ8ckak+NDtOViP7oiYzG5vn6WVXyrJDiJPhl4yRdmNAG49iuLmhkUdVsQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="{% static 'crisp_modals/modals.min.js' %}"></script>
+{% block extra_js %}{% endblock %}
+<script>
+    $(document).ready(function () {
+        // enable tooltips
+        const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
+        const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl))
+        $('#modal-target').initModal({
+            setup: function (element) {
+                $('select').selectize({
+                    plugins: ["remove_button"],
+                });
+            }
+        });
+    });
+</script>
+</body>
+</html>

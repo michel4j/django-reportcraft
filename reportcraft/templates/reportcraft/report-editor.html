@@ -42,14 +42,9 @@
 {% block content %}
     <div class="row report-editor ">
             <div class="col-12">
-            <div class="card alert-info bg-info-subtle mb-4">
-                <div class="card-header py-2 d-flex align-items-center">
-                    HELP
-                </div>
-                <div class="card-body">
-                    Add entries to the report and then configure them to select the fields to display. The entry position,
-                    specifies the ordering of entries within the report. The entry style can be used to control the layout.
-                </div>
+            <div class="alert alert-info mb-4">
+                Add entries to the report and then configure them to select the fields to display. The entry position,
+                specifies the ordering of entries within the report. The entry style can be used to control the layout.
             </div>
         </div>
         <div class="col-md-12">
@@ -59,20 +54,20 @@
                 <div class="card">
                     <div class="card-header py-2 d-flex align-items-center justify-content-between entry-{{ entry.kind }}">
                         {{ entry.title }}
-                        <div class="toolbox ml-auto pr-0">
+                        <div class="toolbox ms-auto pr-0">
                             <a href="#!" data-modal-url="{% url 'configure-report-entry' report=report.pk pk=entry.pk %}" title="Configure">
-                                {% tool_icon icon='bi-sliders icon-sm' %}
+                                {% tool_icon icon='ti-adjustments-horizontal icon-sm' %}
                             </a>
                             {% if entry.source %}
                             <a href="{% url 'source-editor' pk=entry.source.pk %}" title="Edit Source">
-                                {% tool_icon icon='bi-database icon-sm' %}
+                                {% tool_icon icon='ti-database icon-sm' %}
                             </a>
                             {% endif %}
                             <a href="#!" data-modal-url="{% url 'edit-report-entry' report=report.pk pk=entry.pk %}" title="Edit Entry">
-                                {% tool_icon icon='bi-pencil icon-sm' %}
+                                {% tool_icon icon='ti-pencil icon-sm' %}
                             </a>
                             <a href="#!" data-modal-url="{% url 'delete-report-entry' report=report.pk pk=entry.pk %}" title="Delete">
-                                {% tool_icon icon='bi-trash3 icon-sm' %}
+                                {% tool_icon icon='ti-trash-x icon-sm' %}
                             </a>
                         </div>
                     </div>

@@ -389,7 +389,7 @@ class BarsForm(ModalModelForm):
     line = forms.ModelChoiceField(label='Line', required=False, queryset=models.DataField.objects.none())
     x_culling = forms.IntegerField(label="Culling", required=False)
     wrap_x_labels = forms.BooleanField(label="Wrap Labels", required=False)
-    aspect_ratio = forms.FloatField(label="Bar Width", required=False, help_text="Aspect ratio of the bars")
+    aspect_ratio = forms.FloatField(label="Aspect Ratio", required=False)
     vertical = forms.BooleanField(label="Vertical Bars", required=False)
 
     sort_by = forms.ModelChoiceField(label='Sort By', required=False, queryset=models.DataField.objects.none())
