@@ -52,6 +52,8 @@ class DataSource(models.Model):
 
         model: Any = apps.get_model(model_name)
         queryset = model.objects.all()
+        field_names = [f.name for f in model._meta.get_fields()]
+
 
         # Apply static filters
         if self.filters:
@@ -66,7 +68,7 @@ class DataSource(models.Model):
         annotate_filter = {'name__in': group_by} if group_by else {}
         annotations = {
             field.name: field.get_expression()
-            for field in self.fields.filter(model__name=model_name, **annotate_filter)
+            for field in self.fields.exclude(name__in=field_names).filter(model__name=model_name, **annotate_filter)
         }
 
         # Add aggregations and handle grouping
@@ -74,7 +76,7 @@ class DataSource(models.Model):
         if group_by:
             aggregations = {
                 field.name: field.get_expression()
-                for field in self.fields.exclude(name__in=group_by).filter(model__name=model_name)
+                for field in self.fields.exclude(name__in=field_names).exclude(name__in=group_by).filter(model__name=model_name)
             }
 
         if annotations and not aggregations:

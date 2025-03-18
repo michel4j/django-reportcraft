@@ -1,19 +1,18 @@
 from django.urls import path
-from django.views.decorators.cache import cache_page
 
 from . import views
 
 urlpatterns = [
-    path('reports/', views.ReportList.as_view(), name='report-list'),
-    path('reports/add/', views.CreateReport.as_view(), name='new-report'),
-    path('reports/<int:pk>/', views.ReportEditor.as_view(), name='report-editor'),
-    path('reports/<int:pk>/edit/', views.EditReport.as_view(), name='edit-report'),
-    path('reports/<int:pk>/delete/', views.DeleteReport.as_view(), name='delete-report'),
+    path('', views.ReportList.as_view(), name='report-list'),
+    path('add/', views.CreateReport.as_view(), name='new-report'),
+    path('<int:pk>/', views.ReportEditor.as_view(), name='report-editor'),
+    path('<int:pk>/edit/', views.EditReport.as_view(), name='edit-report'),
+    path('<int:pk>/delete/', views.DeleteReport.as_view(), name='delete-report'),
 
-    path('reports/<int:report>/edit/<int:pk>/', views.EditEntry.as_view(), name='edit-report-entry'),
-    path('reports/<int:report>/delete/<int:pk>/', views.DeleteEntry.as_view(), name='delete-report-entry'),
-    path('reports/<int:report>/add/', views.CreateEntry.as_view(), name='add-report-entry'),
-    path('reports/<int:report>/config/<int:pk>/', views.ConfigureEntry.as_view(), name='configure-report-entry'),
+    path('<int:report>/edit/<int:pk>/', views.EditEntry.as_view(), name='edit-report-entry'),
+    path('<int:report>/delete/<int:pk>/', views.DeleteEntry.as_view(), name='delete-report-entry'),
+    path('<int:report>/add/', views.CreateEntry.as_view(), name='add-report-entry'),
+    path('<int:report>/config/<int:pk>/', views.ConfigureEntry.as_view(), name='configure-report-entry'),
 
     path('sources/', views.DataSourceList.as_view(), name='data-source-list'),
     path('sources/add/', views.CreateDataSource.as_view(), name='new-data-source'),
