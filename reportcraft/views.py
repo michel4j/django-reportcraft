@@ -1,17 +1,22 @@
 from collections import defaultdict
-from django.contrib.messages.views import SuccessMessageMixin
+from django.conf import settings
 from django.http import JsonResponse, Http404
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.module_loading import import_string
 from django.views import View
 from django.views.generic import DetailView, edit
 from crisp_modals.views import ModalUpdateView, ModalCreateView, ModalDeleteView
 from itemlist.views import ItemListView
 
 from . import models, forms
-    
 
-class ReportView(DetailView):
+
+VIEW_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS['VIEW']]
+EDIT_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS['EDIT']]
+
+
+class ReportView(*VIEW_MIXINS, DetailView):
     template_name = 'reportcraft/report.html'
     model = models.Report
 
@@ -22,7 +27,7 @@ class ReportView(DetailView):
         return context
 
 
-class ReportData(View):
+class ReportData(*VIEW_MIXINS, View):
     @staticmethod
     def get_report(*args, slug='', **kwargs):
         report = models.Report.objects.filter(slug=slug).first()
@@ -42,7 +47,18 @@ class ReportData(View):
         return JsonResponse({'details': [info]}, safe=False)
 
 
-class ReportList(ItemListView):
+class SourceData(*VIEW_MIXINS, View):
+    model = models.DataSource
+
+    def get(self, request, *args, **kwargs):
+        source = self.model.objects.filter(pk=kwargs.get('pk')).first()
+        if not source:
+            raise Http404('Source not found')
+        data = source.get_data()
+        return JsonResponse(data, safe=False)
+
+
+class ReportList(*VIEW_MIXINS, ItemListView):
     model = models.Report
     list_filters = ['created', 'modified']
     list_columns = ['title', 'slug', 'description']
@@ -54,7 +70,7 @@ class ReportList(ItemListView):
     link_kwarg = 'slug'
 
 
-class DataSourceList(ItemListView):
+class DataSourceList(*EDIT_MIXINS, ItemListView):
     model = models.DataSource
     list_filters = ['created', 'modified']
     list_columns = ['name', 'limit', 'group_by']
@@ -70,7 +86,7 @@ class DataSourceList(ItemListView):
     list_title = 'Data Sources'
 
 
-class SourceEditor(DetailView):
+class SourceEditor(*EDIT_MIXINS, DetailView):
     template_name = 'reportcraft/source-editor.html'
     model = models.DataSource
 
@@ -84,7 +100,7 @@ class SourceEditor(DetailView):
         return context
 
 
-class ReportEditor(DetailView):
+class ReportEditor(*EDIT_MIXINS, DetailView):
     template_name = 'reportcraft/report-editor.html'
     model = models.Report
 
@@ -97,7 +113,7 @@ class ReportEditor(DetailView):
         return context
 
 
-class EditReport(ModalUpdateView):
+class EditReport(*EDIT_MIXINS, ModalUpdateView):
     form_class = forms.ReportForm
     model = models.Report
 
@@ -113,7 +129,7 @@ class CreateReport(ModalCreateView):
         return reverse('report-editor', kwargs={'pk': self.object.pk})
 
 
-class CreateDataSource(ModalCreateView):
+class CreateDataSource(*EDIT_MIXINS, ModalCreateView):
     form_class = forms.DataSourceForm
     model = models.DataSource
 
@@ -121,7 +137,7 @@ class CreateDataSource(ModalCreateView):
         return reverse('source-editor', kwargs={'pk': self.object.pk})
 
 
-class EditDataSource(ModalUpdateView):
+class EditDataSource(*EDIT_MIXINS, ModalUpdateView):
     form_class = forms.DataSourceForm
     model = models.DataSource
 
@@ -135,7 +151,7 @@ class EditDataSource(ModalUpdateView):
         return super().form_valid(form)
 
 
-class EditSourceField(ModalUpdateView):
+class EditSourceField(*EDIT_MIXINS, ModalUpdateView):
     form_class = forms.DataFieldForm
     model = models.DataField
 
@@ -143,7 +159,7 @@ class EditSourceField(ModalUpdateView):
         return reverse('source-editor', kwargs={'pk': self.object.source.pk})
 
 
-class AddSourceField(ModalCreateView):
+class AddSourceField(*EDIT_MIXINS, ModalCreateView):
     form_class = forms.DataFieldForm
     model = models.DataField
 
@@ -175,7 +191,7 @@ def update_model_fields(data, view):
         )
 
 
-class AddSourceModel(ModalCreateView):
+class AddSourceModel(*EDIT_MIXINS, ModalCreateView):
     form_class = forms.DataModelForm
     model = models.DataField
 
@@ -199,7 +215,7 @@ class AddSourceModel(ModalCreateView):
         return response
 
 
-class EditSourceModel(ModalUpdateView):
+class EditSourceModel(*EDIT_MIXINS, ModalUpdateView):
     form_class = forms.DataModelForm
     model = models.DataModel
 
@@ -217,7 +233,7 @@ class EditSourceModel(ModalUpdateView):
         return super().form_valid(form)
 
 
-class EditEntry(ModalUpdateView):
+class EditEntry(*EDIT_MIXINS, ModalUpdateView):
     form_class = forms.EntryForm
     model = models.Entry
 
@@ -230,29 +246,29 @@ class EditEntry(ModalUpdateView):
         return initial
 
 
-class DeleteSourceModel(ModalDeleteView):
+class DeleteSourceModel(*EDIT_MIXINS, ModalDeleteView):
     model = models.DataModel
 
 
-class DeleteReport(ModalDeleteView):
+class DeleteReport(*EDIT_MIXINS, ModalDeleteView):
     model = models.Report
     success_url = reverse_lazy('report-list')
 
 
-class DeleteDataSource(ModalDeleteView):
+class DeleteDataSource(*EDIT_MIXINS, ModalDeleteView):
     model = models.DataSource
     success_url = reverse_lazy('data-source-list')
 
 
-class DeleteEntry(ModalDeleteView):
+class DeleteEntry(*EDIT_MIXINS, ModalDeleteView):
     model = models.Entry
 
 
-class DeleteSourceField(ModalDeleteView):
+class DeleteSourceField(*EDIT_MIXINS, ModalDeleteView):
     model = models.DataField
 
 
-class ConfigureEntry(ModalUpdateView):
+class ConfigureEntry(*EDIT_MIXINS, ModalUpdateView):
     model = models.Entry
 
     def get_form_class(self):
@@ -270,7 +286,7 @@ class ConfigureEntry(ModalUpdateView):
         return reverse('report-editor', kwargs={'pk': self.object.report.pk})
 
 
-class CreateEntry(ModalCreateView):
+class CreateEntry(*EDIT_MIXINS, ModalCreateView):
     form_class = forms.EntryForm
     model = models.Entry
 

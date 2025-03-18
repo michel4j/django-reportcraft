@@ -30,5 +30,6 @@ urlpatterns = [
     path('sources/<int:source>/del-model/<int:pk>/', views.DeleteSourceModel.as_view(), name='delete-source-model'),
 
     path('view/<slug:slug>/', views.ReportView.as_view(), name='report-view'),
-    path('data/<slug:slug>/', views.ReportData.as_view(), name='report-data'),
+    path('api/reports/<slug:slug>/', views.ReportData.as_view(), name='report-data'),
+    path('api/sources/<int:pk>/', views.SourceData.as_view(), name='source-data'),
  ]

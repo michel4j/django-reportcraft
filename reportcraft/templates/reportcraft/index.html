@@ -4,9 +4,11 @@
 {% load reportcraft %}
 {% block page-title %}All Reports{% endblock %}
 {% block page-tools %}
+    {% if user.is_authenticated %}
     <a href="#0" data-modal-url="{% url "new-report" %}">
         {% tool_icon label='Add Report' icon='icon-md ti-square-plus' %}
     </a>
+    {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -20,11 +22,13 @@
                     <a href="{% url "report-view" slug=report.slug %}">{{ report.title }}</a>{% if report.description %} &mdash;
                     <span class="text-muted text-md">{{ report.description }}</span>{% endif %}
                 </div>
+                {% if user.is_authenticated %}
                 <div class="toolbox">
                     <a href="{% url 'report-editor' report.pk %}" title="Edit Report">
                       {% tool_icon icon='ti-pencil' %}
                     </a>
                 </div>
+                {% endif %}
             </li>
         {% endfor %}
     </ul>
