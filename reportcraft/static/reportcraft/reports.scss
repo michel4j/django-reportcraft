@@ -36,8 +36,9 @@ $main-font: "Fira Sans";
 $mono-font: "Fira Code";
 
 :root {
-  @include fluid-type($min_width, $max_width, $min_font, $max_font);
+  //@include fluid-type($min_width, $max_width, $min_font, $max_font);
 }
+
 
 .c3 svg {
 	font-family: $main-font, sans-serif;
