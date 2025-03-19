@@ -275,11 +275,11 @@ table {
 }
 
 
-
 i {
   &.icon-xs {
     font-size: 1em;
   }
+
   &.icon-sm {
     font-size: 1.25em;
   }
@@ -302,6 +302,7 @@ svg {
   &.icon-xs {
     width: 1em;
   }
+
   &.icon-sm {
     width: 1.25em;
   }
@@ -367,6 +368,36 @@ svg {
 .custom-control {
   &.custom-radio, &.custom-checkbox, &.custom-switch {
     padding-top: 0.5em;
+  }
+}
+
+.swatches {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 0.25em;
+  padding: 0.25em;
+
+  + .swatches {
+    border-top: 1px solid var(--rc-border-color);
+  }
+  .swatches-name {
+    display: inline-block;
+    font-family: var(--rc-mono-font), monospace;
+    min-width: 10em;
+  }
+
+  .swatches-colors {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+
+    .swatch {
+      display: inline-block;
+      width: 2em;
+      height: 2em;
+    }
   }
 }
 

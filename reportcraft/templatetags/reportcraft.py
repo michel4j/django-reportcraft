@@ -4,6 +4,7 @@ from django.utils.safestring import mark_safe
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import YamlLexer, PythonLexer
+from reportcraft.utils import COLOR_SCHEMES
 
 register = template.Library()
 
@@ -104,3 +105,19 @@ def svg_icon(name, size=None, stroke=None):
 def font_icon(name, size=None):
     size = 'md' if not size else size
     return mark_safe(f'<i class="ti-{name} icon-{size}"></i>')
+
+
+@register.simple_tag
+def swatches():
+    swatches_template = (
+        '<div class="swatches">'
+        '   <div class="swatches-name">&emsp;{name}</div>' 
+        '   <div class="swatches-colors">{colors}</div>'    
+        '</div>'
+    )
+    all_swatches = []
+    for name, colors in COLOR_SCHEMES.items():
+        swatches_entry = ''.join([f'<div class="swatch" style="background-color: {color};"></div>' for color in colors])
+        all_swatches.append(swatches_template.format(name=name, colors=swatches_entry))
+
+    return mark_safe(''.join(all_swatches))

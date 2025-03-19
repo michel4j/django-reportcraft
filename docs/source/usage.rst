@@ -230,29 +230,19 @@ A Bar Chart Entry displays the data in a bar chart format. The bar chart entry h
   Values of the Y-axis field will be used as the series.
 - Sort By: The field to use for sorting the bars on the x-axis.
 - Color By: The field to use for coloring the bars.
-- Color Scheme: The color palette to use for coloring the bars. The following color schemes are supported:
-
-    - Accent
-    - Dark2
-    - Live4
-    - Live8
-    - Live16
-    - Paired
-    - Pastel1
-    - Pastel2
-    - Set1
-    - Set2
-    - Set3
-    - Tableau10
-    - Category10
-    - Observable10
-
 - Aspect Ratio: The ratio of the width to the height of the bars.
 - Culling: The maximum number of X-axis ticks to display.
 - Stack: Specify the groups of fields to stack. Only fields already specified under Y-axis should be included
 - Wrap Labels: Wrap the labels on the x-axis to multiple lines.
 - Vertical bars: Display the bars vertically instead of horizontally.
 - Sort Descending: Sort the bars in descending order.
+- Color Scheme: The color palette to use for coloring the bars. The following color schemes are supported:
+
+.. image:: static/color-schemes.png
+  :width: 80%
+  :align: center
+  :alt: Available Color Schemes
+
 
 Pie Chart Entry
 ---------------
