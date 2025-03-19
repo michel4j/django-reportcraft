@@ -460,6 +460,8 @@ function drawHistogram(figure, chart, options) {
     migrateData(chart);
     let yscale = chart['y-scale'];
     let data = chart['data'];
+    let x_culling = chart['x-culling'] || null;
+
     // remove raw data from dom
     figure.removeData('chart');
     figure.removeAttr('data-chart');
@@ -481,7 +483,7 @@ function drawHistogram(figure, chart, options) {
             x: {
                 tick: {
                     fit: false,
-                    count: 10,
+                    culling: {max: x_culling},
                     format: v => v.toFixed(1)
                 }
             },
@@ -763,7 +765,7 @@ function drawTimeline(figure, chart, options) {
 }
 
 (function ($) {
-    $.fn.liveReport = function (options) {
+    $.fn.showReport = function (options) {
         let target = $(this);
         let defaults = {
             data: {},

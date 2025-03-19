@@ -840,3 +840,66 @@ class RichTextForm(ModalModelForm):
 
         cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, []]}
         return cleaned_data
+
+
+class HistogramForm(ModalModelForm):
+    values = forms.ModelChoiceField(label='Values', required=True, queryset=models.DataField.objects.none())
+    bins = forms.IntegerField(label='Bins', required=False)
+    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=COLOR_CHOICES, initial='Live8')
+
+    class Meta:
+        model = models.Entry
+        fields = (
+            'attrs', 'values', 'bins', 'colors',
+        )
+        widgets = {
+            'attrs': forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.body.title = _("Configure Histogram")
+        self.body.form_action = reverse_lazy(
+            'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
+        )
+        self.update_initial()
+        self.body.append(
+            Row(
+                ThirdWidth(Field('values', css_class='select')),
+                ThirdWidth('bins'),
+                ThirdWidth(Field('colors', css_class='select')),
+            ),
+            Row(
+
+                Field('attrs'),
+            ),
+        )
+
+    def update_initial(self):
+        attrs = self.instance.attrs
+        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
+        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
+        for field in ['values']:
+            self.fields[field].queryset = field_queryset
+            if field in attrs:
+                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
+
+        for field in ['bins', 'colors']:
+            if field in attrs:
+                self.fields[field].initial = attrs[field]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_attrs = {}
+
+        for field in ['values']:
+            if field in cleaned_data and cleaned_data[field] is not None:
+                new_attrs[field] = cleaned_data[field].name
+
+        for field in ['bins', 'colors']:
+            if field in cleaned_data:
+                new_attrs[field] = cleaned_data[field]
+
+        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, []]}
+        return cleaned_data
+

@@ -176,7 +176,7 @@ def get_histogram_points(data: list[float], bins: Any = None) -> list[dict]:
     bins = 'doane' if bins is None else int(bins)
     hist, edges = np.histogram(data, bins=bins)
     centers = edges[:-1] + np.diff(edges) / 2
-    return [{'x': x, 'y': y} for x, y in zip(centers, hist)]
+    return [{'x': float(x), 'y': float(y)} for x, y in zip(centers, hist)]
 
 
 class ExpressionParser:

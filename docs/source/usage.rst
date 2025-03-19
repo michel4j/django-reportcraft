@@ -190,3 +190,48 @@ A Pie Chart Entry displays the data in a pie chart format. The pie chart entry h
   pie chart.
 - Label: The field to use as the labels of the chart. This field will be used to label the slices in the pie chart.
 - Color By: The field to use for coloring the slices.
+
+
+XY Plot
+-------
+An XY Plot Entry displays the data in a XY chart format with lines or points. The XY plot entry has the following
+configuration options:
+
+- X Axis: The field to use as the x-axis of the chart. This field will be used to label the points on the x-axis.
+- Y1 Label: The label to use for the y-axis on the left side of the chart.
+- Y1 Axis: One or more fields to use as the source of Y1 axis values of the chart. Each field will be a separate series
+  on the chart.
+- Y2 Label: The label to use for the y-axis on the right side of the chart.
+- Y2 Axis: One or more fields to use as the source of Y2 axis values of the chart. Each field will be a separate series
+  on the chart.
+- Scatter Plot: Toggle this option to display the data as a scatter plot instead of a line plot.
+- Color Scheme: The color palette to use for coloring the lines or points. Each series will be assigned a color based on
+  the color scheme.
+
+List Entry
+----------
+A List Entry displays a list of entries with one or more columns of data, where. Each row in a List is usually quite
+similar to the other rows unlike a Table Entry. The List Entry has the following configuration options:
+
+- Columns: The fields to display as columns in the list. Select the fields to display as columns from the dropdown list.
+  Only fields that have been added to the data source are available. You can add multiple columns to the list. The order
+  of the columns in the list is determined by the `Position` of the corresponding field.
+- Sort By: The field to use for sorting the rows in the list.
+- Descending: Sort the rows in descending order.
+
+
+Histogram Entry
+--------------
+A Histogram Entry displays the data in a histogram format. The histogram entry has the following configuration options:
+
+- Values: The field to use as the source pf values for the histogram. This should be a numeric field and should return
+  the raw data, not the histogram itself.
+- Bins (optional): The number of bins to use for the histogram. If not specified, the number of bins will be determined
+  automatically.
+- Color Scheme: The color palette to use for coloring the bars in the histogram.
+
+Rich Text Entry
+---------------
+A Rich Text Entry displays markdown formatted text. The rich text entry has the following configuration options:
+
+- Text: The markdown formatted text to display in the entry.

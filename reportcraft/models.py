@@ -517,7 +517,7 @@ class Entry(models.Model):
         """
 
         bins = self.attrs.get('bins', None)
-        value_field = self.attrs.get('value_field', '')
+        value_field = self.attrs.get('values', '')
         colors = self.attrs.get('colors', None)
         if not value_field:
             return {}
@@ -525,7 +525,8 @@ class Entry(models.Model):
         raw_data = self.source.get_data(*args, **kwargs)
         labels = self.source.get_labels()
         values = [float(item.get(value_field)) for item in raw_data if item.get(value_field) is not None]
-
+        data = utils.get_histogram_points(values, bins=bins)
+        x_culling = min(len(data), 15)
         return {
             'title': self.title,
             'description': self.description,
@@ -533,7 +534,8 @@ class Entry(models.Model):
             'style': self.style,
             'colors': colors,
             'x-label': labels.get(value_field, value_field.title()),
-            'data': utils.get_histogram_points(values, bins=bins),
+            'x-culling': x_culling,
+            'data': data,
             'notes': self.notes
         }
 

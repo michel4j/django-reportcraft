@@ -280,6 +280,7 @@ class ConfigureEntry(*EDIT_MIXINS, ModalUpdateView):
             models.Entry.Types.LIST: forms.ListForm,
             models.Entry.Types.TIMELINE: forms.TimelineForm,
             models.Entry.Types.TEXT: forms.RichTextForm,
+            models.Entry.Types.HISTOGRAM: forms.HistogramForm,
         }.get(self.object.kind, forms.EntryForm)
 
     def get_success_url(self):

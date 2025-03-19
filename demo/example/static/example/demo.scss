@@ -46,10 +46,39 @@ a, a:hover, a:active, a:visited {
     padding: calc(.375rem - 2px) .375rem calc(.375rem - 5px);
 }
 .page-pretitle {
-    font-size: .75rem;
+    font-size: .8rem;
     font-weight: 400;
     text-transform: uppercase;
     letter-spacing: .04em;
     line-height: 1rem;
     opacity: 0.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 200;
+    margin: 0;
+    line-height: 1.5;
+}
+h1 {
+  font-size: calc(1rem + 1.5vw);
+}
+
+h2 {
+  font-size: calc(0.75rem + 1.5vw);
+}
+
+h3 {
+  font-size: calc(0.5rem + 1.5vw);
+}
+
+h4 {
+  font-size: calc(0.25rem + 1.5vw);
+}
+
+h5 {
+  font-size: calc(0.125rem + 1.5vw);
+}
+
+h6 {
+  font-size: calc(1.5vw);
 }

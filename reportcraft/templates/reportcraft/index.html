@@ -2,7 +2,7 @@
 {% load static %}
 
 {% load reportcraft %}
-{% block page-title %}All Reports{% endblock %}
+{% block page-title %}Reports{% endblock %}
 {% block page-tools %}
     {% if user.is_authenticated %}
     <a href="#0" data-modal-url="{% url "new-report" %}">

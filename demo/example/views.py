@@ -11,14 +11,12 @@ from itemlist.filters import YearLimitFilterFactory, MonthFilterFactory, Quarter
 class FancyPersonList(ItemListView):
     model = Person
     template_name = 'list.html'
-    list_columns = ['first_name', 'last_name', 'age', 'type', 'institution']
+    list_columns = ['first_name', 'last_name', 'age', 'type', 'institution', 'institution__country']
     list_search = ['first_name', 'last_name', 'age', 'type', 'bio', 'institution__name']
     list_filters = [
         'type',
         YearLimitFilterFactory.new('created', 'since'),
         YearLimitFilterFactory.new('created', 'until'),
-        MonthFilterFactory.new('created'),
-        QuarterFilterFactory.new('created'),
     ]
     list_title = 'Fancy People'
     link_url = 'person-edit'

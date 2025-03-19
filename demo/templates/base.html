@@ -60,26 +60,32 @@
     <div class="container-fluid bg-white p-5">
     {% block body %}
         {% block content-header %}
-        <nav aria-label="breadcrumb">
+        <nav class="mb-5" aria-label="breadcrumb">
         {% block bread-crumbs %}{% endblock %}
         </nav>
         <div class="page-header">
             <div class="row align-items-center">
                 <div class="col">
                     <div class="page-pretitle">{% block page-pretitle %}{% endblock %}</div>
-                    <h2 class="page-title">{% block page-title %}{% endblock %}</h2>
+                    <h1 class="page-title">{% block page-title %}{% endblock %}</h1>
                     <div class="page-subtitle">{% block page-subtitle %}{% endblock %}</div>
                 </div>
                 <div class="page-tools col-auto ms-auto d-flex flex-row">
                     {% block page-tools %}{% endblock %}
                 </div>
             </div>
-        </div>
+            <div class="row">
+                <div class="col"><hr class="my-2"/></div>
+            </div>
         {% endblock %}
         <div class="row">
             <div class="col">
-                {% block object_status %}{% endblock %}
-                {% block content %}{% endblock %}
+                {% block page-status %}{% endblock %}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                {% block page-content %}{% block content %}{% endblock %}{% endblock %}
             </div>
         </div>
     {% endblock %}
