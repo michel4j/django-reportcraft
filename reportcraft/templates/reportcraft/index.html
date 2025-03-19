@@ -6,7 +6,7 @@
 {% block page-tools %}
     {% if user.is_authenticated %}
     <a href="#0" data-modal-url="{% url "new-report" %}">
-        {% tool_icon label='Add Report' icon='icon-md ti-square-plus' %}
+        {% tool_icon label='Add Report' icon='square-plus' %}
     </a>
     {% endif %}
 {% endblock %}
@@ -25,7 +25,7 @@
                 {% if user.is_authenticated %}
                 <div class="toolbox">
                     <a href="{% url 'report-editor' report.pk %}" title="Edit Report">
-                      {% tool_icon icon='ti-pencil' %}
+                      {% tool_icon icon='pencil' size='sm' %}
                     </a>
                 </div>
                 {% endif %}

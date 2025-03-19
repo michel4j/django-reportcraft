@@ -1,5 +1,4 @@
-    <a href="#0" data-modal-url="{% url 'person-add' %}"
-       class="d-flex flex-column align-items-center justify-content-center py-3">
-        <i class="ti-square-plus icon-md"></i>
-        <small class="text-muted">Add Person</small>
-    </a>
+{% load reportcraft %}
+<a href="#0" data-modal-url="{% url 'person-add' %}">
+    {% tool_icon label='Add Person' icon='square-plus' %}
+</a>

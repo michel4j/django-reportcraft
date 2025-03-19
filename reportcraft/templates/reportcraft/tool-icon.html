@@ -1,6 +1,7 @@
+{% load reportcraft %}
 <div class="d-flex flex-column align-items-center justify-content-center p-1"
      {% if tooltip %}title="{{ tooltip }}"{% endif %}>
-    <i class="{{ icon }}"></i>
+    {% svg_icon icon size=size %}
     {% if badge is not None %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-{{ color | default:'info' }}">{{ badge }}</span>{% endif %}
     {% if label %}<small class="text-nowrap pt-1 text-muted d-none d-md-inline-block">{{label}}</small>{% endif %}
 </div>

@@ -21,22 +21,22 @@
 
 {% block page-tools %}
     <a href="{% url "report-list" %}">
-        {% tool_icon label='Reports' icon='icon-md ti-list-details' %}
+        {% tool_icon label='Reports' icon='list-details' %}
     </a>
     <a href="{% url "data-source-list" %}">
-        {% tool_icon label='Sources' icon='icon-md ti-database' %}
+        {% tool_icon label='Sources' icon='database' %}
     </a>
     <a href="#!" data-modal-url="{% url "edit-data-source" source.pk %}">
-        {% tool_icon label='Edit' icon='icon-md ti-pencil' %}
+        {% tool_icon label='Edit' icon='pencil' %}
     </a>
     <a href="#!" data-modal-url="{% url "delete-data-source" source.pk %}">
-        {% tool_icon label='Delete' icon='icon-md ti-trash-x' %}
+        {% tool_icon label='Delete' icon='trash-x' %}
     </a>
     <a href="#!" data-modal-url="{% url "add-source-model" source=source.pk %}">
-        {% tool_icon label='Add Model' icon='icon-md ti-database-plus' %}
+        {% tool_icon label='Add Model' icon='database-plus' %}
     </a>
     <a href="#!" data-modal-url="{% url "add-source-field" source=source.pk %}">
-        {% tool_icon label='Add Field' icon='icon-md ti-table-plus' %}
+        {% tool_icon label='Add Field' icon='table-plus' %}
     </a>
 {% endblock %}
 
@@ -76,12 +76,12 @@
                                                 <a href="#0"
                                                    data-modal-url="{% url 'edit-source-model' source=source.pk pk=src_model.pk %}"
                                                    title="Edit">
-                                                    {% tool_icon icon='ti-pencil' %}
+                                                    {% tool_icon icon='pencil' size='sm' %}
                                                 </a>
                                                 <a href="#0"
                                                    data-modal-url="{% url 'delete-source-model' source=source.pk pk=src_model.pk %}"
                                                    title="Delete">
-                                                    {% tool_icon icon='ti-x' %}
+                                                    {% tool_icon icon='x' size='sm' %}
                                                 </a>
                                             </div>
                                         </div>
@@ -128,12 +128,12 @@
                                                     <a href="#0"
                                                        data-modal-url="{% url 'edit-source-field' source=source.pk pk=field.pk %}"
                                                        title="Edit">
-                                                        {% tool_icon icon='ti-pencil' %}
+                                                        {% tool_icon icon='pencil' size='sm' %}
                                                     </a>
                                                     <a href="#0"
                                                        data-modal-url="{% url 'delete-source-field' source=source.pk pk=field.pk %}"
                                                        title="Delete">
-                                                        {% tool_icon icon='ti-x' %}
+                                                        {% tool_icon icon='x' size='sm' %}
                                                     </a>
                                                 </div>
                                             </div>

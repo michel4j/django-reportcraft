@@ -20,22 +20,22 @@
 
 {% block page-tools %}
     <a href="{% url "report-list" %}">
-        {% tool_icon label='Reports' icon='icon-md ti-list-details' %}
+        {% tool_icon label='Reports' icon='list-details' %}
     </a>
     <a href="{% url "data-source-list" %}">
-        {% tool_icon label='Sources' icon='icon-md ti-database icon-md' %}
+        {% tool_icon label='Sources' icon='database' %}
     </a>
     <a href="{% url "report-view" slug=report.slug %}">
-        {% tool_icon label='Preview' icon='icon-md ti-live-view' %}
+        {% tool_icon label='Preview' icon='live-view' %}
     </a>
     <a href="#0" data-modal-url="{% url "edit-report" report.pk %}">
-        {% tool_icon label='Edit' icon='icon-md ti-pencil' %}
+        {% tool_icon label='Edit' icon='pencil' %}
     </a>
     <a href="#0" data-modal-url="{% url "delete-report" report.pk %}">
-        {% tool_icon label='Delete' icon='icon-md ti-trash-x' %}
+        {% tool_icon label='Delete' icon='trash-x' %}
     </a>
     <a href="#0" data-modal-url="{% url "add-report-entry" report=report.pk %}">
-        {% tool_icon label='Add Entry' icon='icon-md ti-photo-plus' %}
+        {% tool_icon label='Add Entry' icon='photo-plus' %}
     </a>
 {% endblock %}
 
@@ -52,22 +52,23 @@
             {% for entry in entries %}
             <div class="entry pb-3 {{ entry.style|default:'col-12' }}">
                 <div class="card">
-                    <div class="card-header py-2 d-flex align-items-center justify-content-between entry-{{ entry.kind }}">
-                        {{ entry.title }}
+                    <div class="card-header py-2 d-flex align-items-center">
+                        <span class="text-muted">{% svg_icon entry.kind stroke=1 size='lg' %}</span>&emsp;
+                        <span>{{ entry.title }}</span>
                         <div class="toolbox ms-auto pr-0">
                             <a href="#!" data-modal-url="{% url 'configure-report-entry' report=report.pk pk=entry.pk %}" title="Configure">
-                                {% tool_icon icon='ti-adjustments-horizontal icon-sm' %}
+                                {% tool_icon icon='adjustments-horizontal' size='sm' %}
                             </a>
                             {% if entry.source %}
                             <a href="{% url 'source-editor' pk=entry.source.pk %}" title="Edit Source">
-                                {% tool_icon icon='ti-database icon-sm' %}
+                                {% tool_icon icon='database' size='sm' %}
                             </a>
                             {% endif %}
                             <a href="#!" data-modal-url="{% url 'edit-report-entry' report=report.pk pk=entry.pk %}" title="Edit Entry">
-                                {% tool_icon icon='ti-pencil icon-sm' %}
+                                {% tool_icon icon='pencil' size='sm' %}
                             </a>
                             <a href="#!" data-modal-url="{% url 'delete-report-entry' report=report.pk pk=entry.pk %}" title="Delete">
-                                {% tool_icon icon='ti-trash-x icon-sm' %}
+                                {% tool_icon icon='trash-x' size='sm' %}
                             </a>
                         </div>
                     </div>

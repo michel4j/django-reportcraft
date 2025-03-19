@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load reportcraft %}
 
 {% block page-pretitle %}django-reportcraft{% endblock %}
 {% block page-title %}
@@ -9,9 +10,9 @@
     <p>People, Institutions, Subjects, and Reports</p>
     <h4>Fancy Lists</h4>
     <ul class="list-group list-group-flush">
-        <li class="list-group-item"><a href="{% url 'person-list' %}"><i class="ti-users"></i>&emsp;People</a></li>
-        <li class="list-group-item"><a href="{% url 'institution-list' %}"><i class="ti-buildings"></i>&emsp;Institutions</a></li>
-        <li class="list-group-item"><a href="{% url 'subject-list' %}"><i class="ti-notebook"></i>&emsp;Subjects</a></li>
-        <li class="list-group-item"><a href="{% url 'report-list' %}"><i class="ti-notebook"></i>&emsp;Reports</a></li>
+        <li class="list-group-item"><a href="{% url 'person-list' %}">{% svg_icon 'people' %}&emsp;People</a></li>
+        <li class="list-group-item"><a href="{% url 'institution-list' %}">{% svg_icon 'buildings' %}&emsp;Institutions</a></li>
+        <li class="list-group-item"><a href="{% url 'subject-list' %}">{% svg_icon 'notebook' %}&emsp;Subjects</a></li>
+        <li class="list-group-item"><a href="{% url 'report-list' %}">{% svg_icon 'people' %}&emsp;Reports</a></li>
     </ul>
 {% endblock %}
