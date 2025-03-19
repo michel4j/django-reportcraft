@@ -14,20 +14,22 @@
 {% block page-content %}
     {% include "itemlist/filters.html" %}
     <div class="row">
-    <ul class="list-group list-group-flush col mt-3">
+    <ul class="list-group list-group-flush row mt-3">
         {% for report in object_list %}
-            <li class="list-group-item d-flex align-items-center justify-content-between">
-                <div>
-                    <i class="text-info-emphasis ti-report mr-2"></i>&nbsp;
-                    <a href="{% url "report-view" slug=report.slug %}">{{ report.title }}</a>{% if report.description %} &mdash;
-                    <span class="text-muted text-md">{{ report.description }}</span>{% endif %}
+            <li class="list-group-item d-flex flex-column align-items-start justify-content-between col">
+                <div class="d-flex flex-row align-items-center">
+                    {% tool_icon icon='report' %}
+                    <a class="me-auto" href="{% url "report-view" slug=report.slug %}">{{ report.title }}</a>
+                    {% if user.is_authenticated %}
+                        <div class="toolbox">
+                            <a href="{% url 'report-editor' report.pk %}" title="Edit Report">
+                              {% tool_icon icon='pencil' size='sm' %}
+                            </a>
+                        </div>
+                    {% endif %}
                 </div>
-                {% if user.is_authenticated %}
-                <div class="toolbox">
-                    <a href="{% url 'report-editor' report.pk %}" title="Edit Report">
-                      {% tool_icon icon='pencil' size='sm' %}
-                    </a>
-                </div>
+                {% if report.description %}
+                    <div class="text-muted text-md">{{ report.description }}</div>
                 {% endif %}
             </li>
         {% endfor %}
