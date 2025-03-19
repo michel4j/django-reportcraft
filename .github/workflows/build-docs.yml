@@ -1,5 +1,6 @@
 name: build-docs
 on:
+  workflow_dispatch:
   push:
     tags: '*'
   pull_request:
