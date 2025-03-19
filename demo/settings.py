@@ -131,4 +131,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REPORTCRAFT_APPS = ['example']
 
-SITE_THEME = 'bs5'  # 'bs5' or 'tabler'
+SITE_THEME = 'tabler'  # 'bs5' or 'tabler'
