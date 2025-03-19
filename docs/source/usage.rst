@@ -4,9 +4,16 @@ Usage
 To use Django ReportCraft, Navigate to https://mysite/reports/ and create a new report entry by clicking the
 `Add Report` button on the top-right corner. Make sure you are logged in otherwise the button will not be visible.
 
+.. image:: static/report-form.png
+  :width: 100%
+  :alt: Report Form
+
 Once you have created a report, you can build the report using the graphical designer by creating Data Sources,
 Data Fields, and Report Entries.
 
+.. image:: static/report-editor.png
+  :width: 100%
+  :alt: Report Editor
 
 Data Sources
 ------------
@@ -14,9 +21,17 @@ Data Sources
 A Data Source is a model that provides data for the report. You can create a new Data Source by clicking Add Data Source
 button from the Sources list. To create a new Data Source, you need to provide the following information:
 
+.. image:: static/source-form.png
+  :width: 100%
+  :alt: Data Source Form
+
 - Name: The name of the Data Source.
 - Group Fields: A comma separate list of group fields to use for aggregating the data.
 - Limit: The maximum number of records to return. This field is optional.
+
+.. image:: static/source-editor.png
+  :width: 100%
+  :alt: Data Source Editor
 
 Data Source Models
 ------------------
@@ -28,6 +43,10 @@ editor pages.  To add a new Model, you need to provide the following information
   applications whose `app_label` is included in the REPORTCRAFT_APPS setting list will be available.
 - Group Expressions: For each group field, you can provide an expression to use for grouping the data. The expression
   should be a valid `Expression`. See the Expressions section below.
+
+.. image:: static/model-form.png
+  :width: 100%
+  :alt: Data Model Form
 
 Data Fields
 -----------
@@ -47,6 +66,10 @@ page.  The following information is required to add a new Field:
 - Expression: The expression to use for the field. The expression should be a valid `Expression`. See the Expressions
   section below.
 
+.. image:: static/field-form.png
+  :width: 100%
+  :alt: Data Field Form
+
 Expressions
 -----------
 Expressions are used to define how to calculate the value of a field. Expressions can be simple field references or
@@ -58,32 +81,75 @@ Mathematical expressions. The following operators are supported:
 - `/`: Division
 - `-`: Unary negation
 
-Field names are referenced using CamelCase. For example, to reference a field named `total_amount`, you would use `TotalAmount`
-in the expression.  You can also reference group fields using the same syntax. For example, to reference a group field named
-`category`, you would use `Category` in the expression.  Related fields must be referenced using the `.` operator instead
+Django field names are referenced using CamelCase. For example, to reference a field named `total_amount`, you would use `TotalAmount`
+in the expression. Related fields lookups must be referenced using the `.` operator instead
 of the `__` operator. For example, to reference a related field named `name` on a related model named `institution`, you would
-use `Institution.Name` in the expression.
+use `Institution.Name` in the expression instead of the low-level `name__institution` identifier.
 
 Any unquoted identifier that is not a function or a literal is assumed to be a field name.  For example, `TotalAmount * 0.1`
 would multiply the value of the `TotalAmount` field by the value 0.1.  You can also use parentheses to group expressions. For example,
 `(TotalAmount + TaxAmount) * 0.1` would add the value of the `TotalAmount` field to the value of the `TaxAmount` field and
 then multiply the result by 0.1.  String literals must be enclosed in single or double quotes. For example, `'Hello, World!'`.
 
-Functions must use parentheses immediately after the identifier to enclose arguments. Nesting is supported.
+Functions must use parentheses immediately after the identifier to enclose arguments. Nesting and keyword arguments are
+supported.
 
-The following functions are supported:
+The special `this` identifier can be used to reference the current model. For example, the expression `Count(this)`
+on a field defined for the `example.Person` model, would count the entries in the `example.Person` model. This can
+be especially useful when using the `Count` function with the `distinct` keyword, like `Count(this, distinct=True)`.
+
+The following Django database functions are supported. Please consult the Django documentation on Database Functions
+for more information:
 
 .. code-block:: python
-    [Sum, Avg, Count, Max, Min, Concat, Greatest, Least,
-    Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan, ATan2, Mod, Sign, Trunc,
-    ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek,
-    Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
-    Radians, Degrees, Hours, Minutes, ShiftStart, ShiftEnd, Q, DisplayName]
 
+    [
+        Sum, Avg, Count, Max, Min, Concat, Greatest, Least,
+        Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt,
+        Sin, Cos, Tan, ASin, ACos, ATan, ATan2, Mod, Sign, Trunc,
+        ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute,
+        ExtractSecond, ExtractWeekDay, ExtractWeek,
+        Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
+        Radians, Degrees, Q,
+        ShiftStart, ShiftEnd, Hours, Minutes, DisplayName
+    ]
+
+Additionally, the following custom functions functions are supported:
+
+- `ShiftStart`: Round down the time of a DateTime field to the nearest hour. An extra `size` keyword argument
+  can be used to specify the shift size, by default 8 Hrs (00:00, 08:00, 16:00).
+- `ShiftEnd`: Round up the time of a DateTime field to the nearest 8 Hrs (08:00, 16:00, 00:00). Also takes the optional
+  `size` keyword argument.
+- `Hours`: Calculate the total hours from a Duration. A duration is a difference between two DateTime fields.
+- `Minutes`: Calculate the total minutes from a Duration.
+- `DisplayName`: Return the display name of model field that contains choices. The first argument of the function
+  should be a literal string representing the model to use and the second parameter should be the field identifier.
 
 For date based fields, you can use subfields to extract parts of the date. For example, instead of using a function to
 extract the year from a date field like `ExtractYear(Date)` in the expression. It is valid and much easier to use
 `Date.Year`.
+
+Here are some xamples of valid expressions:
+
+.. code-block:: python
+
+    TotalAmount * 0.1
+    (TotalAmount + TaxAmount) * 0.1
+    TotalAmount + TaxAmount
+    'Hello, World!'
+    Concat(FirstName, " ", LastName)
+    Sum(TotalAmount)
+    Sum(TotalAmount) / Count()
+    Sum(Metrics.Citations) + Avg(Metrics.Mentions)
+    Sum(Metrics.Citations - Metrics.Mentions)
+    Avg(Metrics.Citations + Metrics.Mentions)
+    Published.Year
+    -Count(this)
+    Count(Journal, distinct=True)",
+    Concat(Journal.Title, ' (', Journal.Issn, ')')
+    Avg(Journal.Metrics.ImpactFactor)
+    Avg(Metrics.Citations) / Avg(Metrics.Mentions)
+
 
 Report Entries
 --------------
@@ -91,6 +157,10 @@ Report Entries
 A report is made up of a collection of entries. Each entry is a single component that can be displayed in a report. You
 can create a new entry by clicking the Add Entry button from the Report Editor page. To create a new entry, you need to
 provide initially the following information:
+
+.. image:: static/entry-form.png
+  :width: 100%
+  :alt: Report Entry Form
 
 - Title (optional): The title of the entry. This will be displayed as either the heading of the entry or the caption of the table or
   chart.
@@ -144,6 +214,9 @@ A Table Entry displays the data in a tabular format. The table entry has the fol
   rows as columns and the columns as rows.
 - Force Strings: Convert all values to formatted strings.
 
+.. image:: static/table-form.png
+  :width: 100%
+  :alt: Table Configuration
 
 Bar Chart Entry
 ---------------
@@ -191,6 +264,9 @@ A Pie Chart Entry displays the data in a pie chart format. The pie chart entry h
 - Label: The field to use as the labels of the chart. This field will be used to label the slices in the pie chart.
 - Color By: The field to use for coloring the slices.
 
+.. image:: static/pie-form.png
+  :width: 100%
+  :alt: Pie Chart Configuration
 
 XY Plot
 -------
@@ -208,6 +284,10 @@ configuration options:
 - Color Scheme: The color palette to use for coloring the lines or points. Each series will be assigned a color based on
   the color scheme.
 
+.. image:: static/plot-form.png
+  :width: 100%
+  :alt: XY-Plot Configuration
+
 List Entry
 ----------
 A List Entry displays a list of entries with one or more columns of data, where. Each row in a List is usually quite
@@ -219,9 +299,12 @@ similar to the other rows unlike a Table Entry. The List Entry has the following
 - Sort By: The field to use for sorting the rows in the list.
 - Descending: Sort the rows in descending order.
 
+.. image:: static/list-form.png
+  :width: 100%
+  :alt: List Configuration
 
 Histogram Entry
---------------
+---------------
 A Histogram Entry displays the data in a histogram format. The histogram entry has the following configuration options:
 
 - Values: The field to use as the source pf values for the histogram. This should be a numeric field and should return
@@ -230,8 +313,16 @@ A Histogram Entry displays the data in a histogram format. The histogram entry h
   automatically.
 - Color Scheme: The color palette to use for coloring the bars in the histogram.
 
+.. image:: static/histogram-form.png
+  :width: 100%
+  :alt: Histogram Configuration
+
 Rich Text Entry
 ---------------
 A Rich Text Entry displays markdown formatted text. The rich text entry has the following configuration options:
 
 - Text: The markdown formatted text to display in the entry.
+
+.. image:: static/rich-text-form.png
+  :width: 100%
+  :alt: Rich Text Configuration

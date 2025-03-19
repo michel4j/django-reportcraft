@@ -8,7 +8,9 @@ Django ReportCraft
 
 Welcome to the Django ReportCraft documentation. This application allows you to dynamically design and generate reports in Django.
 
-Contents:
+.. image:: static/report-example.png
+  :width: 100%
+  :alt: Example Report
 
 .. toctree::
    :maxdepth: 2

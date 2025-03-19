@@ -8,7 +8,9 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse_lazy
 from django.utils.translation import gettext as _
-from crisp_modals.forms import ModalModelForm, HalfWidth, FullWidth, Row, ThirdWidth, QuarterWidth
+from crisp_modals.forms import (
+    ModalModelForm, HalfWidth, FullWidth, Row, ThirdWidth, QuarterWidth,
+)
 
 from . import models
 from .utils import COLOR_CHOICES
@@ -21,15 +23,19 @@ class ThreeQuarterWidth(Div):
     def __init__(self, *args,  style="", **kwargs):
         super().__init__(*args, css_class=f"col-9 {style}", **kwargs)
 
+class TwoThirdWidth(Div):
+    def __init__(self, *args,  style="", **kwargs):
+        super().__init__(*args, css_class=f"col-8 {style}", **kwargs)
+
 
 class ReportForm(ModalModelForm):
     class Meta:
         model = models.Report
         fields = ('title', 'slug', 'description', 'style', 'notes')
         widgets = {
-            'title': forms.Textarea(attrs={'rows': "2"}),
-            'description': forms.Textarea(attrs={'rows': "4"}),
-            'notes': forms.Textarea(attrs={'rows': "6"}),
+            'title': forms.TextInput,
+            'description': forms.Textarea(attrs={'rows': "2"}),
+            'notes': forms.Textarea(attrs={'rows': "4"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -528,17 +534,17 @@ class PlotForm(ModalModelForm):
         self.update_initial()
         self.body.append(
             Row(
-                HalfWidth(Field('x_axis', css_class='select')),
+                ThirdWidth(Field('x_axis', css_class='select')),
                 ThirdWidth('tick_precision'),
                 ThirdWidth(Field('colors', css_class='select')),
             ),
             Row(
                 ThirdWidth('y1_label'),
-                ThreeQuarterWidth(Field('y1_axis', css_class='select')),
+                TwoThirdWidth(Field('y1_axis', css_class='select')),
             ),
             Row(
                 ThirdWidth('y2_label'),
-                ThreeQuarterWidth(Field('y2_axis', css_class='select')),
+                TwoThirdWidth(Field('y2_axis', css_class='select')),
             ),
             Row(
                 ThirdWidth('scatter'), Field('attrs'),

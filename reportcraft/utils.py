@@ -106,6 +106,10 @@ class ShiftStart(models.Func):
     template = '%(function)s(%(expressions)s)'
     output_field = models.DateTimeField()
 
+    def __init__(self, *expressions, size=SHIFT, **extra):
+        super().__init__(*expressions, **extra)
+        self.size = size
+
     def as_postgresql(self, compiler, connection):
         self.arg_joiner = " - "
         return self.as_sql(
@@ -115,7 +119,7 @@ class ShiftStart(models.Func):
                 "   floor((EXTRACT(epoch FROM %(expressions)s)) / EXTRACT(epoch FROM interval '{shift}'))"
                 "   * EXTRACT(epoch FROM interval '{shift}') {offset:+}"
                 ")"
-            ).format(shift=SHIFT_DURATION, offset=OFFSET)
+            ).format(shift=self.size, offset=OFFSET)
         )
 
 
@@ -123,6 +127,10 @@ class ShiftEnd(models.Func):
     function = 'to_timestamp'
     template = '%(function)s(%(expressions)s)'
     output_field = models.DateTimeField()
+
+    def __init__(self, *expressions, size=SHIFT, **extra):
+        super().__init__(*expressions, **extra)
+        self.size = size
 
     def as_postgresql(self, compiler, connection):
         self.arg_joiner = " - "
@@ -133,7 +141,7 @@ class ShiftEnd(models.Func):
                 "   ceil((EXTRACT(epoch FROM %(expressions)s)) / EXTRACT(epoch FROM interval '{shift}'))"
                 "   * EXTRACT(epoch FROM interval '{shift}') {offset:+}"
                 ")"
-            ).format(shift=SHIFT_DURATION, offset=OFFSET)
+            ).format(shift=self.size, offset=OFFSET)
         )
 
 
