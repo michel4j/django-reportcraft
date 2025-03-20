@@ -33,7 +33,7 @@ jobs:
     - name: Build documentation
       run: |
         cd docs/
-        poetry run sphinx-build -b html 
+        poetry run sphinx-build -b html source build/html
         touch build/html/.nojekyll
     - name: Setup Pages
       uses: actions/configure-pages@v5
