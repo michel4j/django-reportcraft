@@ -17,6 +17,18 @@ VALUE_TYPES = {
 }
 
 
+ENTRY_ERROR_TEMPLATE = """
+### Error: {error_type}!
+
+An error occurred while generating this report entry.
+Please check the configuration!
+
+```python
+{error}
+```
+"""
+
+
 class DataSource(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
@@ -239,13 +251,13 @@ class Entry(models.Model):
                 info = self.generate_text(*args, **kwargs)
             else:
                 info = {}
-        except Exception:
+        except Exception as e:
             info = {
                 'title': self.title,
                 'description': self.description,
                 'kind': 'richtext',
                 'style': self.style,
-                'text': "### Error !\n\nAn error occurred while generating this report entry.",
+                'text': ENTRY_ERROR_TEMPLATE.format(error=str(e), error_type=type(e).__name__),
                 'notes': self.notes
             }
 
