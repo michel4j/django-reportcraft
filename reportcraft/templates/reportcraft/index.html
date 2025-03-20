@@ -13,27 +13,27 @@
 
 {% block page-content %}
     {% include "itemlist/filters.html" %}
-    <div class="row">
-    <ul class="list-group list-group-flush row mt-3">
+
+    <ul class="list-group list-group-flush mt-3">
         {% for report in object_list %}
-            <li class="list-group-item d-flex flex-column align-items-start justify-content-between col">
-                <div class="d-flex flex-row align-items-center">
-                    {% tool_icon icon='report' %}
-                    <a class="me-auto" href="{% url "report-view" slug=report.slug %}">{{ report.title }}</a>
-                    {% if user.is_authenticated %}
-                        <div class="toolbox">
-                            <a href="{% url 'report-editor' report.pk %}" title="Edit Report">
-                              {% tool_icon icon='pencil' size='sm' %}
-                            </a>
-                        </div>
+            <li class="list-group-item d-flex flex-row align-items-center col">
+                <div class="text-muted me-3">{% svg_icon 'report' %}</div>
+                <div class="d-flex flex-column align-items-start">
+                    <a href="{% url "report-view" slug=report.slug %}">{{ report.title }}</a>
+                    {% if report.description %}
+                        <small class="text-muted text-md">{{ report.description }}</small>
                     {% endif %}
                 </div>
-                {% if report.description %}
-                    <div class="text-muted text-md">{{ report.description }}</div>
+                {% if user.is_authenticated %}
+                    <div class="toolbox ms-auto pr-0">
+                        <a href="{% url 'report-editor' report.pk %}" title="Edit Report">
+                          {% tool_icon icon='pencil' size='sm' %}
+                        </a>
+                    </div>
                 {% endif %}
             </li>
         {% endfor %}
     </ul>
 {% include "itemlist/pagination.html" %}
-</div>
+
 {% endblock %}

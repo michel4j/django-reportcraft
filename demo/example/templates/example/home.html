@@ -2,17 +2,19 @@
 {% load reportcraft %}
 
 {% block page-pretitle %}django-reportcraft{% endblock %}
-{% block page-title %}
-    Example Application
-{% endblock %}
+{% block page-title %}Demo Application{% endblock %}
+{% block page-subtitle %}People, Institutions, Subjects, and Reports{% endblock %}
 
 {% block content %}
-    <p>People, Institutions, Subjects, and Reports</p>
-    <h4>Fancy Lists</h4>
+    <div class="alert alert-info">This application is used to demonstrate the features of <code>django-reportcraft</code>.
+        Please use the links below to explore some of the features. Each link showcases different applications. You can
+        also see some of our other reusable apps in action &mdash; <code>django-itemlist</code> and <code>django-crisp-modals</code>.
+    </div>
+
     <ul class="list-group list-group-flush">
-        <li class="list-group-item"><a href="{% url 'person-list' %}">{% svg_icon 'people' %}&emsp;People</a></li>
-        <li class="list-group-item"><a href="{% url 'institution-list' %}">{% svg_icon 'buildings' %}&emsp;Institutions</a></li>
-        <li class="list-group-item"><a href="{% url 'subject-list' %}">{% svg_icon 'notebook' %}&emsp;Subjects</a></li>
-        <li class="list-group-item"><a href="{% url 'report-list' %}">{% svg_icon 'people' %}&emsp;Reports</a></li>
+        <li class="list-group-item"><a href="{% url 'report-list' %}">{% svg_icon 'report' %}&emsp;Reports</a> &mdash; django-reportcraft | django-itemlist | django-crisp-modals</li>
+        <li class="list-group-item"><a href="{% url 'person-list' %}">{% svg_icon 'people' %}&emsp;People</a> &mdash; django-itemlist | django-crisp-modals</li>
+        <li class="list-group-item"><a href="{% url 'institution-list' %}">{% svg_icon 'buildings' %}&emsp;Institutions</a>  &mdash; django-itemlist | django-crisp-modals</li>
+        <li class="list-group-item"><a href="{% url 'subject-list' %}">{% svg_icon 'notebook' %}&emsp;Subjects</a> &mdash; django-itemlist | django-crisp-modals</li>
     </ul>
 {% endblock %}

@@ -401,6 +401,26 @@ svg {
   }
 }
 
+.report-editor {
+  .entry .card-body {
+    min-height: 15em;
+    max-height: 15em;
+    overflow: auto;
+
+    pre {
+      overflow: unset;
+    }
+  }
+
+  .text-monospace {
+    font-family: var(--demo-mono-font), monospace;
+  }
+
+  .text-sm {
+    font-size: 0.8em;
+  }
+}
+
 /* override styles when printing */
 @media print {
 
