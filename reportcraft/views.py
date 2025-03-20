@@ -12,8 +12,8 @@ from itemlist.views import ItemListView
 from . import models, forms
 
 
-VIEW_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS['VIEW']]
-EDIT_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS['EDIT']]
+VIEW_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get('VIEW',[])]
+EDIT_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get('EDIT', [])]
 
 
 class ReportView(*VIEW_MIXINS, DetailView):

@@ -40,6 +40,7 @@ dynamic = ["version"]
 [project.urls]
 Homepage = "https://github.com/michel4j/django-reportcraft"
 Issues = "https://github.com/michel4j/django-reportcraft/issues"
+Documentation = "https://michel4j.github.io/django-reportcraft/"
 
 [tool.poetry]
 packages = [
