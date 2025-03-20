@@ -48,15 +48,14 @@ business intelligence reports
 A demo site showcasing an example configuration of various features is available in the repository. After cloning
 the repository,
 
-    ```bash
     poetry install
     ./manage.py migrate
     ./manage.py createsuperuser
     ./manage.py runserver
  
- Open the browser to http://localhost:8000/. You can log in with the superuser credentials created in the previous 
- by accessing http://localhost:8000/admin to access the login form before returning to the main page after login.
+ Open the browser to http://localhost:8000/admin and log in with the superuser credentials created in the previous step.
+ Click the "View Site" link in the top right corner of the page to access the main page, also accessible 
+ from http://localhost:8000.
  
 ### Documentation
-
 Detailed documentation and screenshots are available at https://michel4j.github.io/django-reportcraft/. 
