@@ -1,5 +1,9 @@
 name: build-pages
-on: workflow_dispatch
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
 
 permissions:
   contents: read

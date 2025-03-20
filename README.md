@@ -50,6 +50,7 @@ the repository,
 
     poetry install
     ./manage.py migrate
+    ./manage.py loaddata initial-data
     ./manage.py createsuperuser
     ./manage.py runserver
  
