@@ -54,7 +54,10 @@ class SourceData(*VIEW_MIXINS, View):
         source = self.model.objects.filter(pk=kwargs.get('pk')).first()
         if not source:
             raise Http404('Source not found')
-        data = source.get_data()
+        try:
+            data = source.get_data()
+        except Exception:
+            data = []
         return JsonResponse(data, safe=False)
 
 

@@ -33,6 +33,9 @@ button from the Sources list. To create a new Data Source, you need to provide t
   :width: 100%
   :alt: Data Source Editor
 
+As you build the data source, you can preview a snippet of the data in the Data card at the bottom of the page, and
+even use the download button to download a JSON representation of the full data set.
+
 Data Source Models
 ------------------
 After creating a Data Source, you can add Models to it. Models need to be added first, as all Data Fields are linked

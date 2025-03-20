@@ -151,11 +151,29 @@
                     {% for report in source.reports %}
                         <li class="list-group-item">
                         <a href="{% url 'report-editor' pk=report.pk %}">
-                            {{ report }}
+                            <small>{{ report }}</small>
                         </a>
                         </li>
                     {% endfor %}
                 </ul>
+            </div>
+        </div>
+        <div class="col-md-9 col-sm-12">
+            <div class="card mb-3">
+                <div class="card-header py-2 d-flex align-items-center">
+                    <h4 class="my-0"><span class="text-muted">Data</span></h4>
+                        <div class="toolbox ms-auto pr-0">
+                            <a download="{{ source.name_slug }}.json" href="{% url 'source-data' pk=source.pk %}" title="Download Data">
+                                {% tool_icon icon='download' size='sm' %}
+                            </a>
+                        </div>
+                </div>
+                <div class="card-body">
+                    {{ source.snippet|yaml_html }}
+                    <code>
+                        ...
+                    </code>
+                </div>
             </div>
         </div>
     </div>

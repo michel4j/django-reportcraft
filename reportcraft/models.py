@@ -1,11 +1,12 @@
 from collections import defaultdict
+from typing import Any
+
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models import Case, When, Value, CharField, QuerySet, F
+from django.db.models import QuerySet
 from django.db.models.functions import Round, Abs, Sign
-from django.utils.text import gettext_lazy as _
-from typing import Any
+from django.utils.text import slugify, gettext_lazy as _
 
 from . import utils
 from .utils import regroup_data
@@ -20,12 +21,23 @@ VALUE_TYPES = {
 ENTRY_ERROR_TEMPLATE = """
 ### Error: {error_type}!
 
-An error occurred while generating this report entry.
+An error occurred while generating this entry.
 Please check the configuration!
 
-```python
+```Python
 {error}
 ```
+"""
+
+DATA_ERROR_TEMPLATE = """
+Error: {error_type}!
+
+An error occurred while generating this data.
+Please check the configuration!
+
+-----------------------------------------
+{error}
+
 """
 
 
@@ -40,6 +52,9 @@ class DataSource(models.Model):
     def __str__(self):
         return self.name
 
+    def name_slug(self):
+        return slugify(self.name)
+
     def reports(self):
         return Report.objects.filter(pk__in=self.entries.values_list('report__pk', flat=True)).order_by('-modified')
 
@@ -52,7 +67,7 @@ class DataSource(models.Model):
     def get_labels(self):
         return {field.name: field.label for field in self.fields.all()}
 
-    def get_queryset(self, model_name, filters=None, group_by=None, order_by=None) -> QuerySet:
+    def get_queryset(self, model_name, filters=None, order_by=None) -> QuerySet:
         model: Any = apps.get_model(model_name)
         queryset = model.objects.all()
         field_names = [f.name for f in model._meta.get_fields()]
@@ -66,7 +81,7 @@ class DataSource(models.Model):
             queryset = queryset.filter(**filters)
 
         # Add annotations
-        group_by = group_by if group_by is not None else list(self.group_by)
+        group_by = list(self.group_by)
         annotate_filter = {'name__in': group_by} if group_by else {}
         annotations = {
             field.name: field.get_expression()
@@ -103,11 +118,10 @@ class DataSource(models.Model):
         return queryset
 
     @utils.cached_model_method(duration=1)
-    def get_data(self, filters=None, group_by=None, order_by=None) -> list[dict]:
+    def get_data(self, filters=None, order_by=None) -> list[dict]:
         """
         Generate data for this data source
         :param filters: dynamic filters
-        :param group_by: group by fields
         :param order_by: order by fields
 
         """
@@ -115,11 +129,22 @@ class DataSource(models.Model):
         data = []
         model_names = set(self.fields.values_list('model__name', flat=True))
         for model_name in model_names:
-            queryset = self.get_queryset(model_name, filters=filters, group_by=group_by, order_by=order_by)
+            queryset = self.get_queryset(model_name, filters=filters, order_by=order_by)
             field_names = [field.name for field in self.fields.filter(model__name=model_name).all()]
             data.extend(list(queryset.values(*field_names)))
 
         return data
+
+    def snippet(self, size=5) -> list[dict]:
+        """
+        Generate a snippet of data for this data source
+        :param size: number of items to return
+        """
+        try:
+            result = self.get_data()[:size]
+        except Exception as e:
+            result = DATA_ERROR_TEMPLATE.format(error=str(e), error_type=type(e).__name__)
+        return result
 
 
 class DataModel(models.Model):
@@ -169,7 +194,7 @@ class DataField(models.Model):
     def __str__(self):
         return self.label
 
-    def get_expression(self) -> models.Expression:
+    def get_expression(self):
         parser = utils.ExpressionParser()
         if self.expression:
             db_expression = parser.parse(self.expression)

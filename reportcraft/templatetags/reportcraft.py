@@ -1,9 +1,12 @@
+import json
+
 import yaml
 from django import template
 from django.utils.safestring import mark_safe
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import YamlLexer, PythonLexer
+from pygments.lexers.web import JSONLexer
 
 from reportcraft.utils import COLOR_SCHEMES
 
@@ -24,7 +27,7 @@ def entry_html(entry):
         flow_style = None
         style = None
 
-    yaml_data = yaml.dump(data, default_style=style, default_flow_style=flow_style, sort_keys=False)
+    yaml_data = yaml.dump(data, default_style=style, default_flow_style=flow_style, sort_keys=False, allow_unicode=True)
     formatter = HtmlFormatter(nobackground=True)
     highlighted_data = highlight(yaml_data, YamlLexer(), formatter)
     return mark_safe(highlighted_data)
@@ -32,9 +35,17 @@ def entry_html(entry):
 
 @register.filter
 def yaml_html(data):
-    yaml_data = yaml.dump(data, default_flow_style=None, sort_keys=False)
+    yaml_data = yaml.dump(data, default_flow_style=False, sort_keys=True, allow_unicode=True, width=65)
     formatter = HtmlFormatter(nobackground=True)
     highlighted_data = highlight(yaml_data, YamlLexer(), formatter)
+    return mark_safe(highlighted_data)
+
+
+@register.filter
+def json_html(data):
+    json_data = json.dumps(data, indent=2, sort_keys=True)
+    formatter = HtmlFormatter(nobackground=True)
+    highlighted_data = highlight(json_data, JSONLexer(), formatter)
     return mark_safe(highlighted_data)
 
 
@@ -140,6 +151,10 @@ ICONS = {
         '<path stroke="none" d="M0 0h24v24H0z" fill="none"/>'
         '<path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-11a1 1 0 0 1 -1 -1v-14a1 1 0 0 1 1 -1m3 0v18" />'
         '<path d="M13 8l2 0" /><path d="M13 12l2 0" />'
+    ),
+    'download': (
+        '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />'
+        '<path d="M7 11l5 5l5 -5" /><path d="M12 4l0 12" />'
     ),
 
     # Entry Type Icons
