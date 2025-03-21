@@ -52,7 +52,7 @@
                 <div class="card">
                     <div class="card-header py-2 d-flex align-items-center">
                         <span class="text-muted">{% svg_icon entry.kind stroke=1 size='lg' %}</span>&emsp;
-                        <span>{{ entry.title }}</span>
+                        <div class="text-truncate">{{ entry.title }}</div>
                         <div class="toolbox ms-auto pr-0">
                             <a href="#!" data-modal-url="{% url 'configure-report-entry' report=report.pk pk=entry.pk %}" title="Configure">
                                 {% tool_icon icon='adjustments-horizontal' size='sm' %}

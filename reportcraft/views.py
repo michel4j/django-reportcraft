@@ -10,7 +10,7 @@ from crisp_modals.views import ModalUpdateView, ModalCreateView, ModalDeleteView
 from itemlist.views import ItemListView
 
 from . import models, forms
-
+from .utils import CsvResponse
 
 VIEW_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get('VIEW',[])]
 EDIT_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get('EDIT', [])]
@@ -58,7 +58,11 @@ class SourceData(*VIEW_MIXINS, View):
             data = source.get_data()
         except Exception:
             data = []
-        return JsonResponse(data, safe=False)
+        content_type = request.GET.get('type', 'json')
+        if content_type == 'csv':
+            return CsvResponse(data)
+        else:
+            return JsonResponse(data, safe=False)
 
 
 class ReportList(*VIEW_MIXINS, ItemListView):

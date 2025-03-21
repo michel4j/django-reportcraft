@@ -163,8 +163,13 @@
                 <div class="card-header py-2 d-flex align-items-center">
                     <h4 class="my-0"><span class="text-muted">Data</span></h4>
                         <div class="toolbox ms-auto pr-0">
-                            <a download="{{ source.name_slug }}.json" href="{% url 'source-data' pk=source.pk %}" title="Download Data">
-                                {% tool_icon icon='download' size='sm' %}
+                            <a download="{{ source.name_slug }}.csv"
+                               href="{% url 'source-data' pk=source.pk %}?type=csv" title="Download CSV">
+                                {% tool_icon icon='file-type-csv' size='sm' %}
+                            </a>
+                            <a download="{{ source.name_slug }}.json"
+                               href="{% url 'source-data' pk=source.pk %}" title="Download JSON">
+                                {% tool_icon icon='file-type-js' size='sm' %}
                             </a>
                         </div>
                 </div>

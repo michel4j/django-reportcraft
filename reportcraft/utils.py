@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import csv
+import io
 from datetime import datetime, timedelta
 
 import hashlib
@@ -15,6 +17,7 @@ from django.db.models.functions import (
     ATan2, Mod, Sign, Trunc, Radians, Degrees, Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
     ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek
 )
+from django.http import HttpResponse
 from django.utils import timezone
 from functools import wraps
 from pyparsing import *
@@ -568,7 +571,31 @@ class MinMax:
         return f"Min: {self.min}, Max: {self.max}"
 
 
-__all__ = ['ExpressionParser', FUNCTIONS, COLOR_SCHEMES, COLOR_CHOICES, map_colors, get_models, epoch]
+class CsvResponse(HttpResponse):
+    """
+    An HTTP response class that consumes data to be serialized to CSV.
+
+    :param data: Data to be dumped into csv. Should be alist of dicts.
+    """
+
+    def __init__(self, data: list[dict], **kwargs):
+        kwargs.setdefault("content_type", "text/csv")
+        content = ''
+        if data:
+            stream = io.StringIO()
+            writer = csv.DictWriter(stream, fieldnames=data[0].keys())
+            writer.writeheader()
+            writer.writerows(data)
+            content = stream.getvalue()
+            stream.close()
+        super().__init__(content=content, **kwargs)
+
+
+__all__ = [
+    'ExpressionParser', 'FUNCTIONS', 'COLOR_SCHEMES', 'COLOR_CHOICES',
+    'map_colors', 'get_models', 'epoch',
+    'CsvResponse', 'cached_model_method', 'MinMax', 'regroup_data', 'get_histogram_points'
+]
 
 if __name__ == '__main__':
     # Test the parser
