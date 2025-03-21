@@ -1,5 +1,3 @@
 TODO
 ====
 
-- Handle field names that already exist in the Model. Probably should be added to the data source
-  with no expression or something like that.

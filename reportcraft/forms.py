@@ -121,6 +121,15 @@ class DataFieldForm(ModalModelForm):
             StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
         )
 
+    def clean(self):
+        data = super().clean()
+        model = data.get('model')
+        name = data.get('name')
+        expression = data.get('expression')
+        if not model.has_field(name) and not expression:
+            self.add_error('expression', _(f"Required since `{model}` does not have a field named `{name}`"))
+        return data
+
 
 class DataSourceForm(ModalModelForm):
     group_fields = forms.CharField(required=False, help_text=_("Comma separated list of field names to group by"))

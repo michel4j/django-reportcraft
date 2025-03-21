@@ -69,16 +69,11 @@ class DataSource(models.Model):
 
     def get_queryset(self, model_name, filters=None, order_by=None) -> QuerySet:
         model: Any = apps.get_model(model_name)
-        queryset = model.objects.all()
         field_names = [f.name for f in model._meta.get_fields()]
 
         # Apply static filters
-        if self.filters:
-            queryset = queryset.filter(**self.filters)
-
-        # Apply dynamic filters
-        if filters:
-            queryset = queryset.filter(**filters)
+        filters = filters or {}
+        filters.update({} if not self.filters else self.filters)
 
         # Add annotations
         group_by = list(self.group_by)
@@ -96,20 +91,14 @@ class DataSource(models.Model):
                 for field in self.fields.exclude(name__in=field_names).exclude(name__in=group_by).filter(model__name=model_name)
             }
 
-        if annotations and not aggregations:
-            queryset = queryset.annotate(**annotations)
-        elif annotations and aggregations:
-            queryset = queryset.annotate(**annotations).values(*group_by).annotate(**aggregations)
-        elif group_by:
-            queryset.values(*group_by).annotate(**aggregations)
-
-        # Apply sorting
+        # Ordering
         order_fields = self.fields.annotate(
             order_by=Abs('ordering')
         ).filter(ordering__isnull=False).order_by('order_by').values_list(Sign('ordering'), 'name', )
         order_by: list = order_by or [f'-{name}' if sign < 0 else name for sign, name in order_fields]
-        if order_by:
-            queryset = queryset.order_by(*order_by)
+
+        # generate the queryset
+        queryset = model.objects.annotate(**annotations).values(*group_by).annotate(**aggregations).order_by(*order_by)
 
         # Apply limit
         if self.limit:
@@ -167,14 +156,19 @@ class DataModel(models.Model):
             return {name: fields.get(name, None) for name in group_names}
         return {}
 
+    def has_field(self, field_name: str) -> bool:
+        """
+        Check if the underlying model has a field with the given name
+        :param field_name: the name of the field
+        """
+        model = self.model.model_class()
+        return any(f.name == field_name for f in model._meta.get_fields())
+
     def __str__(self):
         return f'{self.model.app_label}.{self.model.name.title()}'
 
 
 class DataField(models.Model):
-    class FieldType(models.TextChoices):
-        ANNOTATION = 'annotation', _('Annotation')
-        AGGREGATION = 'aggregation', _('Aggregation')
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     name = models.SlugField(max_length=50)

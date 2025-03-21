@@ -56,7 +56,9 @@ Data Fields
 After adding a Model, you can add Fields to it. Fields can be added by clicking the Add Field from the Source Editor
 page.  The following information is required to add a new Field:
 
-- Name: The name of the field. This should be a valid identifier. We recommend using snake_case for the field name.
+- Name: The name of the field. This should be a valid identifier. We recommend using snake_case for the field name. When
+  the field name matches a field already present in the model, the data will be fetched from the model field and the expression
+  will be ignored.
 - Label: The label to use for the field in the report. This should be a human readable string.
 - Model: The model to use for the field. Select a model from the dropdown list. Only models that have been added to the
   Source, are available.
@@ -67,7 +69,7 @@ page.  The following information is required to add a new Field:
 - Position: The position of the field relative to other fields in the report. While the `Ordering` field is used for
   ordering the data, the `Position` field is used for ordering the fields in the report.
 - Expression: The expression to use for the field. The expression should be a valid `Expression`. See the Expressions
-  section below.
+  section below. The expression is required for fields that do not already exist in the model.
 
 .. image:: static/field-form.png
   :width: 100%
