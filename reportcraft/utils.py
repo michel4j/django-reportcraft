@@ -578,12 +578,12 @@ class CsvResponse(HttpResponse):
     :param data: Data to be dumped into csv. Should be alist of dicts.
     """
 
-    def __init__(self, data: list[dict], **kwargs):
+    def __init__(self, data: list[dict], headers: list[str], **kwargs):
         kwargs.setdefault("content_type", "text/csv")
         content = ''
         if data:
             stream = io.StringIO()
-            writer = csv.DictWriter(stream, fieldnames=data[0].keys())
+            writer = csv.DictWriter(stream, fieldnames=headers)
             writer.writeheader()
             writer.writerows(data)
             content = stream.getvalue()

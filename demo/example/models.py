@@ -14,8 +14,9 @@ class Subject(models.Model):
 
 
 class Institution(models.Model):
-    name = models.CharField(_('Name'), max_length=100, unique=True)
+    name = models.CharField(_('Name'), max_length=200, unique=True)
     city = models.CharField(max_length=200)
+    province = models.CharField(max_length=200, blank=True)
     country = models.CharField(max_length=200)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)

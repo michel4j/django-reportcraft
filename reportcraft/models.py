@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 from typing import Any
 
@@ -220,6 +221,7 @@ class Entry(models.Model):
         HISTOGRAM = 'histogram', _('Histogram')
         TIMELINE = 'timeline', _('Timeline')
         TEXT = 'text', _('Rich Text')
+        MAP = 'map', _('Map')
 
     class Widths(models.TextChoices):
         QUARTER = "col-md-3", _("One Quarter")
@@ -250,9 +252,7 @@ class Entry(models.Model):
 
     def generate(self, *args, **kwargs):
         try:
-            if not self.attrs:
-                info = {}
-            elif self.kind == self.Types.BARS:
+            if self.kind == self.Types.BARS:
                 info = self.generate_bars(*args, **kwargs)
             elif self.kind == self.Types.TABLE:
                 info = self.generate_table(*args, **kwargs)
@@ -268,6 +268,8 @@ class Entry(models.Model):
                 info = self.generate_timeline(*args, **kwargs)
             elif self.kind == self.Types.TEXT:
                 info = self.generate_text(*args, **kwargs)
+            elif self.kind == self.Types.MAP:
+                info = self.generate_map(*args, **kwargs)
             else:
                 info = {}
         except Exception as e:
@@ -623,3 +625,26 @@ class Entry(models.Model):
             'text': rich_text,
             'notes': self.notes
         }
+
+    def generate_map(self,  *args, **kwargs):
+        location = self.attrs.get('location', 'country_name')
+        value = self.attrs.get('value', 'num_institutions')
+        labels = self.source.get_labels()
+
+        raw_data = self.source.get_data(*args, **kwargs)
+        data = [
+            [labels.get(location, location), labels.get(value, value)]
+        ] + [
+            [item.get(location, ''), item.get(value, 0)]
+            for item in raw_data if location in item and value in item
+        ]
+        return {
+            'title': self.title,
+            'description': self.description,
+            'kind': 'map',
+            'style': self.style,
+            'notes': self.notes,
+            'map': 'canada',
+            'data': data
+        }
+

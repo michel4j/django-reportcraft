@@ -60,7 +60,7 @@ class SourceData(*VIEW_MIXINS, View):
             data = []
         content_type = request.GET.get('type', 'json')
         if content_type == 'csv':
-            return CsvResponse(data)
+            return CsvResponse(data, headers=source.get_labels().keys())
         else:
             return JsonResponse(data, safe=False)
 

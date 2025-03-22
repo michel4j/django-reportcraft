@@ -60,7 +60,7 @@
                                     <td>{{ src_model.name }}</td>
                                     {% for field_name, group_field in src_model.get_group_fields.items %}
                                         {% if group_field %}
-                                        <td class="text-monospace">{{ group_field.expression }}</td>
+                                            <td class="text-monospace"><a href="#0" data-modal-url="{% url 'edit-source-field' source=source.pk pk=group_field.pk %}">{{ group_field.expression }}</a></td>
                                         {% else %}
                                         <td class="text-danger"><a href="#0" data-modal-url="{% url 'add-group-field' source=source.pk group=field_name %}">Undefined</a></td>
                                         {% endif %}

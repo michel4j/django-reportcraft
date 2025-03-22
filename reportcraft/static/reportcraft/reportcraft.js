@@ -3,14 +3,14 @@
 
 const figureTypes = [
     "histogram", "lineplot", "barchart", "scatterplot", "pie", "gauge", "timeline", "columnchart",
-    "plot", "histo", "bar",
+    "plot", "histo", "bar", 'map'
 ];
 
 const ColorSchemes = {
     Accent: ['#7fc97f', '#beaed4', '#fdc086', '#ffff99', '#386cb0', '#f0027f', '#bf5b17', '#666666'],
     Category10: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'],
     Dark2: ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02', '#a6761d', '#666666'],
-    Live16: ['#67aec1','#c45a81', '#cdc339', '#ae8e6b', '#6dc758', '#a084b6', '#667ccd', '#cd4f55', '#805cd6','#cf622d', '#a69e4c', '#9b9795', '#6db586', '#c255b6', '#073b4c', '#ffd166'],
+    Live16: ['#67aec1', '#c45a81', '#cdc339', '#ae8e6b', '#6dc758', '#a084b6', '#667ccd', '#cd4f55', '#805cd6', '#cf622d', '#a69e4c', '#9b9795', '#6db586', '#c255b6', '#073b4c', '#ffd166'],
     Live4: ['#8f9f9a', '#c56052', '#9f6dbf', '#a0b552'],
     Live8: ['#073b4c', '#06d6a0', '#ffd166', '#ef476f', '#118ab2', '#7f7eff', '#afc765', '#78c5e7'],
     Observable10: ['#4269d0', '#efb118', '#ff725c', '#6cc5b0', '#3ca951', '#ff8ab7', '#a463f2', '#97bbf5', '#9c6b4e', '#9498a0'],
@@ -384,6 +384,7 @@ function drawBarChart(figure, chart, options) {
     function formatKilo(num) {
         return num >= 1000 ? (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K' : num.toString();
     }
+
     let line_axes = {};
     let line_types = {};
     let axis_y2 = {show: chart['line'] && true || false, label: chart['line']};
@@ -429,8 +430,8 @@ function drawBarChart(figure, chart, options) {
                 label: chart['x-label'],
                 tick: x_ticks,
             },
-            y:{
-                tick: {format:formatKilo}
+            y: {
+                tick: {format: formatKilo}
             },
             y2: axis_y2,
             rotated: (options.horizontal || false)
@@ -548,6 +549,7 @@ function drawScatterChart(figure, chart, options) {
 function drawLineChart(figure, chart, options) {
     drawXYChart(figure, chart, options, 'line');
 }
+
 
 function callout(g, value, color) {
     if (!value) return g.style("display", "none");
@@ -764,75 +766,105 @@ function drawTimeline(figure, chart, options) {
     }
 }
 
-(function ($) {
-    $.fn.showReport = function (options) {
-        let target = $(this);
-        let defaults = {
-            data: {},
-        };
-        let settings = $.extend(defaults, options);
-
-        target.addClass('report-viewer');
-        $.each(settings.data.details, function (i, section) {
-            target.append(sectionTemplate({id: i, section: section}))
+function drawMap(figure, chart, options) {
+    google.charts.load('current', {
+        'packages': ['geochart'],
+    });
+    google.charts.setOnLoadCallback(function () {
+        let data = google.visualization.arrayToDataTable(chart.data);
+        let vis = new google.visualization.GeoChart(document.getElementById(`${figure.attr('id')}`));
+        vis.draw(data, {
+            region: chart.region,
+            displayMode: chart['display-mode'] || 'world',
+            resolution: chart.resolution,
+            colorAxis: {colors: options.scheme},
+            backgroundColor: 'transparent',
+            datalessRegionColor: 'transparent',
+            defaultColor: 'transparent',
+            legend: 'none',
+            sizeAxis: {minValue: 0, maxValue: 100},
+            enableRegionInteractivity: true,
+            keepAspectRatio: true,
+            width: options.width,
+            height: options.height,
+            tooltip: {isHtml: true}
         });
+    });
+}
 
-        target.find('figure').each(function () {
-            let figure = $(this);
-            let chart = figure.data('chart');
-            let aspect_ratio = chart['aspect-ratio'] || chart.data["aspect-ratio"] || 16 / 9;
-            let options = {
-                width: figure.width(),
-                height: figure.width() / aspect_ratio,
-                colors: {}
+
+    (function ($) {
+        $.fn.showReport = function (options) {
+            let target = $(this);
+            let defaults = {
+                data: {},
             };
+            let settings = $.extend(defaults, options);
 
-            // if chart.data.colors is an array use it as a color scheme, if it is an
-            // object, then assume it maps names to color values
-            // if it is a string then assume it is a named color scheme in ColorSchemes
-            let chart_colors = chart.colors || chart.data.colors;
+            target.addClass('report-viewer');
+            $.each(settings.data.details, function (i, section) {
+                target.append(sectionTemplate({id: i, section: section}))
+            });
 
-            if (Array.isArray(chart_colors)) {
-                options.scheme = chart_colors;
-            } else if (typeof chart_colors === 'object') {
-                options.scheme = ColorSchemes.Tableau10;
-                options.colors = chart_colors;
-            } else {
-                options.scheme = ColorSchemes[chart_colors] || ColorSchemes.Tableau10;
-            }
+            target.find('figure').each(function () {
+                let figure = $(this);
+                let chart = figure.data('chart');
+                let aspect_ratio = chart['aspect-ratio'] || chart.data["aspect-ratio"] || 16 / 9;
+                let options = {
+                    width: figure.width(),
+                    height: figure.width() / aspect_ratio,
+                    colors: {}
+                };
 
-            switch (figure.data('type')) {
-                case 'barchart':
-                    options.horizontal = true;
-                    drawBarChart(figure, chart, options);
-                    break;
-                case 'columnchart':
-                    drawBarChart(figure, chart, options);
-                    break;
-                case 'lineplot':
-                    drawLineChart(figure, chart, options);
-                    break;
-                case 'histogram':
-                    drawHistogram(figure, chart, options);
-                    break;
-                case 'pie':
-                    drawPieChart(figure, chart, options);
-                    break;
-                case 'scatterplot':
-                    drawScatterChart(figure, chart, options);
-                    break;
-                case 'timeline':
-                    drawTimeline(figure, chart, options);
-                    break;
-            }
+                // if chart.data.colors is an array use it as a color scheme, if it is an
+                // object, then assume it maps names to color values
+                // if it is a string then assume it is a named color scheme in ColorSchemes
+                let chart_colors = chart.colors || chart.data.colors;
 
-            // caption
-            if (chart.title) {
-                figure.after(`<figcaption class="text-center">${chart.title}</figcaption>`);
-            } else {
-                figure.after(`<figcaption class="text-center"></figcaption>`);
-            }
+                if (Array.isArray(chart_colors)) {
+                    options.scheme = chart_colors;
+                } else if (typeof chart_colors === 'object') {
+                    options.scheme = ColorSchemes.Tableau10;
+                    options.colors = chart_colors;
+                } else {
+                    options.scheme = ColorSchemes[chart_colors] || ColorSchemes.Tableau10;
+                }
 
-        });
-    };
-}(jQuery));
+                switch (figure.data('type')) {
+                    case 'barchart':
+                        options.horizontal = true;
+                        drawBarChart(figure, chart, options);
+                        break;
+                    case 'columnchart':
+                        drawBarChart(figure, chart, options);
+                        break;
+                    case 'lineplot':
+                        drawLineChart(figure, chart, options);
+                        break;
+                    case 'histogram':
+                        drawHistogram(figure, chart, options);
+                        break;
+                    case 'pie':
+                        drawPieChart(figure, chart, options);
+                        break;
+                    case 'scatterplot':
+                        drawScatterChart(figure, chart, options);
+                        break;
+                    case 'timeline':
+                        drawTimeline(figure, chart, options);
+                        break;
+                    case 'map':
+                        drawMap(figure, chart, options);
+                        break;
+                }
+
+                // caption
+                if (chart.title) {
+                    figure.after(`<figcaption class="text-center">${chart.title}</figcaption>`);
+                } else {
+                    figure.after(`<figcaption class="text-center"></figcaption>`);
+                }
+
+            });
+        };
+    }(jQuery));

@@ -13,6 +13,7 @@
         <item url="file://$PROJECT_DIR$/docs/build/html/_static/searchtools.min.js" />
         <item url="file://$PROJECT_DIR$/docs/build/html/_static/sphinx_highlight.min.js" />
         <item url="file://$PROJECT_DIR$/docs/build/html/searchindex.min.js" />
+        <item url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/reportcraft.min.js" />
       </sourceFilesUrls>
     </properties>
     <CLASSES>
@@ -27,6 +28,7 @@
       <root url="file://$PROJECT_DIR$/docs/build/html/_static/searchtools.min.js" />
       <root url="file://$PROJECT_DIR$/docs/build/html/_static/sphinx_highlight.min.js" />
       <root url="file://$PROJECT_DIR$/docs/build/html/searchindex.min.js" />
+      <root url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/reportcraft.min.js" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
