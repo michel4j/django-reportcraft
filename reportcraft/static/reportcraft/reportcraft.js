@@ -767,6 +767,13 @@ function drawTimeline(figure, chart, options) {
 }
 
 function drawMap(figure, chart, options) {
+    mapDrawer(figure, chart, options);
+    $(window).resize(function(){
+      mapDrawer(figure, chart, options);
+    });
+}
+
+function mapDrawer(figure, chart, options) {
     google.charts.load('current', {
         'packages': ['geochart'],
     });
@@ -785,8 +792,8 @@ function drawMap(figure, chart, options) {
             sizeAxis: {minValue: 0, maxValue: 100},
             enableRegionInteractivity: true,
             keepAspectRatio: true,
-            width: options.width,
-            height: options.height,
+            height: 'auto',
+            width: '100%',
             tooltip: {isHtml: true}
         });
     });

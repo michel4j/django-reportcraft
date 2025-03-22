@@ -631,6 +631,10 @@ class Entry(models.Model):
         value = self.attrs.get('value', 'num_institutions')
         labels = self.source.get_labels()
 
+        display_mode = self.attrs.get('display_mode', 'auto')
+        region = self.attrs.get('region', 'world')
+        resolution = self.attrs.get('resolution', 'countries')
+
         raw_data = self.source.get_data(*args, **kwargs)
         data = [
             [labels.get(location, location), labels.get(value, value)]
