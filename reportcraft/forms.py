@@ -13,8 +13,7 @@ from crisp_modals.forms import (
 )
 
 from . import models
-from .utils import COLOR_CHOICES
-
+from .utils import CATEGORICAL_COLORS, SEQUENTIAL_COLORS, REGION_CHOICES
 
 disabled_widget = forms.HiddenInput(attrs={'readonly': True})
 
@@ -397,7 +396,7 @@ class BarsForm(ModalModelForm):
     stack_2 = forms.ModelMultipleChoiceField(label='Stack', required=False, queryset=models.DataField.objects.none())
 
     color_field = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
-    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=COLOR_CHOICES, initial='Live8')
+    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
     line = forms.ModelChoiceField(label='Line', required=False, queryset=models.DataField.objects.none())
     x_culling = forms.IntegerField(label="Culling", required=False)
     wrap_x_labels = forms.BooleanField(label="Wrap Labels", required=False)
@@ -520,7 +519,7 @@ class PlotForm(ModalModelForm):
     y2_axis = forms.ModelMultipleChoiceField(label='Y2-axis', required=False, queryset=models.DataField.objects.none())
     y1_label = forms.CharField(label='Y1 Label', required=False)
     y2_label = forms.CharField(label='Y2 Label', required=False)
-    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=COLOR_CHOICES, initial='Live8')
+    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
 
     tick_precision = forms.IntegerField(label="Precision", required=False)
     scatter = forms.BooleanField(label="Scatter Plot", required=False)
@@ -675,7 +674,7 @@ class ListForm(ModalModelForm):
 class PieForm(ModalModelForm):
     value = forms.ModelChoiceField(label='Value', required=True, queryset=models.DataField.objects.none())
     label = forms.ModelChoiceField(label='Label', required=True, queryset=models.DataField.objects.none())
-    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=COLOR_CHOICES, initial='Live8')
+    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
 
     class Meta:
         model = models.Entry
@@ -739,7 +738,7 @@ class TimelineForm(ModalModelForm):
     end_field = forms.ModelChoiceField(label='Event End', required=True, queryset=models.DataField.objects.none())
     label_field = forms.ModelChoiceField(label='Event Label', required=False, queryset=models.DataField.objects.none())
     type_field = forms.ModelChoiceField(label='Event Type', required=False, queryset=models.DataField.objects.none())
-    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=COLOR_CHOICES, initial='Live8')
+    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
 
     class Meta:
         model = models.Entry
@@ -860,7 +859,7 @@ class RichTextForm(ModalModelForm):
 class HistogramForm(ModalModelForm):
     values = forms.ModelChoiceField(label='Values', required=True, queryset=models.DataField.objects.none())
     bins = forms.IntegerField(label='Bins', required=False)
-    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=COLOR_CHOICES, initial='Live8')
+    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
 
     class Meta:
         model = models.Entry
@@ -912,6 +911,91 @@ class HistogramForm(ModalModelForm):
                 new_attrs[field] = cleaned_data[field].name
 
         for field in ['bins', 'colors']:
+            if field in cleaned_data:
+                new_attrs[field] = cleaned_data[field]
+
+        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, []]}
+        return cleaned_data
+
+
+MODE_CHOICES = (
+    ('regions', 'Area'),
+    ('markers', 'Bubbles'),
+    ('text', 'Text'),
+)
+
+RESOLUTION_CHOICES = (
+    ('countries', 'Countries'),
+    ('provinces', 'Provinces'),
+    ('metros', 'Metropolitan'),
+)
+
+
+class GeoCharForm(ModalModelForm):
+    location = forms.ModelChoiceField(label='Location', required=True, queryset=models.DataField.objects.none())
+    value = forms.ModelChoiceField(label='Values', required=True, queryset=models.DataField.objects.none())
+    region = forms.ChoiceField(label='Map', choices=REGION_CHOICES, initial='world')
+    resolution = forms.ChoiceField(label='Resolution', choices=RESOLUTION_CHOICES, required=True, initial='countries')
+    color_by = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
+    mode = forms.ChoiceField(label='Mode', choices=MODE_CHOICES, required=True)
+    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=SEQUENTIAL_COLORS, initial='Blues')
+
+    class Meta:
+        model = models.Entry
+        fields = (
+            'attrs',
+        )
+        widgets = {
+            'attrs': forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.body.title = _("Configure Geo Chart")
+        self.body.form_action = reverse_lazy(
+            'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
+        )
+        self.update_initial()
+        self.body.append(
+            Row(
+                FullWidth(Field('region', css_class='selectize')),
+                HalfWidth(Field('resolution', css_class='select')),
+                HalfWidth(Field('mode', css_class='select')),
+
+            ),
+            Row(
+                HalfWidth(Field('location', css_class='select')),
+                HalfWidth(Field('value', css_class='select')),
+                HalfWidth(Field('color_by', css_class='select')),
+                HalfWidth(Field('colors', css_class='select')),
+            ),
+            Field('attrs'),
+        )
+
+    def update_initial(self):
+        attrs = self.instance.attrs
+        print(attrs)
+        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
+        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
+        for field in ['location', 'value', 'color_by']:
+            self.fields[field].queryset = field_queryset
+
+            if field in attrs:
+                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
+
+        for field in ['colors', 'region', 'resolution', 'mode']:
+            if field in attrs:
+                self.fields[field].initial = attrs[field]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_attrs = {}
+
+        for field in ['location', 'value', 'color_by']:
+            if field in cleaned_data and cleaned_data[field] is not None:
+                new_attrs[field] = cleaned_data[field].name
+
+        for field in ['colors', 'region', 'resolution', 'mode']:
             if field in cleaned_data:
                 new_attrs[field] = cleaned_data[field]
 

@@ -3,7 +3,7 @@
 
 const figureTypes = [
     "histogram", "lineplot", "barchart", "scatterplot", "pie", "gauge", "timeline", "columnchart",
-    "plot", "histo", "bar", 'map'
+    "plot", "histo", "bar", 'geochart'
 ];
 
 const ColorSchemes = {
@@ -20,7 +20,28 @@ const ColorSchemes = {
     Set1: ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999'],
     Set2: ['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854', '#ffd92f', '#e5c494', '#b3b3b3'],
     Set3: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5', '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f'],
-    Tableau10: ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab']
+    Tableau10: ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'],
+
+    // https://observablehq.com/@d3/color-schemes
+    // Sequential colors
+    Blues: d3.schemeBlues[9],
+    Greens: d3.schemeGreens[9],
+    Greys: d3.schemeGreys[9],
+    Oranges: d3.schemeOranges[9],
+    Purples: d3.schemePurples[9],
+    Reds: d3.schemeReds[9],
+    BuGn: d3.schemeBuGn[9],
+    BuPu: d3.schemeBuPu[9],
+    GnBu: d3.schemeGnBu[9],
+    OrRd: d3.schemeOrRd[9],
+    PuBu: d3.schemePuBu[9],
+    PuRd: d3.schemePuRd[9],
+    RdPu: d3.schemeRdPu[9],
+    YlGn: d3.schemeYlGn[9],
+    YlGnBu: d3.schemeYlGnBu[9],
+    YlOrBr: d3.schemeYlOrBr[9],
+    YlOrRd: d3.schemeYlOrRd[9],
+    PuBuGn: d3.schemePuBuGn[9],
 };
 
 const styleTemplate = _.template('<%= selector %> { <%= rules %> }');
@@ -766,35 +787,35 @@ function drawTimeline(figure, chart, options) {
     }
 }
 
-function drawMap(figure, chart, options) {
-    mapDrawer(figure, chart, options);
-    $(window).resize(function(){
-      mapDrawer(figure, chart, options);
-    });
-}
-
-function mapDrawer(figure, chart, options) {
+function drawGeoChart(figure, chart, options) {
     google.charts.load('current', {
         'packages': ['geochart'],
     });
+
     google.charts.setOnLoadCallback(function () {
         let data = google.visualization.arrayToDataTable(chart.data);
         let vis = new google.visualization.GeoChart(document.getElementById(`${figure.attr('id')}`));
         vis.draw(data, {
             region: chart.region,
-            displayMode: chart['display-mode'] || 'world',
+            displayMode: chart['mode'] || 'auto',
             resolution: chart.resolution,
             colorAxis: {colors: options.scheme},
             backgroundColor: 'transparent',
-            datalessRegionColor: 'transparent',
-            defaultColor: 'transparent',
-            legend: 'none',
-            sizeAxis: {minValue: 0, maxValue: 100},
+            //defaultColor: 'transparent',
+            legend: null,
+            //sizeAxis: {minValue: 0, maxValue: 100},
             enableRegionInteractivity: true,
             keepAspectRatio: true,
             height: 'auto',
             width: '100%',
-            tooltip: {isHtml: true}
+        });
+        google.visualization.events.addListener(vis, 'ready', function(){
+            let svg = $(`#${figure.attr('id')} svg`);
+            svg.attr('viewBox', `0 0 ${svg.attr("width")} ${svg.attr("height")}`);
+            svg.removeAttr('width');
+            svg.removeAttr('height');
+            svg.parent().removeAttr('style').css('width', '100%');
+            svg.parent().parent().removeAttr('style').css('width', '100%');
         });
     });
 }
@@ -860,8 +881,8 @@ function mapDrawer(figure, chart, options) {
                     case 'timeline':
                         drawTimeline(figure, chart, options);
                         break;
-                    case 'map':
-                        drawMap(figure, chart, options);
+                    case 'geochart':
+                        drawGeoChart(figure, chart, options);
                         break;
                 }
 

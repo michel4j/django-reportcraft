@@ -421,14 +421,6 @@ svg {
   }
 }
 
-
-figure[data-type="map"] {
-  svg {
-    width: 100%;
-    min-width: 500px;
-    viewBox: 0 0 500 500;
-  }
-}
 /* override styles when printing */
 @media print {
 

@@ -8,7 +8,7 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import YamlLexer, PythonLexer
 from pygments.lexers.web import JSONLexer
 
-from reportcraft.utils import COLOR_SCHEMES
+from reportcraft.utils import CATEGORICAL_SCHEMES
 
 register = template.Library()
 
@@ -210,6 +210,12 @@ ICONS = {
         '<path d="M15 11h6" /><path d="M21 7h-6" /><path d="M9 9h1a1 1 0 1 1 -1 1v-2.5a2 2 0 0 1 2 -2" />'
         '<path d="M3 9h1a1 1 0 1 1 -1 1v-2.5a2 2 0 0 1 2 -2" />'
     ),
+    'map': (
+        '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 18.5l-3 -1.5l-6 3v-13l6 -3l6 3l6 -3v7.5" />'
+        '<path d="M9 4v13" /><path d="M15 7v5.5" />'
+        '<path d="M21.121 20.121a3 3 0 1 0 -4.242 0c.418 .419 1.125 1.045 2.121 1.879c1.051 -.89 1.759 '
+        '-1.516 2.121 -1.879z" /><path d="M19 18v.01" />'
+    )
 }
 DEFAULT_ICON = (
     '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />'
@@ -244,7 +250,7 @@ def swatches():
         '</div>'
     )
     all_swatches = []
-    for name, colors in COLOR_SCHEMES.items():
+    for name, colors in CATEGORICAL_SCHEMES.items():
         swatches_entry = ''.join([f'<div class="swatch" style="background-color: {color};"></div>' for color in colors])
         all_swatches.append(swatches_template.format(name=name, colors=swatches_entry))
 

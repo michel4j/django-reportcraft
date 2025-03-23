@@ -10,7 +10,7 @@ from django.db.models.functions import Round, Abs, Sign
 from django.utils.text import slugify, gettext_lazy as _
 
 from . import utils
-from .utils import regroup_data
+from .utils import regroup_data, map_colors
 
 VALUE_TYPES = {
     'STRING': str,
@@ -221,7 +221,7 @@ class Entry(models.Model):
         HISTOGRAM = 'histogram', _('Histogram')
         TIMELINE = 'timeline', _('Timeline')
         TEXT = 'text', _('Rich Text')
-        MAP = 'map', _('Map')
+        MAP = 'map', _('Geo Chart')
 
     class Widths(models.TextChoices):
         QUARTER = "col-md-3", _("One Quarter")
@@ -269,7 +269,7 @@ class Entry(models.Model):
             elif self.kind == self.Types.TEXT:
                 info = self.generate_text(*args, **kwargs)
             elif self.kind == self.Types.MAP:
-                info = self.generate_map(*args, **kwargs)
+                info = self.generate_geochart(*args, **kwargs)
             else:
                 info = {}
         except Exception as e:
@@ -626,29 +626,38 @@ class Entry(models.Model):
             'notes': self.notes
         }
 
-    def generate_map(self,  *args, **kwargs):
+    def generate_geochart(self, *args, **kwargs):
         location = self.attrs.get('location', 'country_name')
         value = self.attrs.get('value', 'num_institutions')
+        color_by = self.attrs.get('color_by', None)
         labels = self.source.get_labels()
 
-        display_mode = self.attrs.get('display_mode', 'auto')
         region = self.attrs.get('region', 'world')
         resolution = self.attrs.get('resolution', 'countries')
-
+        mode = self.attrs.get('mode', 'regions')
+        colors = self.attrs.get('colors', 'YlOrRd')
         raw_data = self.source.get_data(*args, **kwargs)
         data = [
             [labels.get(location, location), labels.get(value, value)]
         ] + [
-            [item.get(location, ''), item.get(value, 0)]
+            [item.get(location, ''), item.get(value, 1)]
             for item in raw_data if location in item and value in item
         ]
-        return {
+        info = {
             'title': self.title,
             'description': self.description,
-            'kind': 'map',
+            'kind': 'geochart',
+            'mode': mode,
+            'region': region,
+            'resolution': resolution,
+
+            'colors': colors,
+            'show-legend': False,
             'style': self.style,
             'notes': self.notes,
             'map': 'canada',
             'data': data
         }
+
+        return info
 

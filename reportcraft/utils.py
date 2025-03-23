@@ -69,7 +69,7 @@ class Hours(models.Func):
         # template parsing happen, it needs double-escaping ("%%%%").
         return self.as_sql(
             compiler, connection, function="strftime",
-            template="%(function)s(\"%%%%H\",%(expressions)s)"
+            template="%(function)s(%%%%H,%(expressions)s)"
         )
 
 
@@ -95,7 +95,7 @@ class Minutes(models.Func):
         # the template string needs to escape '%Y' to make sure it ends up in the final SQL. Because two rounds of
         # template parsing happen, it needs double-escaping ("%%%%").
         return self.as_sql(
-            compiler, connection, function="strftime", template="%(function)s(\"%%%%M\",%(expressions)s)"
+            compiler, connection, function="strftime", template="%(function)s(%%%%M,%(expressions)s)"
         )
 
 
@@ -487,7 +487,7 @@ def list_colors(specifier):
     ]
 
 
-COLOR_SCHEMES = {
+CATEGORICAL_SCHEMES = {
     "Accent": list_colors("7fc97fbeaed4fdc086ffff99386cb0f0027fbf5b17666666"),
     "Dark2": list_colors("1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666"),
     "Live4": list_colors("8f9f9ac560529f6dbfa0b552"),
@@ -504,7 +504,30 @@ COLOR_SCHEMES = {
     "Observable10": list_colors("4269d0efb118ff725c6cc5b03ca951ff8ab7a463f297bbf59c6b4e9498a0")
 }
 
-COLOR_CHOICES = [(scheme, scheme) for scheme in COLOR_SCHEMES.keys()]
+SEQUENTIAL_SCHEMES = {
+    "Blues": ["#f7fbff", "#08306b"],
+    "Greens": ["#f7fcf5", "#00441b"],
+    "Greys": ["#fbfbfb", "#252525"],
+    "Oranges": ["#fff5eb", "#7f2704"],
+    "Purples": ["#fcfbfd", "#49006a"],
+    "Reds": ["#fff5f0", "#67000d"],
+    "BuGn": ["#e5f5f9", "#2ca25f"],
+    "BuPu": ["#e0ecf4", "#8856a7"],
+    "GnBu": ["#edf8fb", "#2ca25f"],
+    "OrRd": ["#fee8c8", "#e34a33"],
+    "PuBu": ["#ece7f2", "#2b8cbe"],
+    # "PuBuGn": ["#ece2f0", "#1c9099"],
+    "PuRd": ["#e7e1ef", "#dd1c77"],
+    "RdPu": ["#fde0dd", "#c51b8a"],
+    "YlGn": ["#f7fcb9", "#31a354"],
+    # "YlGnBu": ["#edf8b1", "#2c7fb8"],
+    # "YlOrBr": ["#fff7bc", "#8c2d04"],
+    # "YlOrRd": ["#ffeda0", "#b30000"],
+
+}
+
+CATEGORICAL_COLORS = [(scheme, scheme) for scheme in CATEGORICAL_SCHEMES.keys()]
+SEQUENTIAL_COLORS = [(scheme, scheme) for scheme in SEQUENTIAL_SCHEMES.keys()]
 
 
 def map_colors(data, scheme='Live16'):
@@ -514,7 +537,7 @@ def map_colors(data, scheme='Live16'):
     :param scheme: List of colors
     :return: Dictionary of data items mapped to colors
     """
-    colors = COLOR_SCHEMES.get(scheme, COLOR_SCHEMES['Live16'])
+    colors = CATEGORICAL_SCHEMES.get(scheme, CATEGORICAL_SCHEMES['Live16'])
     return {item: colors[i % len(colors)] for i, item in enumerate(data)}
 
 
@@ -591,20 +614,372 @@ class CsvResponse(HttpResponse):
         super().__init__(content=content, **kwargs)
 
 
-__all__ = [
-    'ExpressionParser', 'FUNCTIONS', 'COLOR_SCHEMES', 'COLOR_CHOICES',
-    'map_colors', 'get_models', 'epoch',
-    'CsvResponse', 'cached_model_method', 'MinMax', 'regroup_data', 'get_histogram_points'
+REGION_DATA = [
+    {
+        "002 - Africa": [
+            {
+                "015 - Northern Africa": [
+                    "DZ - Algeria",
+                    "EG - Egypt",
+                    "EH - Western Sahara",
+                    "LY - Libya",
+                    "MA - Morocco",
+                    "SD - Sudan",
+                    "SS - South Sudan",
+                    "TN - Tunisia"
+                ]
+            },
+            {
+                "011 - Western Africa": [
+                    "BF - Burkina Faso",
+                    "BJ - Benin",
+                    "CI - Côte d'Ivoire",
+                    "CV - Cabo Verde",
+                    "GH - Ghana",
+                    "GM - Gambia",
+                    "GN - Guinea",
+                    "GW - Guinea-Bissau",
+                    "LR - Liberia",
+                    "ML - Mali",
+                    "MR - Mauritania",
+                    "NE - Niger",
+                    "NG - Nigeria",
+                    "SH - Saint Helena, Ascension and Tristan da Cunha",
+                    "SL - Sierra Leone",
+                    "SN - Senegal",
+                    "TG - Togo"
+                ]
+            },
+            {
+                "017 - Middle Africa": [
+                    "AO - Angola",
+                    "CD - Congo, Democratic Republic of the",
+                    "CF - Central African Republic",
+                    "CG - Congo",
+                    "CM - Cameroon",
+                    "GA - Gabon",
+                    "GQ - Equatorial Guinea",
+                    "ST - Sao Tome and Principe",
+                    "TD - Chad"
+                ]
+            },
+            {
+                "014 - Eastern Africa": [
+                    "BI - Burundi",
+                    "DJ - Djibouti",
+                    "ER - Eritrea",
+                    "ET - Ethiopia",
+                    "KE - Kenya",
+                    "KM - Comoros",
+                    "MG - Madagascar",
+                    "MU - Mauritius",
+                    "MW - Malawi",
+                    "MZ - Mozambique",
+                    "RE - Réunion",
+                    "RW - Rwanda",
+                    "SC - Seychelles",
+                    "SO - Somalia",
+                    "TZ - Tanzania, United Republic of",
+                    "UG - Uganda",
+                    "YT - Mayotte",
+                    "ZM - Zambia",
+                    "ZW - Zimbabwe"
+                ]
+            },
+            {
+                "018 - Southern Africa": [
+                    "BW - Botswana",
+                    "LS - Lesotho",
+                    "NA - Namibia",
+                    "SZ - Eswatini",
+                    "ZA - South Africa"
+                ]
+            }
+        ]
+    },
+    {
+        "150 - Europe": [
+            {
+                "154 - Northern Europe": [
+                    "GG - Guernsey",
+                    "JE - Jersey",
+                    "AX - Åland Islands",
+                    "DK - Denmark",
+                    "EE - Estonia",
+                    "FI - Finland",
+                    "FO - Faroe Islands",
+                    "GB - United Kingdom of Great Britain and Northern Ireland",
+                    "IE - Ireland",
+                    "IM - Isle of Man",
+                    "IS - Iceland",
+                    "LT - Lithuania",
+                    "LV - Latvia",
+                    "NO - Norway",
+                    "SE - Sweden",
+                    "SJ - Svalbard and Jan Mayen"
+                ]
+            },
+            {
+                "155 - Western Europe": [
+                    "AT - Austria",
+                    "BE - Belgium",
+                    "CH - Switzerland",
+                    "DE - Germany",
+                    "FR - France",
+                    "LI - Liechtenstein",
+                    "LU - Luxembourg",
+                    "MC - Monaco",
+                    "NL - Netherlands"
+                ]
+            },
+            {
+                "151 - Eastern Europe": [
+                    "BG - Bulgaria",
+                    "BY - Belarus",
+                    "CZ - Czechia",
+                    "HU - Hungary",
+                    "MD - Moldova",
+                    "PL - Poland",
+                    "RO - Romania",
+                    "RU - Russian Federation",
+                    "SK - Slovakia",
+                    "UA - Ukraine"
+                ]
+            },
+            {
+                "039 - Southern Europe": [
+                    "AD - Andorra",
+                    "AL - Albania",
+                    "BA - Bosnia and Herzegovina",
+                    "ES - Spain",
+                    "GI - Gibraltar",
+                    "GR - Greece",
+                    "HR - Croatia",
+                    "IT - Italy",
+                    "ME - Montenegro",
+                    "MK - North Macedonia",
+                    "MT - Malta",
+                    "RS - Serbia",
+                    "PT - Portugal",
+                    "SI - Slovenia",
+                    "SM - San Marino",
+                    "VA - Holy See",
+                    "YU - Yugoslavia"
+                ]
+            }
+        ]
+    },
+    {
+        "019 - Americas": [
+            {
+                "021 - Northern America": [
+                    "BM - Bermuda",
+                    "CA - Canada",
+                    "GL - Greenland",
+                    "PM - Saint Pierre and Miquelon",
+                    "US - United States of America"
+                ]
+            },
+            {
+                "029 - Caribbean": [
+                    "AG - Antigua and Barbuda",
+                    "AI - Anguilla",
+                    "AN - Netherlands Antilles",
+                    "AW - Aruba",
+                    "BB - Barbados",
+                    "BL - Saint Barthélemy",
+                    "BS - Bahamas",
+                    "CU - Cuba",
+                    "DM - Dominica",
+                    "DO - Dominican Republic",
+                    "GD - Grenada",
+                    "GP - Guadeloupe",
+                    "HT - Haiti",
+                    "JM - Jamaica",
+                    "KN - Saint Kitts and Nevis",
+                    "KY - Cayman Islands",
+                    "LC - Saint Lucia",
+                    "MF - Saint Martin (French part)",
+                    "MQ - Martinique",
+                    "MS - Montserrat",
+                    "PR - Puerto Rico",
+                    "TC - Turks and Caicos Islands",
+                    "TT - Trinidad and Tobago",
+                    "VC - Saint Vincent and the Grenadines",
+                    "VG - Virgin Islands (British)",
+                    "VI - Virgin Islands (U.S.)"
+                ]
+            },
+            {
+                "013 - Central America": [
+                    "BZ - Belize",
+                    "CR - Costa Rica",
+                    "GT - Guatemala",
+                    "HN - Honduras",
+                    "MX - Mexico",
+                    "NI - Nicaragua",
+                    "PA - Panama",
+                    "SV - El Salvador"
+                ]
+            },
+            {
+                "005 - South America": [
+                    "AR - Argentina",
+                    "BO - Bolivia",
+                    "BR - Brazil",
+                    "CL - Chile",
+                    "CO - Colombia",
+                    "EC - Ecuador",
+                    "FK - Falkland Islands",
+                    "GF - French Guiana",
+                    "GY - Guyana",
+                    "PE - Peru",
+                    "PY - Paraguay",
+                    "SR - Suriname",
+                    "UY - Uruguay",
+                    "VE - Venezuela"
+                ]
+            }
+        ]
+    },
+    {
+        "142 - Asia": [
+            {
+                "143 - Central Asia": [
+                    "TM - Turkmenistan",
+                    "TJ - Tajikistan",
+                    "KG - Kyrgyzstan",
+                    "KZ - Kazakhstan",
+                    "UZ - Uzbekistan"
+                ]
+            },
+            {
+                "030 - Eastern Asia": [
+                    "CN - China",
+                    "HK - Hong Kong",
+                    "JP - Japan",
+                    "KP - North Korea",
+                    "KR - South Korea",
+                    "MN - Mongolia",
+                    "MO - Macao",
+                    "TW - Taiwan"
+                ]
+            },
+            {
+                "034 - Southern Asia": [
+                    "AF - Afghanistan",
+                    "BD - Bangladesh",
+                    "BT - Bhutan",
+                    "IN - India",
+                    "IR - Iran",
+                    "LK - Sri Lanka",
+                    "MV - Maldives",
+                    "NP - Nepal",
+                    "PK - Pakistan"
+                ]
+            },
+            {
+                "035 - South-Eastern Asia": [
+                    "BN - Brunei Darussalam",
+                    "ID - Indonesia",
+                    "KH - Cambodia",
+                    "LA - Lao People's Democratic Republic",
+                    "MM - Myanmar",
+                    "MY - Malaysia",
+                    "BU - Burma",
+                    "PH - Philippines",
+                    "SG - Singapore",
+                    "TH - Thailand",
+                    "TL - Timor-Leste",
+                    "VN - Viet Nam",
+                    "TP - East Timor"
+                ]
+            },
+            {
+                "145 - Western Asia": [
+                    "AE - United Arab Emirates",
+                    "AM - Armenia",
+                    "AZ - Azerbaijan",
+                    "BH - Bahrain",
+                    "CY - Cyprus",
+                    "GE - Georgia",
+                    "IL - Israel",
+                    "IQ - Iraq",
+                    "JO - Jordan",
+                    "KW - Kuwait",
+                    "LB - Lebanon",
+                    "OM - Oman",
+                    "PS - Palestine, State of",
+                    "QA - Qatar",
+                    "SA - Saudi Arabia",
+                    "SY - Syrian Arab Republic",
+                    "TR - Turkey",
+                    "YE - Yemen",
+                ]
+            }
+        ]
+    },
+    {
+        "009 - Oceania": [
+            {
+                "053 - Australia and New Zealand": [
+                    "AU - Australia",
+                    "NF - Norfolk Island",
+                    "NZ - New Zealand"
+                ]
+            },
+            {
+                "054 - Melanesia": [
+                    "FJ - Fiji",
+                    "NC - New Caledonia",
+                    "PG - Papua New Guinea",
+                    "SB - Solomon Islands",
+                    "VU - Vanuatu"
+                ]
+            },
+            {
+                "057 - Micronesia": [
+                    "FM - Micronesia",
+                    "GU - Guam",
+                    "KI - Kiribati",
+                    "MH - Marshall Islands",
+                    "MP - Northern Mariana Islands",
+                    "NR - Nauru",
+                    "PW - Palau"
+                ]
+            },
+            {
+                "061 - Polynesia": [
+                    "AS - American Samoa",
+                    "CK - Cook Islands",
+                    "NU - Niue",
+                    "PF - French Polynesia",
+                    "PN - Pitcairn",
+                    "TK - Tokelau",
+                    "TO - Tonga",
+                    "TV - Tuvalu",
+                    "WF - Wallis and Futuna",
+                    "WS - Samoa"
+                ]
+            }
+        ]
+    }
 ]
 
-if __name__ == '__main__':
-    # Test the parser
-    parser = ExpressionParser()
-    for txt in EXPRESSIONS:
-        print('-' * 50)
-        try:
-            parsed_expr = parser.parse(txt)
-        except ParseException as e:
-            print(txt, "-->", f'FAILED: {e}')
-        else:
-            print(f"{txt} --> {parsed_expr!r}")
+
+def region_choices(data):
+    if isinstance(data, list):
+        for v in data:
+            yield from region_choices(v)
+    elif isinstance(data, dict):
+        for k, v in data.items():
+            code, name = re.split(r'\s+-\s+', k, maxsplit=1)
+            yield code, f'{code} - {name}'
+            yield from region_choices(v)
+    else:
+        code, name = re.split(r'\s+-\s+', data, maxsplit=1)
+        yield code, f'{code} - {name}'
+
+
+REGION_CHOICES = sorted([('world', '001 - World')] + list(region_choices(REGION_DATA)), key=lambda x: x[1])
+
