@@ -18,6 +18,8 @@ class Institution(models.Model):
     city = models.CharField(max_length=200)
     province = models.CharField(max_length=200, blank=True)
     country = models.CharField(max_length=200)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     parent = models.ForeignKey(

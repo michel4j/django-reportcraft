@@ -99,7 +99,7 @@ class DataSource(models.Model):
         order_by: list = order_by or [f'-{name}' if sign < 0 else name for sign, name in order_fields]
 
         # generate the queryset
-        queryset = model.objects.annotate(**annotations).values(*group_by).annotate(**aggregations).order_by(*order_by)
+        queryset = model.objects.filter(**filters).annotate(**annotations).values(*group_by).annotate(**aggregations).order_by(*order_by)
 
         # Apply limit
         if self.limit:
@@ -630,19 +630,29 @@ class Entry(models.Model):
         location = self.attrs.get('location', 'country_name')
         value = self.attrs.get('value', 'num_institutions')
         color_by = self.attrs.get('color_by', None)
+        latitude = self.attrs.get('latitude', None)
+        longitude = self.attrs.get('longitude', None)
         labels = self.source.get_labels()
 
         region = self.attrs.get('region', 'world')
         resolution = self.attrs.get('resolution', 'countries')
         mode = self.attrs.get('mode', 'regions')
         colors = self.attrs.get('colors', 'YlOrRd')
-        raw_data = self.source.get_data(*args, **kwargs)
+
+        if mode == 'markers':
+            headers = [latitude, longitude, value]
+        else:
+            headers = [location, value]
+
+        raw_data = self.source.get_data(*args, filters={'country': 'Canada'}, **kwargs)
         data = [
-            [labels.get(location, location), labels.get(value, value)]
+            [labels.get(field, field) for field in headers if field]
         ] + [
-            [item.get(location, ''), item.get(value, 1)]
-            for item in raw_data if location in item and value in item
+            [item.get(field) for field in headers]
+            for item in raw_data if all(item.get(field) for field in headers)
         ]
+        print(data)
+
         info = {
             'title': self.title,
             'description': self.description,

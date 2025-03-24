@@ -794,6 +794,7 @@ function drawGeoChart(figure, chart, options) {
 
     google.charts.setOnLoadCallback(function () {
         let data = google.visualization.arrayToDataTable(chart.data);
+        console.log(data);
         let vis = new google.visualization.GeoChart(document.getElementById(`${figure.attr('id')}`));
         vis.draw(data, {
             region: chart.region,

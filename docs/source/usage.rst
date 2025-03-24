@@ -321,3 +321,28 @@ A Rich Text Entry displays markdown formatted text. The rich text entry has the 
 .. image:: static/rich-text-form.png
   :width: 100%
   :alt: Rich Text Configuration
+
+
+Map / Geo Chart Entry
+---------------------
+A Map Entry displays the data in a map format using Google Charts. The map entry has the following configuration options:
+
+- Resolution : The resolution of the map. The following resolutions are supported:
+    - countries: A map of the world, with country boundaries displayed.
+    - provinces: A map with provincial boundaries displayed.
+    - metros: A map with city boundaries displayed.
+- Location: The field to use as the location of the data. This field should contain the name of the location to display
+  on the map. The location can be a country, state, city, or any other geographic location.
+- Latitude: The field to use as the latitude of the data. This field should contain the lattitude of the location to
+  display on the map.
+- Longitude: The field to use as the longitude of the data. This field should contain the longitude of the location to
+- Value: The field to use as the value of the data. This field should contain the value to display on the map. The value
+  can be used to determine the size of the marker or the color of the marker.
+- Color By: The field to use for coloring the markers. If provided, the markers will be colored based on the values of
+  this field.
+- Color Scheme: The color palette to use for coloring the markers.
+
+.. image:: static/geo-chart-form.png
+  :width: 100%
+  :alt: Geo Charts Configuration
+
