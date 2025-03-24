@@ -1,3 +1,6 @@
 TODO
 ====
 
+- Add the ability to filter data sources and make that available through url parameters similar to
+  `django-itemlist` filters
+- Add a drag and drop field positioning capability to the source editor

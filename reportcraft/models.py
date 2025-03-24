@@ -99,8 +99,14 @@ class DataSource(models.Model):
         order_by: list = order_by or [f'-{name}' if sign < 0 else name for sign, name in order_fields]
 
         # generate the queryset
-        queryset = model.objects.filter(**filters).annotate(**annotations).values(*group_by).annotate(**aggregations).order_by(*order_by)
-
+        queryset = model.objects.annotate(
+            **annotations
+        ).values(*group_by).annotate(
+            **aggregations
+        ).order_by(*order_by).filter(
+            **filters
+        )
+        print(queryset)
         # Apply limit
         if self.limit:
             queryset = queryset[:self.limit]
@@ -644,14 +650,13 @@ class Entry(models.Model):
         else:
             headers = [location, value]
 
-        raw_data = self.source.get_data(*args, filters={'country': 'Canada'}, **kwargs)
+        raw_data = self.source.get_data(*args, **kwargs)
         data = [
             [labels.get(field, field) for field in headers if field]
         ] + [
             [item.get(field) for field in headers]
             for item in raw_data if all(item.get(field) for field in headers)
         ]
-        print(data)
 
         info = {
             'title': self.title,

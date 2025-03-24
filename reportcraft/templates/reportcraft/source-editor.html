@@ -42,7 +42,12 @@
                 <div class="col-12">
                     <div class="card mb-3">
                         <div class="card-header py-2 d-flex align-items-center">
-                            <h4 class="my-0"><span class="text-muted">Models</span></h4>
+                            <h5>Models</h5>
+                            <div class="toolbox ms-auto pr-0">
+                                <a href="#0" data-modal-url="{% url "add-source-model" source=source.pk %}" title="Add Model">
+                                    {% tool_icon icon='database-plus' size='sm' %}
+                                </a>
+                            </div>
                         </div>
                         <table class="table">
                             <thead>
@@ -60,7 +65,7 @@
                                     <td>{{ src_model.name }}</td>
                                     {% for field_name, group_field in src_model.get_group_fields.items %}
                                         {% if group_field %}
-                                            <td class="text-monospace"><a href="#0" data-modal-url="{% url 'edit-source-field' source=source.pk pk=group_field.pk %}">{{ group_field.expression }}</a></td>
+                                            <td class="font-monospace"><a href="#0" data-modal-url="{% url 'edit-source-field' source=source.pk pk=group_field.pk %}">{{ group_field.expression }}</a></td>
                                         {% else %}
                                         <td class="text-danger"><a href="#0" data-modal-url="{% url 'add-group-field' source=source.pk group=field_name %}">Undefined</a></td>
                                         {% endif %}
@@ -96,9 +101,12 @@
                 <div class="col-12">
                         <div class="card mb-3">
                             <div class="card-header py-2 d-flex align-items-center">
-                                <h4 class="my-0">
-                                    <span class="text-muted">Fields</span>
-                                </h4>
+                                <h5>Fields</h5>
+                                <div class="toolbox ms-auto pr-0">
+                                    <a href="#0" data-modal-url="{% url "add-source-field" source=source.pk %}" title="Add Field">
+                                        {% tool_icon icon='table-plus' size='sm' %}
+                                    </a>
+                                </div>
                             </div>
                             <table class="table">
                                 <thead>
@@ -113,10 +121,10 @@
                                 <tbody class="text-sm">
                                 {% for field in source.non_group_fields %}
                                     <tr>
-                                        <td class="text-monospace pl-3">{{ field.name }}</td>
+                                        <td class="font-monospace pl-3">{{ field.name }}</td>
                                         <td>{{ field.label }}</td>
                                         <td>{{ field.model }}</td>
-                                        <td class="d-none d-md-table-cell text-monospace">{{ field.expression }}</td>
+                                        <td class="d-none d-md-table-cell font-monospace">{{ field.expression }}</td>
                                         <td>
                                             <div class="d-flex align-children-end">
                                                 <div class="toolbox ms-auto pr-0">
@@ -145,7 +153,7 @@
         <div class="col-md-3 col-sm-12">
             <div class="card mb-3">
                 <div class="card-header py-2 d-flex align-items-center">
-                    <h4 class="my-0"><span class="text-muted">Reports</span></h4>
+                    <h5 class="my-0"><span class="text-muted">Reports</span></h5>
                 </div>
                 <ul class="list-group list-group-flush">
                     {% for report in source.reports %}
