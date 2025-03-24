@@ -627,8 +627,8 @@ class Entry(models.Model):
         }
 
     def generate_geochart(self, *args, **kwargs):
-        location = self.attrs.get('location', 'country_name')
-        value = self.attrs.get('value', 'num_institutions')
+        location = self.attrs.get('location', None)
+        value = self.attrs.get('value', None)
         color_by = self.attrs.get('color_by', None)
         latitude = self.attrs.get('latitude', None)
         longitude = self.attrs.get('longitude', None)
