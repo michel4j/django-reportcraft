@@ -433,3 +433,7 @@ div.google-visualization-tooltip > ul > li > span {
   //  @include fluid-type($min_width, $max_width, $max_font, $max_font * 1.5);
   //}
 }
+
+svg circle {
+  opacity: 0.75;
+}
