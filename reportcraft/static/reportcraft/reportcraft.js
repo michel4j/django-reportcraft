@@ -125,33 +125,21 @@ function getPrecision(row, steps) {
 }
 
 function encodeObj(obj) {
-  // First, we use encodeURIComponent to get the UTF-8 representation of the string,
-  // and then we convert the percent-encoded string into a "binary string"
-  // (where each character represents an 8-bit byte).  This handles Unicode characters
-  // correctly, as encodeURIComponent escapes them appropriately.
-  const utf8Bytes = encodeURIComponent(JSON.stringify(obj)).replace(/%([0-9A-F]{2})/g,
-    function toSolidBytes(match, p1) {
-      return String.fromCharCode('0x' + p1);
-    });
-
-  // Then, we use btoa (binary-to-ASCII) to encode the binary string to base64.
-  return btoa(utf8Bytes);
+    // encode object as base64 string
+    const utf8Bytes = encodeURIComponent(JSON.stringify(obj)).replace(/%([0-9A-F]{2})/g,
+        function toSolidBytes(match, p1) {
+            return String.fromCharCode('0x' + p1);
+        });
+    return btoa(utf8Bytes);
 }
 
 function decodeObj(base64Str) {
-  // First, we use atob (ASCII-to-binary) to decode the base64 string to a binary string.
-  const binaryString = atob(base64Str);
-
-  // Then, we convert the binary string (where each character represents an 8-bit byte)
-  // back into a percent-encoded string.
-  const percentEncodedStr = binaryString.split('').map(function(c) {
-    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-  }).join('');
-
-  // Finally, we use decodeURIComponent to convert the percent-encoded string back
-  // to a Unicode string.  This handles Unicode characters correctly,
-  // as decodeURIComponent interprets the percent-encoded sequences as UTF-8.
-  return JSON.parse(decodeURIComponent(percentEncodedStr));
+    // decode base64 string to object
+    const binaryString = atob(base64Str);
+    const percentEncodedStr = binaryString.split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join('');
+    return JSON.parse(decodeURIComponent(percentEncodedStr));
 }
 
 
@@ -858,7 +846,7 @@ function drawGeoChart(figure, chart, options) {
             width: options.width,
             tooltip: {isHtml: true}
         });
-        google.visualization.events.addListener(vis, 'ready', function(){
+        google.visualization.events.addListener(vis, 'ready', function () {
             let svg = $(`#${figure.attr('id')} svg`);
             svg.attr('viewBox', `0 0 ${svg.attr("width")} ${svg.attr("height")}`);
             svg.removeAttr('width');
@@ -870,82 +858,82 @@ function drawGeoChart(figure, chart, options) {
 }
 
 
-    (function ($) {
-        $.fn.showReport = function (options) {
-            let target = $(this);
-            let defaults = {
-                data: {},
-            };
-            let settings = $.extend(defaults, options);
-
-            target.addClass('report-viewer');
-            $.each(settings.data.details, function (i, section) {
-                target.append(sectionTemplate({id: i, section: section}))
-            });
-
-            target.find('figure').each(function () {
-                let figure = $(this);
-                let chart = decodeObj(figure.attr('data-chart'));
-                let aspect_ratio = chart['aspect-ratio'] || 16 / 9;
-                let chart_colors = chart.colors;
-                if (typeof chart.data === 'object') {
-                    aspect_ratio = chart.data['aspect-ratio'] || aspect_ratio;
-                    chart_colors = chart.data.colors || chart_colors;
-                }
-                let options = {
-                    width: figure.width(),
-                    height: figure.width() / aspect_ratio,
-                    colors: {}
-                };
-
-                // if chart.data.colors is an array use it as a color scheme, if it is an
-                // object, then assume it maps names to color values
-                // if it is a string then assume it is a named color scheme in ColorSchemes
-
-                if (Array.isArray(chart_colors)) {
-                    options.scheme = chart_colors;
-                } else if (typeof chart_colors === 'object') {
-                    options.scheme = ColorSchemes.Tableau10;
-                    options.colors = chart_colors;
-                } else {
-                    options.scheme = ColorSchemes[chart_colors] || ColorSchemes.Tableau10;
-                }
-
-                switch (figure.data('type')) {
-                    case 'barchart':
-                        options.horizontal = true;
-                        drawBarChart(figure, chart, options);
-                        break;
-                    case 'columnchart':
-                        drawBarChart(figure, chart, options);
-                        break;
-                    case 'lineplot':
-                        drawLineChart(figure, chart, options);
-                        break;
-                    case 'histogram':
-                        drawHistogram(figure, chart, options);
-                        break;
-                    case 'pie':
-                        drawPieChart(figure, chart, options);
-                        break;
-                    case 'scatterplot':
-                        drawScatterChart(figure, chart, options);
-                        break;
-                    case 'timeline':
-                        drawTimeline(figure, chart, options);
-                        break;
-                    case 'geochart':
-                        drawGeoChart(figure, chart, options);
-                        break;
-                }
-
-                // caption
-                if (chart.title) {
-                    figure.after(`<figcaption class="text-center">${chart.title}</figcaption>`);
-                } else {
-                    figure.after(`<figcaption class="text-center"></figcaption>`);
-                }
-
-            });
+(function ($) {
+    $.fn.showReport = function (options) {
+        let target = $(this);
+        let defaults = {
+            data: {},
         };
-    }(jQuery));
+        let settings = $.extend(defaults, options);
+
+        target.addClass('report-viewer');
+        $.each(settings.data.details, function (i, section) {
+            target.append(sectionTemplate({id: i, section: section}))
+        });
+
+        target.find('figure').each(function () {
+            let figure = $(this);
+            let chart = decodeObj(figure.attr('data-chart'));
+            let aspect_ratio = chart['aspect-ratio'] || 16 / 9;
+            let chart_colors = chart.colors;
+            if (typeof chart.data === 'object') {
+                aspect_ratio = chart.data['aspect-ratio'] || aspect_ratio;
+                chart_colors = chart.data.colors || chart_colors;
+            }
+            let options = {
+                width: figure.width(),
+                height: figure.width() / aspect_ratio,
+                colors: {}
+            };
+
+            // if chart.data.colors is an array use it as a color scheme, if it is an
+            // object, then assume it maps names to color values
+            // if it is a string then assume it is a named color scheme in ColorSchemes
+
+            if (Array.isArray(chart_colors)) {
+                options.scheme = chart_colors;
+            } else if (typeof chart_colors === 'object') {
+                options.scheme = ColorSchemes.Tableau10;
+                options.colors = chart_colors;
+            } else {
+                options.scheme = ColorSchemes[chart_colors] || ColorSchemes.Tableau10;
+            }
+
+            switch (figure.data('type')) {
+                case 'barchart':
+                    options.horizontal = true;
+                    drawBarChart(figure, chart, options);
+                    break;
+                case 'columnchart':
+                    drawBarChart(figure, chart, options);
+                    break;
+                case 'lineplot':
+                    drawLineChart(figure, chart, options);
+                    break;
+                case 'histogram':
+                    drawHistogram(figure, chart, options);
+                    break;
+                case 'pie':
+                    drawPieChart(figure, chart, options);
+                    break;
+                case 'scatterplot':
+                    drawScatterChart(figure, chart, options);
+                    break;
+                case 'timeline':
+                    drawTimeline(figure, chart, options);
+                    break;
+                case 'geochart':
+                    drawGeoChart(figure, chart, options);
+                    break;
+            }
+
+            // caption
+            if (chart.title) {
+                figure.after(`<figcaption class="text-center">${chart.title}</figcaption>`);
+            } else {
+                figure.after(`<figcaption class="text-center"></figcaption>`);
+            }
+
+        });
+    };
+}(jQuery));
