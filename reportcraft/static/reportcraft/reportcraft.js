@@ -59,7 +59,7 @@ const contentTemplate = _.template(
     '   <% if ((entry.kind === "table") && (entry.data)) { %>' +
     '       <%= tableTemplate({id: id, entry: entry}) %>' +
     '   <% } else if (figureTypes.includes(entry.kind)) { %>' +
-    '       <figure id="figure-<%= entry.id || id %>" data-type="<%= entry.kind %>" data-chart=\'<%= JSON.stringify(entry) %>\' >' +
+    '       <figure id="figure-<%= entry.id || id %>" data-type="<%= entry.kind %>" data-chart="<%= encodeObj(entry) %>" >' +
     '       </figure>' +
     '   <% }%>' +
     '   <% if (entry.notes) { %>' +
@@ -123,6 +123,37 @@ function getPrecision(row, steps) {
     let diff = (row[row.length - 1] - row[0]) / steps;
     return Math.abs(Math.floor(Math.log10(diff.toPrecision(1)) || 2))
 }
+
+function encodeObj(obj) {
+  // First, we use encodeURIComponent to get the UTF-8 representation of the string,
+  // and then we convert the percent-encoded string into a "binary string"
+  // (where each character represents an 8-bit byte).  This handles Unicode characters
+  // correctly, as encodeURIComponent escapes them appropriately.
+  const utf8Bytes = encodeURIComponent(JSON.stringify(obj)).replace(/%([0-9A-F]{2})/g,
+    function toSolidBytes(match, p1) {
+      return String.fromCharCode('0x' + p1);
+    });
+
+  // Then, we use btoa (binary-to-ASCII) to encode the binary string to base64.
+  return btoa(utf8Bytes);
+}
+
+function decodeObj(base64Str) {
+  // First, we use atob (ASCII-to-binary) to decode the base64 string to a binary string.
+  const binaryString = atob(base64Str);
+
+  // Then, we convert the binary string (where each character represents an 8-bit byte)
+  // back into a percent-encoded string.
+  const percentEncodedStr = binaryString.split('').map(function(c) {
+    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join('');
+
+  // Finally, we use decodeURIComponent to convert the percent-encoded string back
+  // to a Unicode string.  This handles Unicode characters correctly,
+  // as decodeURIComponent interprets the percent-encoded sequences as UTF-8.
+  return JSON.parse(decodeURIComponent(percentEncodedStr));
+}
+
 
 function drawXYChart(figure, chart, options, type = 'spline') {
     migrateXYData(chart);
@@ -791,10 +822,26 @@ function drawGeoChart(figure, chart, options) {
     google.charts.load('current', {
         'packages': ['geochart'],
     });
-
     google.charts.setOnLoadCallback(function () {
-        let data = google.visualization.arrayToDataTable(chart.data);
-        console.log(data);
+        let data = new google.visualization.DataTable();
+        let table = [];
+
+        if (chart.mode === 'markers') {
+            data.addColumn('number', 'Latitude');
+            data.addColumn('number', 'Longitude');
+            data.addColumn('string', 'Name');
+            data.addColumn('number', 'Value');
+            $.each(chart.data, function (i, entry) {
+                table.push([entry.Lat, entry.Lon, entry.Name, entry.Value]);
+            });
+        } else {
+            data.addColumn('string', 'Location');
+            data.addColumn('number', 'Value');
+            $.each(chart.data, function (i, entry) {
+                table.push([entry.Location, entry.Value]);
+            });
+        }
+        data.addRows(table);
         let vis = new google.visualization.GeoChart(document.getElementById(`${figure.attr('id')}`));
         vis.draw(data, {
             region: chart.region,
@@ -806,9 +853,10 @@ function drawGeoChart(figure, chart, options) {
             legend: null,
             //sizeAxis: {minValue: 0, maxValue: 100},
             enableRegionInteractivity: true,
-            keepAspectRatio: true,
-            height: 'auto',
-            width: '100%',
+            //keepAspectRatio: true,
+            height: options.height,
+            width: options.width,
+            tooltip: {isHtml: true}
         });
         google.visualization.events.addListener(vis, 'ready', function(){
             let svg = $(`#${figure.attr('id')} svg`);
@@ -837,8 +885,13 @@ function drawGeoChart(figure, chart, options) {
 
             target.find('figure').each(function () {
                 let figure = $(this);
-                let chart = figure.data('chart');
-                let aspect_ratio = chart['aspect-ratio'] || chart.data["aspect-ratio"] || 16 / 9;
+                let chart = decodeObj(figure.attr('data-chart'));
+                let aspect_ratio = chart['aspect-ratio'] || 16 / 9;
+                let chart_colors = chart.colors;
+                if (typeof chart.data === 'object') {
+                    aspect_ratio = chart.data['aspect-ratio'] || aspect_ratio;
+                    chart_colors = chart.data.colors || chart_colors;
+                }
                 let options = {
                     width: figure.width(),
                     height: figure.width() / aspect_ratio,
@@ -848,7 +901,6 @@ function drawGeoChart(figure, chart, options) {
                 // if chart.data.colors is an array use it as a color scheme, if it is an
                 // object, then assume it maps names to color values
                 // if it is a string then assume it is a named color scheme in ColorSchemes
-                let chart_colors = chart.colors || chart.data.colors;
 
                 if (Array.isArray(chart_colors)) {
                     options.scheme = chart_colors;

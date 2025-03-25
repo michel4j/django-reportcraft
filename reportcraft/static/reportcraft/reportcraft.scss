@@ -417,6 +417,10 @@ svg {
   }
 }
 
+div.google-visualization-tooltip > ul > li > span {
+    font-family: var(--rc-main-font), sans-serif !important;
+}
+
 /* override styles when printing */
 @media print {
 

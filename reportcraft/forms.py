@@ -921,7 +921,6 @@ class HistogramForm(ModalModelForm):
 MODE_CHOICES = (
     ('regions', 'Area'),
     ('markers', 'Bubbles'),
-    ('text', 'Text'),
 )
 
 RESOLUTION_CHOICES = (
@@ -932,13 +931,13 @@ RESOLUTION_CHOICES = (
 
 
 class GeoCharForm(ModalModelForm):
-    location = forms.ModelChoiceField(label='Location', required=False, queryset=models.DataField.objects.none())
     latitude = forms.ModelChoiceField(label='Latitude', required=False, queryset=models.DataField.objects.none())
     longitude = forms.ModelChoiceField(label='Longitude', required=False, queryset=models.DataField.objects.none())
+    name = forms.ModelChoiceField(label='Name', required=False, queryset=models.DataField.objects.none())
+    location = forms.ModelChoiceField(label='Location', required=False, queryset=models.DataField.objects.none())
     value = forms.ModelChoiceField(label='Values', required=True, queryset=models.DataField.objects.none())
     region = forms.ChoiceField(label='Map', choices=REGION_CHOICES, initial='world')
     resolution = forms.ChoiceField(label='Resolution', choices=RESOLUTION_CHOICES, required=True, initial='countries')
-    color_by = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
     mode = forms.ChoiceField(label='Mode', choices=MODE_CHOICES, required=True)
     colors = forms.ChoiceField(label='Color Scheme', required=False, choices=SEQUENTIAL_COLORS, initial='Blues')
 
@@ -960,20 +959,19 @@ class GeoCharForm(ModalModelForm):
         self.update_initial()
         self.body.append(
             Row(
+                ThirdWidth('latitude'),
+                ThirdWidth('longitude'),
+                ThirdWidth('name'),
+            ),
+            Row(
+                ThirdWidth('location'),
+                ThirdWidth('value'),
+                ThirdWidth('colors'),
+            ),
+            Row(
                 FullWidth(Field('region', css_class='selectize')),
                 HalfWidth(Field('resolution', css_class='select')),
                 HalfWidth(Field('mode', css_class='select')),
-
-            ),
-            Row(
-                ThirdWidth(Field('location', css_class='select')),
-                ThirdWidth(Field('latitude', css_class='select')),
-                ThirdWidth(Field('longitude', css_class='select')),
-            ),
-            Row(
-                ThirdWidth(Field('value', css_class='select')),
-                ThirdWidth(Field('color_by', css_class='select')),
-                ThirdWidth(Field('colors', css_class='select')),
             ),
             Field('attrs'),
         )
@@ -982,7 +980,7 @@ class GeoCharForm(ModalModelForm):
         attrs = self.instance.attrs
         field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
         field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
-        for field in ['location', 'value', 'color_by', 'latitude', 'longitude']:
+        for field in ['location', 'value', 'name', 'latitude', 'longitude']:
             self.fields[field].queryset = field_queryset
 
             if field in attrs:
@@ -996,13 +994,21 @@ class GeoCharForm(ModalModelForm):
         cleaned_data = super().clean()
         new_attrs = {}
 
-        # Check if latitude and longitude are set
-        valid_coords = all(cleaned_data.get(field) for field in ['latitude', 'longitude'])
-        valid_location = cleaned_data.get('location')
-        if not valid_coords and not valid_location:
-            raise forms.ValidationError(_("Latitude and Longitude or Location field is required"))
+        mode = cleaned_data.get('mode')
+        invalid_markers = (
+            mode == 'markers' and not
+            all(cleaned_data.get(field) for field in ['latitude', 'longitude', 'name', 'value'])
+        )
+        invalid_regions = (
+            mode == 'regions' and not
+            all(cleaned_data.get(field) for field in ['location', 'value'])
+        )
+        if invalid_markers:
+            raise forms.ValidationError(_("Latitude, Longitude, Name, and Value fields are required for Markers mode"))
+        elif invalid_regions:
+            raise forms.ValidationError(_("Location and Value fields are required for Area mode"))
 
-        for field in ['location', 'value', 'color_by', 'latitude', 'longitude']:
+        for field in ['location', 'value', 'name', 'latitude', 'longitude']:
             if field in cleaned_data and cleaned_data[field] is not None:
                 new_attrs[field] = cleaned_data[field].name
 

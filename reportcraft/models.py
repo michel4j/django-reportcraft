@@ -106,7 +106,6 @@ class DataSource(models.Model):
         ).order_by(*order_by).filter(
             **filters
         )
-        print(queryset)
         # Apply limit
         if self.limit:
             queryset = queryset[:self.limit]
@@ -633,29 +632,25 @@ class Entry(models.Model):
         }
 
     def generate_geochart(self, *args, **kwargs):
-        location = self.attrs.get('location', None)
-        value = self.attrs.get('value', None)
-        color_by = self.attrs.get('color_by', None)
-        latitude = self.attrs.get('latitude', None)
-        longitude = self.attrs.get('longitude', None)
-        labels = self.source.get_labels()
+        all_columns = {
+            'Lat': self.attrs.get('latitude'),
+            'Lon': self.attrs.get('longitude'),
+            'Location': self.attrs.get('location'),
+            'Name': self.attrs.get('name'),
+            'Value': self.attrs.get('value'),
+            'Color': self.attrs.get('color_by'),
+        }
+        columns = {key: value for key, value in all_columns.items() if value}
 
         region = self.attrs.get('region', 'world')
         resolution = self.attrs.get('resolution', 'countries')
         mode = self.attrs.get('mode', 'regions')
         colors = self.attrs.get('colors', 'YlOrRd')
 
-        if mode == 'markers':
-            headers = [latitude, longitude, value]
-        else:
-            headers = [location, value]
-
         raw_data = self.source.get_data(*args, **kwargs)
         data = [
-            [labels.get(field, field) for field in headers if field]
-        ] + [
-            [item.get(field) for field in headers]
-            for item in raw_data if all(item.get(field) for field in headers)
+            {k: item.get(v) for k, v in columns.items()}
+            for item in raw_data
         ]
 
         info = {
@@ -665,7 +660,6 @@ class Entry(models.Model):
             'mode': mode,
             'region': region,
             'resolution': resolution,
-
             'colors': colors,
             'show-legend': False,
             'style': self.style,
@@ -673,6 +667,6 @@ class Entry(models.Model):
             'map': 'canada',
             'data': data
         }
-
+        print(info)
         return info
 
