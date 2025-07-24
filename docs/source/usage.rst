@@ -1,12 +1,18 @@
 Usage
 =====
 
-To use Django ReportCraft, Navigate to https://mysite/reports/ and create a new report entry by clicking the
-`Add Report` button on the top-right corner. Make sure you are logged in otherwise the button will not be visible.
+To use Django ReportCraft, Navigate to https://mysite/reports/editor/ and create a new report entry by clicking the
+:guilabel:`+ Add` button from the Reports list.
 
 .. image:: static/report-form.png
   :width: 100%
   :alt: Report Form
+
+- Title: The title of the report. This should be a human readable string.
+- Description: A description of the report. Use this to provide additional information about the purpose of the report.
+- Section: A slug to use for grouping reports. This could be any valid slug
+- Style: a css class to apply to the report. This can be used to apply custom styles to the report.
+- Notes: Notes to display with the report. Notes are often used to provide additional information about the report.
 
 Once you have created a report, you can build the report using the graphical designer by creating Data Sources,
 Data Fields, and Report Entries.
@@ -18,8 +24,9 @@ Data Fields, and Report Entries.
 Data Sources
 ------------
 
-A Data Source is a model that provides data for the report. You can create a new Data Source by clicking Add Data Source
-button from the Sources list. To create a new Data Source, you need to provide the following information:
+A Data Source is a model that provides data for the report. You can create a new Data Source by clicking the
+:guilabel:` + Add` button from the Data Sources list. To create a new Data Source, you need to provide the following
+information:
 
 .. image:: static/source-form.png
   :width: 100%

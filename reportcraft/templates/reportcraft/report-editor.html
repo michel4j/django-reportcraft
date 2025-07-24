@@ -12,9 +12,11 @@
 
 {% block page-pretitle %}Edit Report{% endblock %}
 {% block page-title %}
-    {{ object.title }}
+    {% if report %}{{ report.title }}{% else %}Report Editor{% endif %}
 {% endblock %}
-{% block page-subtitle %}{{ object.description }}{% endblock %}
+{% block page-subtitle %}
+    {% if report %}{{ object.description }}{% else %}Please select or add a new a report from the list{% endif %}
+{% endblock %}
 
 {% block page-tools %}
     <a href="#rc-off-canvas" data-oc-url="{% url "editor-report-list" %}" data-bs-toggle="offcanvas">
@@ -23,6 +25,7 @@
     <a href="#rc-off-canvas" data-oc-url="{% url "data-source-list" %}" data-bs-toggle="offcanvas">
         {% tool_icon label='Sources' icon='database' %}
     </a>
+    {% if report %}
     <a href="{% url "report-view" slug=report.slug %}">
         {% tool_icon label='Preview' icon='live-view' %}
     </a>
@@ -35,9 +38,11 @@
     <a href="#0" data-modal-url="{% url "add-report-entry" report=report.pk %}">
         {% tool_icon label='Add Entry' icon='photo-plus' %}
     </a>
+    {% endif %}
 {% endblock %}
 
 {% block page-content %}
+    {% if report %}
     <div class="row report-editor ">
             <div class="col-12">
             <div class="alert alert-info mb-4">
@@ -79,4 +84,8 @@
             </div>
         </div>
     </div>
+    {% endif %}
+{% endblock %}
+{% block report-off-canvas %}
+{% if show_sidebar %}{% include "reportcraft/off-canvas-list.html" with items=reports %}{% endif %}
 {% endblock %}

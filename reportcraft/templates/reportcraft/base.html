@@ -4,7 +4,8 @@
     <link rel="stylesheet" href="{% static "reportcraft/reportcraft.min.css" %}" type="text/css"/>
 {% endblock %}
 {% block page-scripts %}
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="rc-off-canvas" aria-labelledby="oc-list-title">
+    <div class="offcanvas offcanvas-start {% if show_sidebar %}show{% endif %}" tabindex="-1" id="rc-off-canvas" aria-labelledby="oc-list-title">
+    {% block report-off-canvas %}{% endblock %}
     </div>
     <script>
         $(document).ready(function () {

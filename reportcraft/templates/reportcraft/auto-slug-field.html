@@ -1,0 +1,22 @@
+<script>
+    $(document).ready(function () {
+        const srcField = $('[name="{{ src_field }}"]');
+        const slugField = $('[name="{{ slug_field }}"]');
+        const slugify = (text) => {
+            return text.toString().toLowerCase().trim()
+                .replace(/\s+/g, '-')           // Replace spaces with -
+                .replace(/&/g, '-and-')         // Replace & with 'and'
+                .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+                .replace(/-+/g, '-')            // Replace multiple - with single -
+                .replace(/^-+/, '')             // Trim - from start of text
+                .replace(/-+$/, '');            // Trim - from end of text
+        };
+        srcField.on('change', function () {
+            const srcValue = $(this).val();
+            const slugValue = slugField.val();
+            if ((srcValue) && (slugValue === "")) {
+                slugField.val(slugify(srcValue));
+            }
+        });
+    });
+</script>

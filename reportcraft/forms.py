@@ -7,6 +7,7 @@ from django import forms
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse_lazy
+from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
 from crisp_modals.forms import (
     ModalModelForm, HalfWidth, FullWidth, Row, ThirdWidth, QuarterWidth, ThreeQuarterWidth, TwoThirdWidth
@@ -18,6 +19,25 @@ from .utils import CATEGORICAL_COLORS, SEQUENTIAL_COLORS, REGION_CHOICES
 disabled_widget = forms.HiddenInput(attrs={'readonly': True})
 
 
+class AutoPopulatedSlugField(forms.TextInput):
+    """
+    A SlugField that automatically populates the slug based on the title field.
+    If the slug is already set, it will not change it.
+    """
+    def __init__(self, *args, **kwargs):
+        self.src_field = kwargs.pop('src_field', 'title')
+        super().__init__(*args, **kwargs)
+
+    def render(self, name, value, attrs=None, renderer=None):
+        final_attrs = self.build_attrs(self.attrs, attrs)
+        output = super().render(name, value, final_attrs, renderer)
+        js_code = render_to_string('reportcraft/auto-slug-field.html', {
+            'slug_field': name,
+            'src_field': self.src_field,
+        })
+        return output + js_code
+
+
 class ReportForm(ModalModelForm):
     class Meta:
         model = models.Report
@@ -26,6 +46,7 @@ class ReportForm(ModalModelForm):
             'title': forms.TextInput,
             'description': forms.Textarea(attrs={'rows': "2"}),
             'notes': forms.Textarea(attrs={'rows': "4"}),
+            'slug': AutoPopulatedSlugField(src_field='title'),
         }
 
     def __init__(self, *args, **kwargs):

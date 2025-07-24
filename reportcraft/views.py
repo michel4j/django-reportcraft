@@ -5,7 +5,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.module_loading import import_string
 from django.views import View
-from django.views.generic import DetailView, edit, ListView
+from django.views.generic import DetailView, edit, ListView, TemplateView
 from crisp_modals.views import ModalUpdateView, ModalCreateView, ModalDeleteView
 from itemlist.views import ItemListView
 
@@ -65,7 +65,19 @@ class SourceData(*VIEW_MIXINS, View):
             return JsonResponse(data, safe=False)
 
 
-class ReportIndex(*VIEW_MIXINS, ItemListView):
+class ReportIndexView(ItemListView):
+    model = models.Report
+    list_filters = ['created', 'modified']
+    list_columns = ['title', 'slug', 'description']
+    list_search = ['slug', 'title', 'description', 'entries__title', 'notes']
+    ordering = ['-created']
+    paginate_by = 20
+    template_name = 'reportcraft/index.html'
+    link_url = 'report-view'
+    link_kwarg = 'slug'
+
+
+class ReportIndex(*VIEW_MIXINS, ReportIndexView):
     model = models.Report
     list_filters = ['created', 'modified']
     list_columns = ['title', 'slug', 'description']
@@ -112,6 +124,19 @@ class SourceEditor(*EDIT_MIXINS, DetailView):
             field_info[field.model].append(field)
         context['source'] = self.object
         context['fields'] = dict(field_info)
+        return context
+
+
+class ReportEditorRoot(*EDIT_MIXINS, TemplateView):
+    template_name = 'reportcraft/report-editor.html'
+    link_url = 'report-editor'
+    list_title = 'Reports'
+    add_url = 'new-report'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['reports'] = models.Report.objects.all().order_by('-modified')
+        context['show_sidebar'] = True
         return context
 
 
