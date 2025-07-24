@@ -45,16 +45,13 @@ class DataSource(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     name = models.CharField(max_length=50)
+    description = models.TextField(default='', blank=True)
     group_by = models.JSONField(_("Group Fields"), default=list, blank=True, null=True)
     filters = models.JSONField(default=dict, blank=True)
     limit = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return self.name
-
-    @property
-    def description(self):
-        return f"Created on {self.created.isoformat()}, modified on {self.modified.isoformat()}"
 
     def name_slug(self):
         return slugify(self.name)
