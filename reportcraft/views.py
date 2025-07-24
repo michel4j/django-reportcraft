@@ -181,6 +181,11 @@ class EditDataSource(*EDIT_MIXINS, ModalUpdateView):
     form_class = forms.DataSourceForm
     model = models.DataSource
 
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['group_fields'] = ', '.join(self.object.group_by or [])
+        return initial
+
     def get_success_url(self):
         return reverse('source-editor', kwargs={'pk': self.object.pk})
 
