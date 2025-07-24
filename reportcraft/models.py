@@ -50,6 +50,9 @@ class DataSource(models.Model):
     filters = models.JSONField(default=dict, blank=True)
     limit = models.IntegerField(null=True, blank=True)
 
+    class Meta:
+        verbose_name = 'Data Source'
+
     def __str__(self):
         return self.name
 
@@ -153,6 +156,9 @@ class DataModel(models.Model):
     name = models.CharField(max_length=150, blank=True, null=True)
     source = models.ForeignKey(DataSource, on_delete=models.CASCADE, related_name='models')
 
+    class Meta:
+        verbose_name = 'Data Model'
+
     def get_group_fields(self):
         group_names = list(self.source.group_by)
         if group_names:
@@ -188,6 +194,7 @@ class DataField(models.Model):
     source = models.ForeignKey(DataSource, on_delete=models.CASCADE, related_name='fields')
 
     class Meta:
+        verbose_name = 'Data Field'
         unique_together = ['name', 'source', 'model']
         ordering = ['source', 'position', 'pk']
 

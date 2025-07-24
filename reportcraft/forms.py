@@ -51,12 +51,6 @@ class ReportForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        if self.instance.pk:
-            self.body.form_action = reverse_lazy('edit-report', kwargs={"pk": self.instance.pk})
-        else:
-            self.body.form_action = reverse_lazy('new-report')
-
         self.body.append(
             Row(
                 FullWidth('title'),
@@ -92,20 +86,11 @@ class DataFieldForm(ModalModelForm):
         pk = self.instance.pk
         self.fields['source'].widget = forms.HiddenInput()
         if pk:
-            self.body.title = _("Edit Field")
-            self.body.form_action = reverse_lazy(
-                'edit-source-field', kwargs={'pk': pk, 'source': self.instance.source.pk}
-            )
             self.fields['model'].queryset = self.instance.source.models.all()
         else:
-            self.body.title = _("Add Field")
-            self.body.form_action = reverse_lazy(
-                'add-source-field', kwargs={'source': self.initial['source']}
-            )
             self.fields['model'].queryset = models.DataModel.objects.filter(source=self.initial['source'])
 
-        self.footer.layout = Layout()
-        self.body.layout = Layout(
+        self.body.append(
             Div(
                 Div('name', css_class='col-6'),
                 Div('label', css_class="col-6"),
@@ -128,9 +113,6 @@ class DataFieldForm(ModalModelForm):
                 css_class='row'
             ),
         )
-        self.footer.layout = Layout(
-            StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
-        )
 
     def clean(self):
         data = super().clean()
@@ -148,10 +130,11 @@ class DataSourceForm(ModalModelForm):
     class Meta:
         model = models.DataSource
         fields = (
-            'name', 'group_by', 'limit', 'group_fields'
+            'name', 'group_by', 'limit', 'group_fields', 'description'
         )
         widgets = {
             'group_by': forms.HiddenInput,
+            'description': forms.Textarea(attrs={'rows': "2"}),
         }
         help_texts = {
             'limit': _("Maximum number of records"),
@@ -159,23 +142,14 @@ class DataSourceForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        pk = self.instance.pk
-
-        if pk:
-            self.body.title = u"Edit Data Source"
-            self.body.form_action = reverse_lazy('edit-data-source', kwargs={'pk': pk})
-            self.fields['group_fields'].initial = ', '.join(self.instance.group_by)
-        else:
-            self.body.title = u"Add Data Source"
-            self.body.form_action = reverse_lazy('new-data-source')
-
-        self.body.layout = Layout(
+        self.body.append(
             Div(
                 Div('name', css_class='col-12'),
-                Div('group_fields', css_class='col-8'),
-                Div('limit', css_class='col-4'),
+                Div('group_fields', css_class='col-sm-8'),
+                Div('limit', css_class='col-sm-4'),
+                Div('description', css_class='col-12'),
                 css_class='row'
-            ),
+            )
         )
 
     def clean(self):
@@ -194,10 +168,9 @@ class DataModelForm(ModalModelForm):
             'name': forms.HiddenInput,
         }
 
-    def __init__(self, *args, **kwargs):
-        self.source = kwargs.pop('source')
+    def __init__(self, *args, source=None, **kwargs):
+        self.source = source
         super().__init__(*args, **kwargs)
-        pk = self.instance.pk
 
         self.fields['model'].queryset = ContentType.objects.filter(app_label__in=settings.REPORTCRAFT_APPS)
 
@@ -218,15 +191,8 @@ class DataModelForm(ModalModelForm):
                 self.fields[group_name].help_text = f'Enter expression for {field_name} grouping'
                 self.extra_fields[field_name] = group_name
 
-        if pk:
-            self.body.title = _("Edit Data Model")
-            self.body.form_action = reverse_lazy('edit-source-model', kwargs={'pk': pk, 'source': self.source.pk})
-        else:
-            self.body.title = _("Add Data Model")
-            self.body.form_action = reverse_lazy('add-source-model', kwargs={'source': self.source.pk})
-
         extra_div = Div(*[Div(field, css_class='col-12') for field in self.extra_fields.values()], css_class='row')
-        self.body.layout = Layout(
+        self.body.append(
             Div(
                 Div('model', css_class='col-12'),
                 css_class='row'
@@ -234,10 +200,6 @@ class DataModelForm(ModalModelForm):
             extra_div,
             Field('source'),
             Field('name'),
-        )
-        self.footer.layout = Layout(
-            StrictButton('Revert', type='reset', value='Reset', css_class="btn btn-secondary"),
-            StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
         )
 
     def clean(self):
@@ -267,20 +229,7 @@ class EntryForm(ModalModelForm):
         super().__init__(*args, **kwargs)
         pk = self.instance.pk
 
-        if pk:
-            self.body.title = _("Edit Entry")
-            self.body.form_action = reverse_lazy(
-                'edit-report-entry', kwargs={'pk': pk, 'report': self.instance.report.pk}
-            )
-        else:
-            if 'report' in self.initial:
-                self.body.title = _("Add Entry to {}".format(self.initial['report']))
-                self.body.form_action = reverse_lazy(
-                    'add-report-entry', kwargs={'report': self.initial['report']}
-                )
-            self.body.title = _("Add Entry")
-
-        self.body.layout = Layout(
+        self.body.append(
             Div(
                 Div('title', css_class='col-10'),
                 Div('position', css_class='col-2'),
@@ -301,10 +250,6 @@ class EntryForm(ModalModelForm):
                 Field('report'),
                 css_class='row'
             ),
-        )
-        self.footer.layout = Layout(
-            StrictButton('Revert', type='reset', value='Reset', css_class="btn btn-secondary"),
-            StrictButton('Save', type='submit', name="submit", value='submit', css_class='btn btn-primary'),
         )
 
     def clean(self):
@@ -336,11 +281,7 @@ class TableForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         self.body.title = _("Configure Table")
-        self.body.form_action = reverse_lazy(
-            'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
-        )
         self.update_initial()
         self.body.append(
             Div(
@@ -434,9 +375,6 @@ class BarsForm(ModalModelForm):
         super().__init__(*args, **kwargs)
 
         self.body.title = _("Configure Barchart")
-        self.body.form_action = reverse_lazy(
-            'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
-        )
         self.update_initial()
         self.body.append(
             Div(
@@ -548,9 +486,6 @@ class PlotForm(ModalModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.body.title = _("Configure Plot")
-        self.body.form_action = reverse_lazy(
-            'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
-        )
         self.update_initial()
         self.body.append(
             Row(
@@ -629,9 +564,6 @@ class ListForm(ModalModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.body.title = _("Configure List")
-        self.body.form_action = reverse_lazy(
-            'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
-        )
         self.update_initial()
         self.body.append(
             Row(
@@ -699,9 +631,6 @@ class PieForm(ModalModelForm):
         super().__init__(*args, **kwargs)
 
         self.body.title = _("Configure Pie")
-        self.body.form_action = reverse_lazy(
-            'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
-        )
         self.update_initial()
         self.body.append(
             Row(
@@ -766,9 +695,6 @@ class TimelineForm(ModalModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.body.title = _("Configure Timeline")
-        self.body.form_action = reverse_lazy(
-            'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
-        )
         self.update_initial()
         self.body.append(
             Row(
@@ -840,9 +766,6 @@ class RichTextForm(ModalModelForm):
         super().__init__(*args, **kwargs)
 
         self.body.title = _("Configure Rich Text")
-        self.body.form_action = reverse_lazy(
-            'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
-        )
         self.update_initial()
         self.body.append(
             Row(
@@ -885,9 +808,6 @@ class HistogramForm(ModalModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.body.title = _("Configure Histogram")
-        self.body.form_action = reverse_lazy(
-            'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
-        )
         self.update_initial()
         self.body.append(
             Row(
@@ -965,9 +885,6 @@ class GeoCharForm(ModalModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.body.title = _("Configure Geo Chart")
-        self.body.form_action = reverse_lazy(
-            'configure-report-entry', kwargs={'pk': self.instance.pk, 'report': self.instance.report.pk}
-        )
         self.update_initial()
         self.body.append(
             Row(
