@@ -193,18 +193,18 @@ test = ["pytest", "pytest-django"]
 
 [[package]]
 name = "django"
-version = "5.1.7"
+version = "5.2.4"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "Django-5.1.7-py3-none-any.whl", hash = "sha256:1323617cb624add820cb9611cdcc788312d250824f92ca6048fda8625514af2b"},
-    {file = "Django-5.1.7.tar.gz", hash = "sha256:30de4ee43a98e5d3da36a9002f287ff400b43ca51791920bfb35f6917bfe041c"},
+    {file = "django-5.2.4-py3-none-any.whl", hash = "sha256:60c35bd96201b10c6e7a78121bd0da51084733efa303cc19ead021ab179cef5e"},
+    {file = "django-5.2.4.tar.gz", hash = "sha256:a1228c384f8fa13eebc015196db7b3e08722c5058d4758d20cb287503a540d8f"},
 ]
 
 [package.dependencies]
-asgiref = ">=3.8.1,<4"
+asgiref = ">=3.8.1"
 sqlparse = ">=0.3.1"
 tzdata = {version = "*", markers = "sys_platform == \"win32\""}
 
@@ -214,18 +214,18 @@ bcrypt = ["bcrypt"]
 
 [[package]]
 name = "django-crisp-modals"
-version = "2025.3.29"
+version = "2025.7.0"
 description = "Django Crispy Forms inside Bootstrap Modals"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "django_crisp_modals-2025.3.29-py3-none-any.whl", hash = "sha256:87d00e1a12d5ddcfb82f9abf33f0661e7397903f935c4815c92efd0127223810"},
-    {file = "django_crisp_modals-2025.3.29.tar.gz", hash = "sha256:3fdd669b8436f3c9b296284cf19b60b814c83c4c4e3743c13595ed5e16dc6080"},
+    {file = "django_crisp_modals-2025.7.0-py3-none-any.whl", hash = "sha256:5c0e3c9cc90df55743cdc278b4521b974ce3aeb16e43ef87a951ed56faf2106d"},
+    {file = "django_crisp_modals-2025.7.0.tar.gz", hash = "sha256:4e8d39ad432d5174e1faffe1ca8810dbd7dc8dff06459ef9ab835b053e63e498"},
 ]
 
 [package.dependencies]
-crispy-bootstrap5 = ">=2024.10,<2025.0"
+crispy-bootstrap5 = ">=2024.10,<2026.0"
 django = ">=4.2,<6.0.0"
 django-crispy-forms = ">=2.3"
 pyyaml = ">=6.0.2,<7.0.0"

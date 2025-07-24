@@ -10,17 +10,17 @@
     </style>
 {% endblock %}
 
-{% block page-pretitle %}Report{% endblock %}
+{% block page-pretitle %}Edit Report{% endblock %}
 {% block page-title %}
     {{ object.title }}
 {% endblock %}
 {% block page-subtitle %}{{ object.description }}{% endblock %}
 
 {% block page-tools %}
-    <a href="{% url "report-list" %}">
+    <a href="#rc-off-canvas" data-oc-url="{% url "editor-report-list" %}" data-bs-toggle="offcanvas">
         {% tool_icon label='Reports' icon='list-details' %}
     </a>
-    <a href="{% url "data-source-list" %}">
+    <a href="#rc-off-canvas" data-oc-url="{% url "data-source-list" %}" data-bs-toggle="offcanvas">
         {% tool_icon label='Sources' icon='database' %}
     </a>
     <a href="{% url "report-view" slug=report.slug %}">

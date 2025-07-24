@@ -2,6 +2,7 @@ import json
 
 import yaml
 from django import template
+from django.urls import reverse
 from django.utils.safestring import mark_safe
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
@@ -116,6 +117,9 @@ ICONS = {
     'square-plus': (
         '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 12h6" /><path d="M12 9v6" />'
         '<path d="M3 5a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-14z" />'
+    ),
+    'plus': (
+        '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" />'
     ),
     'database-plus': (
         '<path stroke="none" d="M0 0h24v24H0z" fill="none"/>'
@@ -255,3 +259,26 @@ def swatches():
         all_swatches.append(swatches_template.format(name=name, colors=swatches_entry))
 
     return mark_safe(''.join(all_swatches))
+
+
+@register.simple_tag(takes_context=True)
+def item_url(context, item):
+    """
+    Returns the URL for a given item based on context.
+    """
+    view = context.get('view')
+    slug_field = getattr(view, 'slug_field', 'pk')
+    slug_kwarg = getattr(view, 'slug_kwarg', 'pk')
+    url_name = getattr(view, 'link_url', None)
+    kwargs = {slug_kwarg: getattr(item, slug_field, None)}
+
+    if url_name:
+        return reverse(url_name, kwargs=kwargs)
+    elif hasattr(item, 'get_absolute_url'):
+        return item.get_absolute_url()
+    elif hasattr(item, 'url'):
+        return item.url
+    elif hasattr(item, 'get_url'):
+        return item.get_url()
+    else:
+        return '#0'

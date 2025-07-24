@@ -1,0 +1,32 @@
+{% load reportcraft %}
+
+<div class="offcanvas-header flex-column align-items-stretch bg-light-subtle">
+    <div class="d-flex flex-row align-items-center justify-content-between w-100">
+        <h4 class="offcanvas-title" id="oc-list-title">{{ view.list_title }}</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <hr class="border-secondary my-2"/>
+    <div class="d-flex flex-row align-items-stretch justify-content-between w-100">
+        <input type="text" placeholder="search ..."
+               class="form-control w-75" id="oc-list-search"
+               aria-label="Search Form Types"
+        />
+        <a class="ms-auto btn btn-primary" role="button" href="#0" data-modal-url='{% url view.add_url %}'>
+            {% svg_icon 'plus' size="sm" %} Add
+        </a>
+    </div>
+</div>
+<div class="offcanvas-body">
+    <ul class="list-group list-group-flush" id="oc-list-items">
+        {% for item in items %}
+            <li class="list-group-item">
+                <a href="{% item_url  item %}">
+                    <div>{{ item }}</div>
+                    <div class="small text-secondary lh-sm">{{ item.description }}</div>
+                </a>
+            </li>
+        {% empty %}
+            <li class="list-group-item text-muted">No items available.</li>
+        {% endfor %}
+    </ul>
+</div>

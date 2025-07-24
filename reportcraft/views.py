@@ -5,7 +5,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.module_loading import import_string
 from django.views import View
-from django.views.generic import DetailView, edit
+from django.views.generic import DetailView, edit, ListView
 from crisp_modals.views import ModalUpdateView, ModalCreateView, ModalDeleteView
 from itemlist.views import ItemListView
 
@@ -65,7 +65,7 @@ class SourceData(*VIEW_MIXINS, View):
             return JsonResponse(data, safe=False)
 
 
-class ReportList(*VIEW_MIXINS, ItemListView):
+class ReportIndex(*VIEW_MIXINS, ItemListView):
     model = models.Report
     list_filters = ['created', 'modified']
     list_columns = ['title', 'slug', 'description']
@@ -77,20 +77,28 @@ class ReportList(*VIEW_MIXINS, ItemListView):
     link_kwarg = 'slug'
 
 
-class DataSourceList(*EDIT_MIXINS, ItemListView):
+class EditorReportList(*EDIT_MIXINS, ListView):
+    model = models.Report
+    template_name = 'reportcraft/off-canvas-list.html'
+    context_object_name = 'items'
+    link_url = 'report-editor'
+    list_title = 'Reports'
+    add_url = 'new-report'
+
+    def get_queryset(self):
+        return self.model.objects.all().order_by('-modified')
+
+
+class DataSourceList(*EDIT_MIXINS, ListView):
     model = models.DataSource
-    list_filters = ['created', 'modified']
-    list_columns = ['name', 'limit', 'group_by']
-    list_search = ['fields__name', 'entries__title']
-    list_transforms = {
-        'group_by': lambda x, y: ', '.join(x) or '-',
-    }
-    ordering = ['-created']
-    paginate_by = 25
-    template_name = 'reportcraft/list.html'
-    tool_template = 'reportcraft/source-list-tools.html'
+    template_name = 'reportcraft/off-canvas-list.html'
+    context_object_name = 'items'
     link_url = 'source-editor'
     list_title = 'Data Sources'
+    add_url = 'new-data-source'
+
+    def get_queryset(self):
+        return self.model.objects.all().order_by('-modified')
 
 
 class SourceEditor(*EDIT_MIXINS, DetailView):

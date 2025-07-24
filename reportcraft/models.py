@@ -1,4 +1,3 @@
-import logging
 from collections import defaultdict
 from typing import Any
 
@@ -52,6 +51,10 @@ class DataSource(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def description(self):
+        return f"Created on {self.created.isoformat()}, modified on {self.modified.isoformat()}"
 
     def name_slug(self):
         return slugify(self.name)
@@ -211,6 +214,7 @@ class Report(models.Model):
     description = models.TextField(default='', blank=True)
     style = models.CharField(max_length=100, default='', blank=True)
     notes = models.TextField(default='', blank=True)
+    section = models.SlugField(max_length=100, default='', blank=True)
 
     def __str__(self):
         return self.title
@@ -653,7 +657,7 @@ class Entry(models.Model):
             for item in raw_data
         ]
 
-        info = {
+        return {
             'title': self.title,
             'description': self.description,
             'kind': 'geochart',
@@ -667,6 +671,4 @@ class Entry(models.Model):
             'map': 'canada',
             'data': data
         }
-        print(info)
-        return info
 

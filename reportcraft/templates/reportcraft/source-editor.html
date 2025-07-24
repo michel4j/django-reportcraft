@@ -9,16 +9,16 @@
     </style>
 {% endblock %}
 
-{% block page-pretitle %}Data Source{% endblock %}
+{% block page-pretitle %}Edit Data Source{% endblock %}
 {% block page-title %}
     {{ object.name }}
 {% endblock %}
 
 {% block page-tools %}
-    <a href="{% url "report-list" %}">
+    <a href="#rc-off-canvas" data-oc-url="{% url "editor-report-list" %}" data-bs-toggle="offcanvas">
         {% tool_icon label='Reports' icon='list-details' %}
     </a>
-    <a href="{% url "data-source-list" %}">
+    <a href="#rc-off-canvas" data-oc-url="{% url "data-source-list" %}" data-bs-toggle="offcanvas">
         {% tool_icon label='Sources' icon='database' %}
     </a>
     <a href="#!" data-modal-url="{% url "edit-data-source" source.pk %}">

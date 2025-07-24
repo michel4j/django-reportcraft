@@ -3,7 +3,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.ReportList.as_view(), name='report-list'),
+    path('', views.EditorReportList.as_view(), name='editor-report-list'),
     path('add/', views.CreateReport.as_view(), name='new-report'),
     path('<int:pk>/', views.ReportEditor.as_view(), name='report-editor'),
     path('<int:pk>/edit/', views.EditReport.as_view(), name='edit-report'),
@@ -29,6 +29,7 @@ urlpatterns = [
     path('sources/<int:source>/edit-model/<int:pk>/', views.EditSourceModel.as_view(), name='edit-source-model'),
     path('sources/<int:source>/del-model/<int:pk>/', views.DeleteSourceModel.as_view(), name='delete-source-model'),
 
+    path('view/', views.ReportIndex.as_view(), name='report-list'),
     path('view/<slug:slug>/', views.ReportView.as_view(), name='report-view'),
     path('api/reports/<slug:slug>/', views.ReportData.as_view(), name='report-data'),
     path('api/sources/<int:pk>/', views.SourceData.as_view(), name='source-data'),

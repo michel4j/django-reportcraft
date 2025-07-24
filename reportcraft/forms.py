@@ -9,7 +9,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse_lazy
 from django.utils.translation import gettext as _
 from crisp_modals.forms import (
-    ModalModelForm, HalfWidth, FullWidth, Row, ThirdWidth, QuarterWidth,
+    ModalModelForm, HalfWidth, FullWidth, Row, ThirdWidth, QuarterWidth, ThreeQuarterWidth, TwoThirdWidth
 )
 
 from . import models
@@ -18,19 +18,10 @@ from .utils import CATEGORICAL_COLORS, SEQUENTIAL_COLORS, REGION_CHOICES
 disabled_widget = forms.HiddenInput(attrs={'readonly': True})
 
 
-class ThreeQuarterWidth(Div):
-    def __init__(self, *args,  style="", **kwargs):
-        super().__init__(*args, css_class=f"col-9 {style}", **kwargs)
-
-class TwoThirdWidth(Div):
-    def __init__(self, *args,  style="", **kwargs):
-        super().__init__(*args, css_class=f"col-8 {style}", **kwargs)
-
-
 class ReportForm(ModalModelForm):
     class Meta:
         model = models.Report
-        fields = ('title', 'slug', 'description', 'style', 'notes')
+        fields = ('title', 'section', 'slug', 'description', 'style', 'notes')
         widgets = {
             'title': forms.TextInput,
             'description': forms.Textarea(attrs={'rows': "2"}),
@@ -50,7 +41,7 @@ class ReportForm(ModalModelForm):
                 FullWidth('title'),
             ),
             Row(
-                HalfWidth('slug'), HalfWidth('style'),
+                QuarterWidth('section'), HalfWidth('slug'), QuarterWidth('style'),
             ),
             Row(
                 FullWidth('description'),

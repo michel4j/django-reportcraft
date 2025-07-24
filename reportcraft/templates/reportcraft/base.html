@@ -1,5 +1,25 @@
 {% extends "base.html" %}
 {% load static %}
-{% block extra_css %}
+{% block page-styles %}
     <link rel="stylesheet" href="{% static "reportcraft/reportcraft.min.css" %}" type="text/css"/>
+{% endblock %}
+{% block page-scripts %}
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="rc-off-canvas" aria-labelledby="oc-list-title">
+    </div>
+    <script>
+        $(document).ready(function () {
+            const target = $('#rc-off-canvas');
+            $(document).on('click', `[data-oc-url]`, function () {
+                target.load($(this).data('oc-url'), function () {
+                    console.log("Off-canvas loaded: " + $(this).data('oc-url'));
+                });
+            });
+        });
+        $(document).on("keyup", "#oc-list-search", function () {
+            let value = $(this).val().toLowerCase();
+            $("#oc-list-items li").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    </script>
 {% endblock %}
