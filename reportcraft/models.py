@@ -133,6 +133,17 @@ class DataSource(models.Model):
 
         return data
 
+    def get_precision(self, field_name: str) -> int:
+        """
+        Get the precision for a field in this data source
+        :param field_name: the name of the field
+        """
+        try:
+            field = self.fields.get(name=field_name)
+            return field.precision if field.precision is not None else 0
+        except DataField.DoesNotExist:
+            return 0
+
     def snippet(self, size=5) -> list[dict]:
         """
         Generate a snippet of data for this data source
