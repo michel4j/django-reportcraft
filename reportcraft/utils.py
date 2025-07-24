@@ -441,19 +441,22 @@ def cached_model_method(duration: int = 30):
             key_string = json.dumps(key_data, sort_keys=True)
             cache_key = f"cache:{hashlib.md5(key_string.encode()).hexdigest()}"
             cache_expiry_key = f"{cache_key}:expiry"
-            results = cache.get_many((cache_key, cache_expiry_key))
-            cached_result = results.get(cache_key)
-            now = datetime.now()
-            expiry = results.get(cache_expiry_key, now)
-            if cached_result is not None:
-                if now - expiry > timedelta(seconds=duration):
-                    # Asynchronously replace cache value if it is about to expire, next request will get the fresh value
-                    threading.Thread(target=_update_cache, args=(self, func, cache_key, args, kwargs, duration)).start()
-                return cached_result
+            try:
+                results = cache.get_many((cache_key, cache_expiry_key))
+                cached_result = results.get(cache_key)
+                now = datetime.now()
+                expiry = results.get(cache_expiry_key, now)
+                if cached_result is not None:
+                    if now - expiry > timedelta(seconds=duration):
+                        # Asynchronously replace cache value if it is about to expire, next request will get the fresh value
+                        threading.Thread(target=_update_cache, args=(self, func, cache_key, args, kwargs, duration)).start()
+                    return cached_result
 
-            # Compute and store the fresh result
-            return _update_cache(self, func, cache_key, args, kwargs, duration)
-
+                # Compute and store the fresh result
+                return _update_cache(self, func, cache_key, args, kwargs, duration)
+            except Exception as e:
+                print(f"Cache error: {e}")
+                return func(self, *args, **kwargs)
         return wrapper
 
     return decorator

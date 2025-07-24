@@ -7,7 +7,6 @@ from django.utils.safestring import mark_safe
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import YamlLexer, PythonLexer
-from pygments.lexers.web import JSONLexer
 
 from reportcraft.utils import CATEGORICAL_SCHEMES
 
@@ -39,14 +38,6 @@ def yaml_html(data):
     yaml_data = yaml.dump(data, default_flow_style=False, sort_keys=True, allow_unicode=True, width=65)
     formatter = HtmlFormatter(nobackground=True)
     highlighted_data = highlight(yaml_data, YamlLexer(), formatter)
-    return mark_safe(highlighted_data)
-
-
-@register.filter
-def json_html(data):
-    json_data = json.dumps(data, indent=2, sort_keys=True)
-    formatter = HtmlFormatter(nobackground=True)
-    highlighted_data = highlight(json_data, JSONLexer(), formatter)
     return mark_safe(highlighted_data)
 
 
