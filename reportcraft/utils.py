@@ -399,7 +399,17 @@ def regroup_data(
     x_label = labels.get(x_axis, x_axis)
     x_values = list(dict.fromkeys(filter(None, [item[x_axis] for item in data])))
 
-    raw_data = {value: {x_label: value} for value in x_values}
+    if isinstance(y_axis, str):
+        y_labels = list(filter(None, dict.fromkeys(item[y_axis] for item in data)))
+    else:
+        y_labels = [labels.get(y, y) for y in y_axis]
+
+    defaults = {
+        y: default
+        for y in y_labels
+    }
+
+    raw_data = {value: {x_label: value, **defaults} for value in x_values}
 
     # reorganize data into dictionary of dictionaries with appropriate fields
     for item in data:
@@ -407,10 +417,13 @@ def regroup_data(
         if x_value not in x_values:
             continue
         if isinstance(y_axis, str):
-            raw_data[x_value][item[y_axis]] = item.get(y_value, 0)
+            if item[y_axis] is not None:
+                raw_data[x_value][item[y_axis]] = item.get(y_value, 0)
         elif isinstance(y_axis, list):
             for y_field in y_axis:
                 y_label = labels.get(y_field, y_field)
+                if y_label is None:
+                    continue
                 if y_field in item:
                     raw_data[x_value][y_label] = item.get(y_field, 0)
                 elif y_label not in raw_data[x_value]:

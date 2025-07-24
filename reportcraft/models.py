@@ -393,7 +393,7 @@ class Entry(models.Model):
         raw_data = self.source.get_data(*args, **kwargs)
         if len(y_axis) == 1 and y_value:
             y_axis = y_axis[0]
-            y_labels = list(dict.fromkeys(item[y_axis] for item in raw_data))
+            y_labels = list(filter(None, dict.fromkeys(item[y_axis] for item in raw_data)))
             y_stack = [y_labels for group in stack for y in group if y == y_axis]
         else:
             y_stack = [[labels.get(y, y) for y in group] for group in stack]
