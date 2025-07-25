@@ -13,7 +13,7 @@ from crisp_modals.forms import (
     ModalModelForm, HalfWidth, FullWidth, Row, ThirdWidth, QuarterWidth, ThreeQuarterWidth, TwoThirdWidth
 )
 
-from . import models
+from . import models, utils
 from .utils import CATEGORICAL_COLORS, SEQUENTIAL_COLORS, REGION_CHOICES
 
 disabled_widget = forms.HiddenInput(attrs={'readonly': True})
@@ -108,7 +108,7 @@ class DataFieldForm(ModalModelForm):
                 css_class='row'
             ),
             Div(
-                Div('expression', css_class='col-12'),
+                Div(Field('expression', css_class='font-monospace'), css_class='col-12'),
                 Field('source'),
                 css_class='row'
             ),
@@ -116,8 +116,9 @@ class DataFieldForm(ModalModelForm):
 
     def clean(self):
         data = super().clean()
+        data['name'] = data.get('name', '').strip().lower()
         model = data.get('model')
-        name = data.get('name')
+        name = data['name']
         expression = data.get('expression')
         if not model.has_field(name) and not expression:
             self.add_error('expression', _(f"Required since `{model}` does not have a field named `{name}`"))
@@ -130,11 +131,12 @@ class DataSourceForm(ModalModelForm):
     class Meta:
         model = models.DataSource
         fields = (
-            'name', 'group_by', 'limit', 'group_fields', 'description'
+            'name', 'group_by', 'limit', 'group_fields', 'description', 'filters'
         )
         widgets = {
             'group_by': forms.HiddenInput,
             'description': forms.Textarea(attrs={'rows': "2"}),
+            'filters': forms.Textarea(attrs={'rows': "2"}),
         }
         help_texts = {
             'limit': _("Maximum number of records"),
@@ -148,6 +150,7 @@ class DataSourceForm(ModalModelForm):
                 Div('group_fields', css_class='col-sm-8'),
                 Div('limit', css_class='col-sm-4'),
                 Div('description', css_class='col-12'),
+                Div(Field('filters', css_class='font-monospace'), css_class='col-12'),
                 css_class='row'
             )
         )
@@ -156,6 +159,14 @@ class DataSourceForm(ModalModelForm):
         data = super().clean()
         group_fields = data.pop('group_fields', "")
         data['group_by'] = re.split(r'\s*[,;|]\s*', group_fields) if group_fields else []
+        filters = data.get('filters')
+        if filters.strip():
+            source_fields = set(self.instance.fields.values_list('name', flat=True))
+            try:
+                parser = utils.FilterParser(identifiers=source_fields)
+                parser.parse(filters)
+            except ValueError:
+                self.add_error('filters', _(f"Invalid filter specification"))
         return data
 
 

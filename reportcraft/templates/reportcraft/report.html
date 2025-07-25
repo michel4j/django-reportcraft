@@ -23,7 +23,7 @@
     <script type="text/javascript" src="{% static "reportcraft/reportcraft.min.js" %}"></script>
     <script type="text/javascript">
         $(document).ready(function(){
-            $.getJSON("{{ data_url }}", function(data) {
+            $.getJSON("{{ data_url }}{{ query }}", function(data) {
                 $('#report-entry').showReport({
                     data: data
                 })

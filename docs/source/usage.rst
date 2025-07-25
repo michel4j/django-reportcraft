@@ -35,6 +35,10 @@ information:
 - Name: The name of the Data Source.
 - Group Fields: A comma separate list of group fields to use for aggregating the data.
 - Limit: The maximum number of records to return. This field is optional.
+- Description: A description of the Data Source. Use this to provide additional information about the purpose of the
+  Data Source.
+- Filters: Filters to use for selecting a subset of the data. Filters are used to limit the data returned by the Data Source.
+  The filters should be a valid :ref:`Filters <filters>`. See the Filters section below.
 
 .. image:: static/source-editor.png
   :width: 100%
@@ -52,7 +56,7 @@ editor pages.  To add a new Model, you need to provide the following information
 - Model: The model to use for the data source. Select a model from the dropdown list. Only models that are part of
   applications whose `app_label` is included in the REPORTCRAFT_APPS setting list will be available.
 - Group Expressions: For each group field, you can provide an expression to use for grouping the data. The expression
-  should be a valid `Expression`. See the Expressions section below.
+  should be a valid :ref:`Expression <expressions>`. See the Expressions section below.
 
 .. image:: static/model-form.png
   :width: 100%
@@ -64,8 +68,8 @@ After adding a Model, you can add Fields to it. Fields can be added by clicking 
 page.  The following information is required to add a new Field:
 
 - Name: The name of the field. This should be a valid identifier. We recommend using snake_case for the field name. When
-  the field name matches a field already present in the model, the data will be fetched from the model field and the expression
-  will be ignored.
+  the field name matches a field already present in the model, the data will be fetched from the model field and the
+  expression will be ignored.
 - Label: The label to use for the field in the report. This should be a human readable string.
 - Model: The model to use for the field. Select a model from the dropdown list. Only models that have been added to the
   Source, are available.
@@ -81,6 +85,8 @@ page.  The following information is required to add a new Field:
 .. image:: static/field-form.png
   :width: 100%
   :alt: Data Field Form
+
+.. _expressions:
 
 Expressions
 -----------
@@ -123,7 +129,7 @@ for more information:
         ExtractSecond, ExtractWeekDay, ExtractWeek,
         Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
         Radians, Degrees, Q,
-        ShiftStart, ShiftEnd, Hours, Minutes, DisplayName
+        ShiftStart, ShiftEnd, Hours, Minutes
     ]
 
 Additionally, the following custom functions functions are supported:
@@ -134,8 +140,6 @@ Additionally, the following custom functions functions are supported:
   `size` keyword argument.
 - `Hours`: Calculate the total hours from a Duration. A duration is a difference between two DateTime fields.
 - `Minutes`: Calculate the total minutes from a Duration.
-- `DisplayName`: Return the display name of model field that contains choices. The first argument of the function
-  should be a literal string representing the model to use and the second parameter should be the field identifier.
 
 For date based fields, you can use subfields to extract parts of the date. For example, instead of using a function to
 extract the year from a date field like `ExtractYear(Date)` in the expression. It is valid and much easier to use
@@ -161,6 +165,62 @@ Here are some xamples of valid expressions:
     Concat(Journal.Title, ' (', Journal.Issn, ')')
     Avg(Journal.Metrics.ImpactFactor)
     Avg(Metrics.Citations) / Avg(Metrics.Mentions)
+
+.. _filters:
+Filters
+-------
+Filters are used to limit the data returned by a Data Source. Filters must only use fields added to the Data Source.
+Native low-level model fields are not supported. Filters are boolean expressions defined using the following extended
+Python-like syntax:
+
+.. code-block:: python
+
+    [
+        'field_name operator value',
+        '(field_name operator value) and (field_name operator value)',
+        '(field_name operator value) or (field_name operator value)',
+        '(field_name !operator value)',
+        '( field_name operator value ) and ( field_name operator value )'
+    ]
+
+
+Field names are case-insensitive and must match the names of the fields added to the Data Source. values can be
+strings, numbers, or boolean values. Boolean values are case-insensitive, such that `TRUE, True, true` are all valid.
+Strings must be enclosed in single or double quotes.
+
+Parentheses are always required around the basic `field_name operator value` expressions when combined.
+Several levels of nesting are supported, and the expressions can be combined using the `and` and `or` operators.
+
+The following operators are supported:
+
+- `=` or `==`: Equal to
+- `!=`: Not equal to
+- `<`: Less than
+- `<=`: Less than or equal to
+- `>`: Greater than
+- `>=`: Greater than or equal to
+- `has`: contains a value
+- `^=`: String starts with
+- `$=`: String ends with
+- `^~`: Case-insensitive string starts with
+- `$~`: Case-insensitive string ends with
+- `~=`: Case-insensitive string equals
+- `~has`: Case-insensitive string contains a value
+- `regex`: Value matches a regular expression
+- 'isnull`: Value is null (or empty)
+
+
+Unlike Python, the `!` operator modifier can be prefixed to any of the above operators (except for `!=`) to negate it.
+For example, the following expressions are valid:
+
+.. code-block:: python
+
+    'total_amount > 100'
+    'journal != "Nature"'
+    'journal isnull True'
+    'total_amount !> 100'
+    '(total_amount > 100) and (journal != "Nature")'
+    '(total_amount !<= 100) and (Journal != "Nature")'
 
 
 Report Entries
@@ -353,3 +413,47 @@ A Map Entry displays the data in a map format using Google Charts. The map entry
   :width: 100%
   :alt: Geo Charts Configuration
 
+
+Viewing Reports
+===============
+Once you have created a report, you can view it by clicking the Preview button from the Report Editor page to view
+the report.
+
+A list of all reports can be viewed by navigating to https://mysite/reports/view/ and selecting the report from the
+list. Access to this page will be restricted according to the Mixins specified in the ReportCraft settings.
+Alternatively, you can override the `reportcraft.views.ReportIndexView`, `reportcraft.views.ReportView` to generate
+a new index with custom permissions.  Override the `get_limit_section` method to return a section name to only include
+reports from that section in the index. In this case, also override `reportcraft.views.DataView` to customize access
+to the data.
+
+For example:
+
+.. code-block:: python
+
+    from reportcraft.views import ReportIndexView, DataView, ReportView
+
+    class CustomReportIndex(ReportIndexView):
+        link_url = 'custom-report-detail'
+
+        def get_limit_section(self):
+            return self.kwargs.get('section', 'default')
+
+    class CustomReportData(DataView):
+        ...
+
+    class CustomReport(ReportView):
+        data_url = 'custom-report-data'
+
+        def get_queryset():
+            """ custom queryset to check of the user has access to the report """
+            ...
+
+.. code-block:: python
+
+    urlpatterns = [
+        ...
+        path('custom-reports/<slug:section>', CustomReportIndex.as_view(), name='custom-report-index'),
+        path('custom-report/<slug:slug>/', CustomReport.as_view(), name='custom-report-detail'),
+        path('custom-report-data/<slug:slug>/', CustomReportData.as_view(), name='custom-report-data'),
+        ...
+    ]

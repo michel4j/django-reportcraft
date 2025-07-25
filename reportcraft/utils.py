@@ -19,8 +19,9 @@ from django.db.models.functions import (
 )
 from django.http import HttpResponse
 from django.utils import timezone
-from functools import wraps
-from pyparsing import *
+from functools import wraps, reduce
+from operator import or_
+import pyparsing as pp
 from pyparsing.exceptions import ParseException
 from typing import Any, Sequence
 
@@ -147,19 +148,6 @@ class ShiftEnd(models.Func):
             ).format(shift=self.size, offset=OFFSET)
         )
 
-
-EXPRESSIONS = [
-    "Sum(Metrics.Citations) + Avg(Metrics.Mentions)",
-    "Sum(Metrics.Citations - Metrics.Mentions)",
-    "Avg(Metrics.Citations + Metrics.Mentions)",
-    "Published.Year",
-    "-Count(this)",
-    "Count(Journal, distinct=True)",
-    "Concat(Journal.Title, ' (', Journal.Issn, ')')",
-    "Avg(Journal.Metrics.ImpactFactor)",
-    "Avg(Metrics.Citations) / Avg(Metrics.Mentions)",
-]
-
 OPERATOR_FUNCTIONS = {
     '+': 'ADD()',
     '-': 'SUB()',
@@ -190,40 +178,7 @@ def get_histogram_points(data: list[float], bins: Any = None) -> list[dict]:
     return [{'x': float(x), 'y': float(y)} for x, y in zip(centers, hist)]
 
 
-class ExpressionParser:
-    def __init__(self):
-        self.expr = Forward()
-        self.double = Combine(Optional('-') + Word(nums) + '.' + Word(nums)).setParseAction(self.parse_float)
-        self.integer = Combine(Optional('-') + Word(nums)).setParseAction(self.parse_int)
-        self.boolean = oneOf('True False true false').setParseAction(self.parse_bool)
-        self.variable = Word(alphas + '.').setParseAction(self.parse_var)
-        self.string = quotedString.setParseAction(removeQuotes)
-
-        # Define the function call
-        self.left_par = Literal('(').suppress()
-        self.right_par = Literal(')').suppress()
-        self.equal = Literal('=').suppress()
-        self.comma = Literal(',').suppress()
-        self.func_name = Word(alphas).setParseAction(self.parse_func_name)
-        self.func_kwargs = Group(Word(alphas + '_') + self.equal + self.expr).setParseAction(self.parse_kwargs)
-        self.func_call = Group(
-            self.func_name + self.left_par + Group(Optional(delimitedList(self.expr))) + self.right_par
-        )
-
-        self.operand = (
-                self.double | self.integer | self.boolean | self.func_kwargs | self.func_call
-                | self.string | self.variable
-        )
-
-        self.negate = Literal('-')
-        self.expr << infixNotation(
-            self.operand, [
-                (self.negate, 1, opAssoc.RIGHT, self.parse_negate),
-                (oneOf('* /'), 2, opAssoc.LEFT, self.parse_operator),
-                (oneOf('+ -'), 2, opAssoc.LEFT, self.parse_operator),
-            ]
-        )
-
+class Parser:
     @staticmethod
     def parse_float(tokens):
         """
@@ -326,6 +281,41 @@ class ExpressionParser:
         else:
             raise ParseException(f'Unknown function: {name}')
 
+
+class ExpressionParser(Parser):
+    def __init__(self):
+        self.expr = pp.Forward()
+        self.double = pp.Combine(pp.Optional('-') + pp.Word(pp.nums) + '.' + pp.Word(pp.nums)).setParseAction(self.parse_float)
+        self.integer = pp.Combine(pp.Optional('-') + pp.Word(pp.nums)).setParseAction(self.parse_int)
+        self.boolean = pp.oneOf('True False true false').setParseAction(self.parse_bool)
+        self.variable = pp.Word(pp.alphas + '.').setParseAction(self.parse_var)
+        self.string = pp.quotedString.setParseAction(pp.removeQuotes)
+
+        # Define the function call
+        self.left_par = pp.Literal('(').suppress()
+        self.right_par = pp.Literal(')').suppress()
+        self.equal = pp.Literal('=').suppress()
+        self.comma = pp.Literal(',').suppress()
+        self.func_name = pp.Word(pp.alphas).setParseAction(self.parse_func_name)
+        self.func_kwargs = pp.Group(pp.Word(pp.alphas + '_') + self.equal + self.expr).setParseAction(self.parse_kwargs)
+        self.func_call = pp.Group(
+            self.func_name + self.left_par + pp.Group(pp.Optional(pp.delimitedList(self.expr))) + self.right_par
+        )
+
+        self.operand = (
+                self.double | self.integer | self.boolean | self.func_kwargs | self.func_call
+                | self.string | self.variable
+        )
+
+        self.negate = pp.Literal('-')
+        self.expr << pp.infixNotation(
+            self.operand, [
+                (self.negate, 1, pp.opAssoc.RIGHT, self.parse_negate),
+                (pp.oneOf('* /'), 2, pp.opAssoc.LEFT, self.parse_operator),
+                (pp.oneOf('+ -'), 2, pp.opAssoc.LEFT, self.parse_operator),
+            ]
+        )
+
     def clean(self, expression, wrap_value=True):
         """
         Clean the parsed expression into a Django expression
@@ -336,9 +326,11 @@ class ExpressionParser:
 
         if isinstance(expression, str) and expression.startswith('$'):
             return self.clean_variable(expression)
-        elif isinstance(expression, (int, float, bool, str)):
+        elif isinstance(expression, bool):
+            return expression
+        elif isinstance(expression, (int, float, str)):
             return V(expression)
-        elif isinstance(expression, ParseResults):
+        elif isinstance(expression, pp.ParseResults):
             return self.clean(expression.asList())
         elif isinstance(expression, dict):
             return {
@@ -370,6 +362,135 @@ class ExpressionParser:
             result = V(0)
             print(f'Error parsing expression: {err}')
         return result
+
+
+class FilterParser:
+    """
+    A parser for boolean filter expressions that generates Django Q objects.
+
+    This class uses the pyparsing library to define a grammar for filter
+    expressions and translates them into Django's Q objects for database querying.
+    """
+
+    def __init__(self, identifiers: Sequence[str] = None):
+        """
+        Initializes the FilterParser with a set of identifiers.
+        :param identifiers: A list of variable names that can be used in the filter expressions. Accepts all by default
+        """
+        self.identifiers = identifiers or []
+        self.q_expression = self._define_grammar()
+
+    def _define_grammar(self):
+        """
+        Defines the pyparsing grammar for the filter expressions.
+        """
+        # Define the basic elements of the grammar
+        if self.identifiers:
+            identifier = pp.oneOf(self.identifiers, caseless=True).setParseAction(self._to_lowercase)
+        else:
+            identifier = pp.Word(pp.alphas, pp.alphanums + "_").setParseAction(self._to_lowercase)
+        extr_operators = {
+            '==': 'exact',  # alias for equality
+            '=': 'exact',
+            '~=': 'iexact',
+            '>=': 'gte',
+            '<=': 'lte',
+            '>': 'gt',
+            '<': 'lt',
+            '^=': 'startswith',
+            '^~': 'istartswith',  # Using '^~' for case-insensitive startswith
+            '$=': 'endswith',
+            '$~': 'iendswith',  # Using '$~' for case-insensitive endswith
+            'has': 'contains',
+            '~has': 'icontains',
+            'regex': 'regex',
+            'isnull': 'isnull',
+        }
+        # Operators
+        operator = reduce(or_, [
+            pp.Literal(f'{op_prefix}{op}').setParseAction(pp.replace_with(f'{lookup_prefix}{lookup}'))
+            for op_prefix, lookup_prefix in [('!', 'not_'), ('', '')]
+            for op, lookup in extr_operators.items()
+
+        ])
+
+        # Values
+        number = pp.pyparsing_common.number
+        quoted_string = pp.QuotedString("'") | pp.QuotedString('"')
+        boolean = pp.oneOf('True False', caseless=True).setParseAction(self._parse_bool)
+        value = number | quoted_string | boolean
+
+        # A single condition (e.g., "Citations > 100")
+        condition = pp.Group(identifier + operator + value)
+        condition.setParseAction(self._make_q_object)
+
+        # Define the boolean logic using an operator precedence parser
+        q_expression = pp.infixNotation(condition, [
+            (pp.CaselessLiteral("and"), 2, pp.opAssoc.LEFT, self._process_and),
+            (pp.CaselessLiteral("or"), 2, pp.opAssoc.LEFT, self._process_or),
+        ])
+
+        return q_expression
+
+    @staticmethod
+    def _parse_bool(tokens):
+        """
+        Parse action to convert boolean strings to Python booleans.
+        """
+        return {
+            'true': True,
+            'false': False,
+        }.get(tokens[0].lower(), False)
+
+    @staticmethod
+    def _to_lowercase(tokens):
+        """Parse action to convert field names to lowercase."""
+        return tokens[0].lower()
+
+    @staticmethod
+    def _make_q_object(tokens):
+        """
+        Parse action to convert a parsed condition into a Q object.
+        e.g., from ['citations', 'gt', 100] to Q(citations__gt=100)
+        """
+        field, op, val = tokens[0]
+        if op.startswith('not_'):
+            # Handle the 'not' operator by negating the Q object
+            q_key = f"{field}__{op[4:]}"
+            return ~Q(**{q_key: val})
+
+        q_key = f"{field}__{op}"
+        return Q(**{q_key: val})
+
+    @staticmethod
+    def _process_and(tokens):
+        """Parse action to handle AND logical operations."""
+        # The tokens are nested, e.g., [[Q(citations__gt=100), Q(mentions__lt=50)]]
+        q_obj = tokens[0][0]
+        for i in range(2, len(tokens[0]), 2):
+            q_obj &= tokens[0][i]
+        return q_obj
+
+    @staticmethod
+    def _process_or(tokens):
+        """Parse action to handle OR logical operations."""
+        # The tokens are nested, e.g., [[Q(citations__gt=100), Q(mentions__lt=50)]]
+        q_obj = tokens[0][0]
+        for i in range(2, len(tokens[0]), 2):
+            q_obj |= tokens[0][i]
+        return q_obj
+
+    def parse(self, filter_string, silent: bool = False):
+        """
+        Parses a filter string and returns the corresponding Q object.
+        """
+        try:
+            # The result is in a list, so we extract the first element
+            return self.q_expression.parseString(filter_string, parseAll=True)[0]
+        except pp.ParseException as e:
+            if not silent:
+                raise ValueError(f"Invalid filter expression: {filter_string}") from e
+            return Q()  # Return an empty Q object if parsing fails and silent mode is on
 
 
 def regroup_data(

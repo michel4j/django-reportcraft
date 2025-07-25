@@ -4,12 +4,12 @@ from typing import Any
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Q
 from django.db.models.functions import Round, Abs, Sign
 from django.utils.text import slugify, gettext_lazy as _
 
 from . import utils
-from .utils import regroup_data, map_colors
+from .utils import regroup_data
 
 VALUE_TYPES = {
     'STRING': str,
@@ -47,7 +47,7 @@ class DataSource(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField(default='', blank=True)
     group_by = models.JSONField(_("Group Fields"), default=list, blank=True, null=True)
-    filters = models.JSONField(default=dict, blank=True)
+    filters = models.TextField(default="", blank=True)
     limit = models.IntegerField(null=True, blank=True)
 
     class Meta:
@@ -68,16 +68,42 @@ class DataSource(models.Model):
     def non_group_fields(self):
         return self.fields.exclude(name__in=self.group_by)
 
+    def get_filters(self):
+        parser = utils.FilterParser()
+        if self.filters:
+            return  parser.parse(self.filters, silent=True)
+        else:
+            return Q()
+
     def get_labels(self):
         return {field.name: field.label for field in self.fields.all()}
 
-    def get_queryset(self, model_name, filters=None, order_by=None) -> QuerySet:
+    def clean_filters(self, filters: dict) -> dict:
+        """
+        Clean the filters to ensure they only contain valid field names defined in the data source
+        :param filters: dictionary of filters
+        :return: cleaned filters
+        """
+        valid_fields = set(self.fields.values_list('name', flat=True))
+        return {
+            k: v for k, v in filters.items()
+            if k.split('__')[0] in valid_fields and k.count('__') < 2       # Only allow one level of lookups
+        }
+
+    def get_queryset(self, model_name, filters: dict = None, order_by: list = None) -> QuerySet:
+        """
+        Generate a queryset for the given model name with the specified filters and order by fields.
+        :param model_name: the name of the model to query
+        :param filters: dynamic filters to apply
+        :param order_by: order by fields
+        :return: a queryset for the specified model with applied annotations, filters and ordering
+        """
+
+        filters = {} if not filters else filters
+        order_by = [] if not order_by else order_by
+
         model: Any = apps.get_model(model_name)
         field_names = [f.name for f in model._meta.get_fields()]
-
-        # Apply static filters
-        filters = filters or {}
-        filters.update({} if not self.filters else self.filters)
 
         # Add annotations
         group_by = list(self.group_by)
@@ -101,13 +127,17 @@ class DataSource(models.Model):
         ).filter(ordering__isnull=False).order_by('order_by').values_list(Sign('ordering'), 'name', )
         order_by: list = order_by or [f'-{name}' if sign < 0 else name for sign, name in order_fields]
 
+        # Apply static filters
+        static_filters = self.get_filters()
+        dynamic_filters = Q(**self.clean_filters(filters))
+
         # generate the queryset
         queryset = model.objects.annotate(
             **annotations
         ).values(*group_by).annotate(
             **aggregations
         ).order_by(*order_by).filter(
-            **filters
+            static_filters & dynamic_filters
         )
         # Apply limit
         if self.limit:
@@ -144,13 +174,16 @@ class DataSource(models.Model):
         except DataField.DoesNotExist:
             return 0
 
-    def snippet(self, size=5) -> list[dict]:
+    def snippet(self, filters=None, order_by=None, size=5) -> list[dict]:
         """
         Generate a snippet of data for this data source
+        :param filters: dynamic filters to apply
+        :param order_by: order by fields
         :param size: number of items to return
+
         """
         try:
-            result = self.get_data()[:size]
+            result = self.get_data(filters=filters, order_by=order_by)[:size]
         except Exception as e:
             result = DATA_ERROR_TEMPLATE.format(error=str(e), error_type=type(e).__name__)
         return result

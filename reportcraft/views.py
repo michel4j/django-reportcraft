@@ -1,8 +1,10 @@
 from collections import defaultdict
+
 from django.conf import settings
 from django.http import JsonResponse, Http404
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.http import urlencode
 from django.utils.module_loading import import_string
 from django.views import View
 from django.views.generic import DetailView, edit, ListView, TemplateView
@@ -16,29 +18,69 @@ VIEW_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get
 EDIT_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get('EDIT', [])]
 
 
-class ReportView(*VIEW_MIXINS, DetailView):
+class ReportView(DetailView):
     template_name = 'reportcraft/report.html'
     model = models.Report
+    data_url = 'report-data'
+
+    def get_data_url(self):
+        """
+        Get the URL for the report data endpoint.
+        :return: URL for the report data
+        """
+        return reverse(self.data_url, kwargs={'slug': self.object.slug})
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['report'] = self.object
-        context['data_url'] = reverse('report-data', kwargs={'slug': self.object.slug})
+        context['data_url'] = self.get_data_url()
+        context['query'] = self.get_query_string()
         return context
 
+    def get_query_string(self):
+        """
+        Fetch the querystring
+        :return: urlencoded querystring, including initial '?'
+        """
+        params = dict(self.request.GET.items())
+        param_string = urlencode(sorted(params.items()), doseq=True)
+        return f'?{param_string}'
 
-class ReportData(*VIEW_MIXINS, View):
-    @staticmethod
-    def get_report(*args, slug='', **kwargs):
-        report = models.Report.objects.filter(slug=slug).first()
+
+class DataView(View):
+    """
+    Base class for report data views.
+    This class is used to fetch and return report data in JSON format.
+    """
+    model = models.Report
+
+    def get_queryset(self):
+        """
+        Get the queryset for the report model.
+        :return: QuerySet of Report objects
+        """
+        return self.model.objects.all()
+
+    def get_report(self, *args, slug='', **kwargs):
+        """
+        Fetch the report by slug and return its data.
+        :param args: positional arguments
+        :param slug: slug of the report
+        :param kwargs: keyword arguments
+        :return: dictionary with report data
+        """
+
+        queryset = self.get_queryset()
+        report = queryset.filter(slug=slug).first()
         if not report:
             raise Http404('Report not found')
 
+        filters = dict(self.request.GET.items())
         return {
             'report-title': report.title,
             'description': report.description,
             'style': f"row {report.style}",
-            'content': [block.generate(*args, **kwargs) for block in report.entries.all()],
+            'content': [block.generate(filters=filters) for block in report.entries.all()],
             'notes': report.notes
         }
 
@@ -47,15 +89,26 @@ class ReportData(*VIEW_MIXINS, View):
         return JsonResponse({'details': [info]}, safe=False)
 
 
+class MainReportView(*VIEW_MIXINS, ReportView):
+    pass
+
+
+class ReportData(*VIEW_MIXINS, DataView):
+    pass
+
+
 class SourceData(*VIEW_MIXINS, View):
     model = models.DataSource
 
     def get(self, request, *args, **kwargs):
+
         source = self.model.objects.filter(pk=kwargs.get('pk')).first()
         if not source:
             raise Http404('Source not found')
+
+        params = dict(request.GET.items())
         try:
-            data = source.get_data()
+            data = source.get_data(filters=params)
         except Exception:
             data = []
         content_type = request.GET.get('type', 'json')
@@ -75,18 +128,21 @@ class ReportIndexView(ItemListView):
     template_name = 'reportcraft/index.html'
     link_url = 'report-view'
     link_kwarg = 'slug'
+    limit_section = None
+
+    def get_limit_section(self):
+        return self.limit_section
+
+    def get_queryset(self):
+        if self.get_limit_section() is not None:
+            self.queryset = self.model.objects.filter(section=self.limit_section)
+        else:
+            self.queryset = self.model.objects.all()
+        return super().get_queryset()
 
 
 class ReportIndex(*VIEW_MIXINS, ReportIndexView):
-    model = models.Report
-    list_filters = ['created', 'modified']
-    list_columns = ['title', 'slug', 'description']
-    list_search = ['slug', 'title', 'description', 'entries__title', 'notes']
-    ordering = ['-created']
-    paginate_by = 15
-    template_name = 'reportcraft/index.html'
-    link_url = 'report-view'
-    link_kwarg = 'slug'
+    pass
 
 
 class EditorReportList(*EDIT_MIXINS, ListView):
