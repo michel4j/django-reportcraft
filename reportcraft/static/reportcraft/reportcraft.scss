@@ -9,7 +9,6 @@ $max_font: 16px;
   --rc-secondary-color: var(--bs-secondary-color, var(--tblr-secondary-color, #6c757d));
   --rc-border-color: var(--bs-border-translucent, var(--tblr-border-color, rgba(0, 0, 0, 0.175)));
   --rc-info: var(--bs-info, var(--tblr-info, #0dcaf0));
-  --rc-dark: var(--bs-dark, var(--tblr-dark, #212529));
   --rc-bg-darken: rgba(0, 0, 0, 0.05);
   --rc-body: var(--bs-body-color, var(--tblr-black, #000));
   --rc-bg: var(--bs-body-bg, var(--tblr-white, #fff));
@@ -253,7 +252,7 @@ table {
       background: var(--bs-tertiary-bg);
       border: 1px solid var(--rc-border-color);
       border-left: 0.25em solid var(--rc-info);
-      color: var(--rc-dark);
+      color: var(--rc-body);
       page-break-inside: avoid;
       font-family: var(--rc-mono-font), monospace;
       font-size: 0.9em;
