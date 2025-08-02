@@ -7,16 +7,14 @@ $max_font: 16px;
   --rc-max-font-size: $max_font;
   --rc-min-font-size: $min_font;
   --rc-secondary-color: var(--bs-secondary-color, var(--tblr-secondary-color, #6c757d));
-  --rc-border-color: var(--bs-border-color, var(--tblr-border-color, rgba(0, 0, 0, 0.175)));
-  --rc-light: var(--bs-light, var(--tblr-light, #f8f9fa));
+  --rc-border-color: var(--bs-border-translucent, var(--tblr-border-color, rgba(0, 0, 0, 0.175)));
   --rc-info: var(--bs-info, var(--tblr-info, #0dcaf0));
   --rc-dark: var(--bs-dark, var(--tblr-dark, #212529));
   --rc-bg-darken: rgba(0, 0, 0, 0.05);
-  --rc-black: var(--bs-black, var(--tblr-black, #000));
-  --rc-white: var(--bs-white, var(--tblr-white, #fff));
+  --rc-body: var(--bs-body-color, var(--tblr-black, #000));
+  --rc-bg: var(--bs-body-bg, var(--tblr-white, #fff));
   --rc-main-font: var(--bs-font-sans-serif, var(--tblr-font-sans-serif, "Fira Sans"));
   --rc-mono-font: var(--bs-font-monospace, var(--tblr-font-monospace, "Fira Code"));
-  --rc-body: var(--bs-body-color);
 }
 
 
@@ -140,9 +138,9 @@ section {
   }
 
   .notes {
-    background: var(--rc-bg-darken);
+    background: var(--bs-tertiary-bg);
     padding: 1rem;
-    color: var(--rc-dark);
+    color: var(--bs-body-color);
 
     p {
       &:last-child {
@@ -161,14 +159,11 @@ section {
 g.tick {
   text {
     font-size: 0.9rem;
-    fill: var(--rc-dark);
   }
 
   line {
     fill: none !important;
     stroke: var(--rc-secondary-color);
-    //stroke: rgba(0,0,0,0.3);
-    //stroke-width: 1pt;
   }
 }
 
@@ -176,11 +171,9 @@ path {
   &.domain {
     fill: none !important;
     stroke: var(--rc-secondary-color);
-    //stroke-width: 1pt;
   }
 
   &.line {
-    //stroke-width: 1pt;
   }
 }
 
@@ -257,9 +250,9 @@ table {
     }
 
     pre:has(code) {
-      background: var(--rc-light);
+      background: var(--bs-tertiary-bg);
       border: 1px solid var(--rc-border-color);
-      border-left: 3px solid var(--rc-info);
+      border-left: 0.25em solid var(--rc-info);
       color: var(--rc-dark);
       page-break-inside: avoid;
       font-family: var(--rc-mono-font), monospace;
@@ -427,8 +420,8 @@ div.google-visualization-tooltip > ul > li > span {
 
   body {
     margin: 0;
-    color: var(--rc-black);
-    background-color: var(--rc-white);
+    color: var(--rc-body);
+    background-color: var(--rc-bg);
   }
   //:root {
   //  @include fluid-type($min_width, $max_width, $max_font, $max_font * 1.5);
@@ -437,10 +430,4 @@ div.google-visualization-tooltip > ul > li > span {
 
 svg circle {
   opacity: 0.75;
-}
-svg {
-  text {
-    font-family: var(--rc-main-font), sans-serif !important;
-    color: var(--bs-body-color);
-  }
 }
