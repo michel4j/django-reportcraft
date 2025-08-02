@@ -16,6 +16,7 @@ $max_font: 16px;
   --rc-white: var(--bs-white, var(--tblr-white, #fff));
   --rc-main-font: var(--bs-font-sans-serif, var(--tblr-font-sans-serif, "Fira Sans"));
   --rc-mono-font: var(--bs-font-monospace, var(--tblr-font-monospace, "Fira Code"));
+  --rc-body: var(--bs-body-color);
 }
 
 
@@ -436,4 +437,10 @@ div.google-visualization-tooltip > ul > li > span {
 
 svg circle {
   opacity: 0.75;
+}
+svg {
+  text {
+    font-family: var(--rc-main-font), sans-serif !important;
+    color: var(--bs-body-color);
+  }
 }
