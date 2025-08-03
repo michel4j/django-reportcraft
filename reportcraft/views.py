@@ -6,6 +6,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.http import urlencode
 from django.utils.module_loading import import_string
+from django.utils.safestring import mark_safe
 from django.views import View
 from django.views.generic import DetailView, edit, ListView, TemplateView
 from crisp_modals.views import ModalUpdateView, ModalCreateView, ModalDeleteView
@@ -16,6 +17,8 @@ from .utils import CsvResponse
 
 VIEW_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get('VIEW',[])]
 EDIT_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get('EDIT', [])]
+
+
 
 
 class ReportView(DetailView):
@@ -44,7 +47,7 @@ class ReportView(DetailView):
         """
         params = dict(self.request.GET.items())
         param_string = urlencode(sorted(params.items()), doseq=True)
-        return f'?{param_string}'
+        return mark_safe(f'?{param_string}')
 
 
 class DataView(View):
@@ -59,7 +62,10 @@ class DataView(View):
         Get the queryset for the report model.
         :return: QuerySet of Report objects
         """
-        return self.model.objects.all()
+        if self.kwargs.get('section'):
+            return self.model.objects.filter(section=self.kwargs.get('section'))
+        else:
+            return self.model.objects.all()
 
     def get_report(self, *args, slug='', **kwargs):
         """
