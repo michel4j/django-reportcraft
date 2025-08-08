@@ -128,7 +128,7 @@ for more information:
         ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute,
         ExtractSecond, ExtractWeekDay, ExtractWeek,
         Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
-        Radians, Degrees, Q, ArrayAgg, StringAgg,
+        Radians, Degrees, Q, ArrayAgg,
         ShiftStart, ShiftEnd, Hours, Minutes
     ]
 
@@ -140,6 +140,13 @@ Additionally, the following custom functions functions are supported:
   `size` keyword argument.
 - `Hours`: Calculate the total hours from a Duration. A duration is a difference between two DateTime fields.
 - `Minutes`: Calculate the total minutes from a Duration.
+- `Join`: Join a list of strings into a single string using a separator. The separator can be specified using the
+  `separator` keyword argument, which defaults to a comma (`,`). For example, `Join(Authors, separator=', ')` would
+  join the authors into a single string separated by commas.
+
+.. note::
+    The `Join` and `ArrayAgg` functions are only available on PostgreSQL databases. If you are using a different
+    database, you can implement a custom function to achieve similar functionality.
 
 For date based fields, you can use subfields to extract parts of the date. For example, instead of using a function to
 extract the year from a date field like `ExtractYear(Date)` in the expression. It is valid and much easier to use

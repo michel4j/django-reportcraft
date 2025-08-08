@@ -177,6 +177,21 @@ class ShiftEnd(models.Func):
         )
 
 
+class Join(StringAgg):
+    def __init__(self, expression, separator=', ', **extra):
+        """
+        A custom Django database function to join strings with a delimiter.
+        :param expression: The field to join
+        :param delimiter: The delimiter to use for joining
+        :param extra: Additional arguments for the StringAgg function
+        """
+        if isinstance(separator, V):
+            delimiter = separator.value
+        else:
+            delimiter = separator
+        super().__init__(expression, delimiter=delimiter, **extra)
+
+
 OPERATOR_FUNCTIONS = {
     '+': 'ADD()',
     '-': 'SUB()',
@@ -189,9 +204,10 @@ ALLOWED_FUNCTIONS = {
     Sum, Avg, Count, Max, Min, Concat, Greatest, Least,
     Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan, ATan2, Mod, Sign, Trunc,
     ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek,
-    Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim, StringAgg,
+    Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim, Join,
     Radians, Degrees, Hours, Minutes, ShiftStart, ShiftEnd, Q, DisplayName
 }
+
 
 REPORTCRAFT_FUNCTIONS = getattr(settings, 'REPORTCRAFT_FUNCTIONS', [])  # list of string paths to importable functions
 for func_path in REPORTCRAFT_FUNCTIONS:
@@ -206,9 +222,6 @@ for func_path in REPORTCRAFT_FUNCTIONS:
 FUNCTIONS = {
     func.__name__: func for func in ALLOWED_FUNCTIONS
 }
-
-import pprint
-pprint.pprint(FUNCTIONS)
 
 
 def get_histogram_points(data: list[float], bins: Any = None) -> list[dict]:
@@ -373,7 +386,7 @@ class ExpressionParser(Parser):
         elif isinstance(expression, bool):
             return expression
         elif isinstance(expression, (int, float, str)):
-            return V(expression)
+            return V(expression) if wrap_value else expression
         elif isinstance(expression, pp.ParseResults):
             return self.clean(expression.asList())
         elif isinstance(expression, dict):
@@ -383,7 +396,7 @@ class ExpressionParser(Parser):
         elif isinstance(expression, list) and len(expression) == 1:
             return self.clean(expression[0])
         elif not isinstance(expression, list):
-            return V(expression)
+            return V(expression) if wrap_value else expression
         elif len(expression) > 1 and isinstance(expression[0], str) and expression[0].endswith('()'):
             func_name = expression[0].strip()[:-2]
             args = self.clean(expression[1:])
