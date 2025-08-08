@@ -207,7 +207,7 @@ The following operators are supported:
 - `~=`: Case-insensitive string equals
 - `~has`: Case-insensitive string contains a value
 - `regex`: Value matches a regular expression
-- 'isnull`: Value is null (or empty)
+- `isnull`: Value is null (or empty)
 
 
 Unlike Python, the `!` operator modifier can be prefixed to any of the above operators (except for `!=`) to negate it.

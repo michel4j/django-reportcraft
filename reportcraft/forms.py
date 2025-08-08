@@ -140,6 +140,7 @@ class DataSourceForm(ModalModelForm):
         }
         help_texts = {
             'limit': _("Maximum number of records"),
+            'filters': _("Use only field names from the source. ")
         }
 
     def __init__(self, *args, **kwargs):
@@ -165,8 +166,8 @@ class DataSourceForm(ModalModelForm):
             try:
                 parser = utils.FilterParser(identifiers=source_fields)
                 parser.parse(filters)
-            except ValueError:
-                self.add_error('filters', _(f"Invalid filter specification"))
+            except ValueError as e:
+                self.add_error('filters', _(f"Invalid filter: {e}"))
         return data
 
 

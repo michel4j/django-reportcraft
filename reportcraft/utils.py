@@ -489,7 +489,7 @@ class FilterParser:
             return self.q_expression.parseString(filter_string, parseAll=True)[0]
         except pp.ParseException as e:
             if not silent:
-                raise ValueError(f"Invalid filter expression: {filter_string}") from e
+                raise ValueError(f"Expression `{filter_string}` is not valid.") from e
             return Q()  # Return an empty Q object if parsing fails and silent mode is on
 
 
