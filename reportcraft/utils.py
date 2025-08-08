@@ -1,15 +1,22 @@
 from __future__ import annotations
 
 import csv
-import io
-from datetime import datetime, timedelta
-
 import hashlib
+import io
 import json
 import re
 import threading
-from django.core.cache import cache
+from datetime import datetime, timedelta
+from functools import wraps, reduce
+from importlib import import_module
+from operator import or_
+from typing import Any, Sequence
+
+import pyparsing as pp
 from django.apps import apps
+from django.conf import settings
+from django.contrib.postgres.aggregates import StringAgg
+from django.core.cache import cache
 from django.db import models
 from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q, Case, When, CharField
 from django.db.models.functions import (
@@ -19,11 +26,32 @@ from django.db.models.functions import (
 )
 from django.http import HttpResponse
 from django.utils import timezone
-from functools import wraps, reduce
-from operator import or_
-import pyparsing as pp
 from pyparsing.exceptions import ParseException
-from typing import Any, Sequence
+
+
+def load_object(import_path):
+    """
+    Loads an object from an 'import_path', like in MIDDLEWARE_CLASSES and the
+    likes.
+
+    Import paths should be: "mypackage.mymodule.MyObject". It then imports the
+    module up until the last dot and tries to get the attribute after that dot
+    from the imported module.
+
+    If the import path does not contain any dots, a TypeError is raised.
+
+    If the module cannot be imported, an ImportError is raised.
+
+    If the attribute does not exist in the module, a AttributeError is raised.
+    """
+    if '.' not in import_path:
+        raise TypeError(
+            "'import_path' argument to 'misc.utils.load_object' must "
+            "contain at least one dot."
+        )
+    module_name, object_name = import_path.rsplit('.', 1)
+    module = import_module(module_name)
+    return getattr(module, object_name)
 
 
 class DisplayName(Case):
@@ -148,23 +176,39 @@ class ShiftEnd(models.Func):
             ).format(shift=self.size, offset=OFFSET)
         )
 
+
 OPERATOR_FUNCTIONS = {
     '+': 'ADD()',
     '-': 'SUB()',
     '*': 'MUL()',
     '/': 'DIV()',
 }
-ALLOWED_FUNCTIONS = [
+
+
+ALLOWED_FUNCTIONS = {
     Sum, Avg, Count, Max, Min, Concat, Greatest, Least,
     Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan, ATan2, Mod, Sign, Trunc,
     ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek,
-    Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
+    Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim, StringAgg,
     Radians, Degrees, Hours, Minutes, ShiftStart, ShiftEnd, Q, DisplayName
-]
+}
+
+REPORTCRAFT_FUNCTIONS = getattr(settings, 'REPORTCRAFT_FUNCTIONS', [])  # list of string paths to importable functions
+for func_path in REPORTCRAFT_FUNCTIONS:
+    try:
+        func = load_object(func_path)
+        if callable(func):
+            ALLOWED_FUNCTIONS.add(func)
+    except (ImportError, AttributeError) as e:
+        print(f"Error importing function {func_path}: {e}")
+
 
 FUNCTIONS = {
     func.__name__: func for func in ALLOWED_FUNCTIONS
 }
+
+import pprint
+pprint.pprint(FUNCTIONS)
 
 
 def get_histogram_points(data: list[float], bins: Any = None) -> list[dict]:

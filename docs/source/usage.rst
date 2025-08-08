@@ -128,7 +128,7 @@ for more information:
         ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute,
         ExtractSecond, ExtractWeekDay, ExtractWeek,
         Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
-        Radians, Degrees, Q,
+        Radians, Degrees, Q, ArrayAgg, StringAgg,
         ShiftStart, ShiftEnd, Hours, Minutes
     ]
 
@@ -144,6 +144,23 @@ Additionally, the following custom functions functions are supported:
 For date based fields, you can use subfields to extract parts of the date. For example, instead of using a function to
 extract the year from a date field like `ExtractYear(Date)` in the expression. It is valid and much easier to use
 `Date.Year`.
+
+You can also implement custom functions by subclassing the `django.db.models.functions.Func` class and registering
+the function by listing the full path to the class in the `REPORTCRAFT_FUNCTIONS` setting. For example:
+
+.. code-block:: python
+
+    from django.db.models import Func, TextField
+
+    class MyCustomFunction(Func):
+        function = 'MY_CUSTOM_FUNCTION'
+        template = '%(function)s(%(expressions)s)'
+        output_field = TextField()
+
+    REPORTCRAFT_FUNCTIONS = [
+        'myapp.functions.MyCustomFunction',
+        ... # other functions
+    ]
 
 Here are some xamples of valid expressions:
 
