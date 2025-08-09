@@ -15,7 +15,6 @@ from typing import Any, Sequence
 import pyparsing as pp
 from django.apps import apps
 from django.conf import settings
-from django.contrib.postgres.aggregates import StringAgg
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q, Case, When, CharField
@@ -177,21 +176,6 @@ class ShiftEnd(models.Func):
         )
 
 
-class Join(StringAgg):
-    def __init__(self, expression, separator=', ', **extra):
-        """
-        A custom Django database function to join strings with a delimiter.
-        :param expression: The field to join
-        :param delimiter: The delimiter to use for joining
-        :param extra: Additional arguments for the StringAgg function
-        """
-        if isinstance(separator, V):
-            delimiter = separator.value
-        else:
-            delimiter = separator
-        super().__init__(expression, delimiter=delimiter, **extra)
-
-
 OPERATOR_FUNCTIONS = {
     '+': 'ADD()',
     '-': 'SUB()',
@@ -204,7 +188,7 @@ ALLOWED_FUNCTIONS = {
     Sum, Avg, Count, Max, Min, Concat, Greatest, Least,
     Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan, ATan2, Mod, Sign, Trunc,
     ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek,
-    Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim, Join,
+    Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
     Radians, Degrees, Hours, Minutes, ShiftStart, ShiftEnd, Q, DisplayName
 }
 
