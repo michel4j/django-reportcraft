@@ -262,7 +262,7 @@ class Report(models.Model):
     description = models.TextField(default='', blank=True)
     style = models.CharField(max_length=100, default='', blank=True)
     notes = models.TextField(default='', blank=True)
-    section = models.SlugField(max_length=100, default='', blank=True)
+    section = models.SlugField(max_length=100, default='', blank=True, null=True)
 
     def __str__(self):
         return self.title

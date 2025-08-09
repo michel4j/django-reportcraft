@@ -19,8 +19,6 @@ VIEW_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get
 EDIT_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get('EDIT', [])]
 
 
-
-
 class ReportView(DetailView):
     template_name = 'reportcraft/report.html'
     model = models.Report
