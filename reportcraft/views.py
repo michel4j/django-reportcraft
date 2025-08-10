@@ -134,12 +134,21 @@ class ReportIndexView(ItemListView):
     link_kwarg = 'slug'
     limit_section = None
 
+    def get_link_url(self, obj):
+        """
+        Get the URL for the report view.
+        :param obj: Report object
+        :return: URL for the report view
+        """
+        return reverse(self.link_url, kwargs={self.link_kwarg: obj.slug})
+
     def get_limit_section(self):
         return self.limit_section
 
     def get_queryset(self):
-        if self.get_limit_section() is not None:
-            self.queryset = self.model.objects.filter(section=self.limit_section)
+        section = self.get_limit_section()
+        if section:
+            self.queryset = self.model.objects.filter(section=section)
         else:
             self.queryset = self.model.objects.all()
         return super().get_queryset()

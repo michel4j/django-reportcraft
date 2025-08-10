@@ -65,6 +65,15 @@ def tool_icon(**kwargs):
     return kwargs
 
 
+@register.simple_tag(takes_context=True)
+def report_url(context, report, **kwargs):
+    """
+    Returns the URL for a report with the given context and report object.
+    """
+    view = context.get('view')
+    return view.get_link_url(report)
+
+
 ICONS = {
     # General Tool icons
     'list-details': (

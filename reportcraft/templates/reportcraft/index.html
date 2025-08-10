@@ -1,5 +1,6 @@
 {% extends "reportcraft/base.html" %}
 {% load static %}
+{% load reportcraft %}
 
 {% load reportcraft %}
 {% block page-title %}{{ section|default:"" }} Reports{% endblock %}
@@ -10,7 +11,7 @@
             <li class="list-group-item d-flex flex-row align-items-center ps-0">
                 <div class="text-muted me-3">{% svg_icon 'report' size="lg" stroke="1" %}</div>
                 <div class="d-flex flex-column align-items-start">
-                    <a href="{% url "report-view" slug=report.slug %}">{{ report.title }}</a>
+                    <a href="{% report_url report %}">{{ report.title }}</a>
                     {% if report.description %}
                         <small class="text-muted text-md">{{ report.description }}</small>
                     {% endif %}

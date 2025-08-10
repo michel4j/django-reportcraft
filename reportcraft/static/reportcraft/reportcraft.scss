@@ -423,3 +423,12 @@ div.google-visualization-tooltip > ul > li > span {
 svg circle {
   opacity: 0.75;
 }
+
+$list-columns: (2, 3, 4, 6);
+
+@each $num in $list-columns {
+  .list-group-#{$num}-cols {
+    column-count: $num;
+    column-gap: 1em;
+  }
+}
