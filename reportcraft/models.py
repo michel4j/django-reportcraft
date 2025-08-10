@@ -221,7 +221,8 @@ class DataModel(models.Model):
         return any(f.name == field_name for f in model._meta.get_fields())
 
     def __str__(self):
-        return f'{self.model.app_label}.{self.model.name.title()}'
+        app, name = self.name.split('.')
+        return f'{app}.{name.title()}'
 
 
 class DataField(models.Model):

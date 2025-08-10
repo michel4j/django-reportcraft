@@ -18,3 +18,8 @@ class Join(StringAgg):
             delimiter = separator
         super().__init__(expression, delimiter=delimiter, **extra)
 
+
+class TitleCase(models.Func):
+    function = 'INITCAP'  # PostgreSQL's function for title case
+    template = '%(function)s(%(expressions)s)'
+

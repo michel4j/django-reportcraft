@@ -93735,3 +93735,775 @@
     modified: 2025-03-14 03:08:01.045373+00:00
     type: user
     institution: 210
+- model: reportcraft.datasource
+  pk: 1
+  fields:
+    created: 2025-03-17 15:26:03.612617+00:00
+    modified: 2025-03-20 04:43:35.956391+00:00
+    name: User Summary
+    description: ''
+    group_by:
+    - year
+    - category
+    filters: '{}'
+    limit: null
+- model: reportcraft.datasource
+  pk: 2
+  fields:
+    created: 2025-03-17 19:07:59.042428+00:00
+    modified: 2025-03-17 19:12:32.221929+00:00
+    name: User Types
+    description: ''
+    group_by:
+    - category
+    filters: '{}'
+    limit: null
+- model: reportcraft.datasource
+  pk: 3
+  fields:
+    created: 2025-03-18 04:48:26.885322+00:00
+    modified: 2025-03-18 04:54:34.287760+00:00
+    name: Top 10 People
+    description: ''
+    group_by: []
+    filters: '{}'
+    limit: null
+- model: reportcraft.datasource
+  pk: 4
+  fields:
+    created: 2025-03-18 04:54:53.157611+00:00
+    modified: 2025-03-18 04:54:53.157647+00:00
+    name: Top 10 Institutions
+    description: ''
+    group_by: []
+    filters: '{}'
+    limit: null
+- model: reportcraft.datasource
+  pk: 5
+  fields:
+    created: 2025-03-18 05:00:44.532008+00:00
+    modified: 2025-03-18 05:14:26.821697+00:00
+    name: Top 10 Countries
+    description: ''
+    group_by:
+    - country_name
+    filters: '{}'
+    limit: null
+- model: reportcraft.datasource
+  pk: 6
+  fields:
+    created: 2025-03-21 00:25:11.519557+00:00
+    modified: 2025-07-25 19:24:30.347789+00:00
+    name: Age Distribution
+    description: ''
+    group_by:
+    - age
+    filters: Nice + 1
+    limit: null
+- model: reportcraft.datamodel
+  pk: 1
+  fields:
+    created: 2025-03-17 15:45:01.809447+00:00
+    modified: 2025-03-20 04:44:16.795785+00:00
+    model:
+    - example
+    - person
+    name: example.Person
+    source: 1
+- model: reportcraft.datamodel
+  pk: 2
+  fields:
+    created: 2025-03-17 18:13:20.523691+00:00
+    modified: 2025-03-20 04:44:30.592963+00:00
+    model:
+    - example
+    - institution
+    name: example.Institution
+    source: 1
+- model: reportcraft.datamodel
+  pk: 3
+  fields:
+    created: 2025-03-17 19:08:31.193116+00:00
+    modified: 2025-03-18 04:23:40.228647+00:00
+    model:
+    - example
+    - person
+    name: example.person
+    source: 2
+- model: reportcraft.datamodel
+  pk: 5
+  fields:
+    created: 2025-03-18 04:48:47.614680+00:00
+    modified: 2025-03-18 04:48:47.614726+00:00
+    model:
+    - example
+    - person
+    name: example.person
+    source: 3
+- model: reportcraft.datamodel
+  pk: 6
+  fields:
+    created: 2025-03-18 04:55:06.501815+00:00
+    modified: 2025-03-18 04:55:06.501865+00:00
+    model:
+    - example
+    - institution
+    name: example.institution
+    source: 4
+- model: reportcraft.datamodel
+  pk: 7
+  fields:
+    created: 2025-03-18 05:01:06.783290+00:00
+    modified: 2025-03-18 05:13:24.435821+00:00
+    model:
+    - example
+    - institution
+    name: example.institution
+    source: 5
+- model: reportcraft.datamodel
+  pk: 8
+  fields:
+    created: 2025-03-21 00:25:35.858243+00:00
+    modified: 2025-07-24 19:03:04.574765+00:00
+    model:
+    - example
+    - person
+    name: example.Person
+    source: 6
+- model: reportcraft.datafield
+  pk: 1
+  fields:
+    created: 2025-03-17 15:45:01.846165+00:00
+    modified: 2025-03-20 04:44:16.719693+00:00
+    name: year
+    model: 1
+    label: Year
+    default: null
+    expression: Created.Year
+    precision: null
+    position: 0
+    ordering: null
+    source: 1
+- model: reportcraft.datafield
+  pk: 2
+  fields:
+    created: 2025-03-17 16:21:49.801218+00:00
+    modified: 2025-03-17 16:21:49.801233+00:00
+    name: users
+    model: 1
+    label: Users
+    default: 0
+    expression: Count(this)
+    precision: null
+    position: 1
+    ordering: null
+    source: 1
+- model: reportcraft.datafield
+  pk: 3
+  fields:
+    created: 2025-03-17 18:13:20.560014+00:00
+    modified: 2025-03-20 04:44:30.525730+00:00
+    name: year
+    model: 2
+    label: Year
+    default: null
+    expression: Created.Year
+    precision: null
+    position: 0
+    ordering: null
+    source: 1
+- model: reportcraft.datafield
+  pk: 4
+  fields:
+    created: 2025-03-17 18:13:49.299593+00:00
+    modified: 2025-03-17 18:13:49.299609+00:00
+    name: institutions
+    model: 2
+    label: Institutions
+    default: 0
+    expression: Count(this)
+    precision: null
+    position: 3
+    ordering: null
+    source: 1
+- model: reportcraft.datafield
+  pk: 5
+  fields:
+    created: 2025-03-17 18:14:35.316087+00:00
+    modified: 2025-03-17 18:14:35.316102+00:00
+    name: avg_age
+    model: 1
+    label: Average Age
+    default: 0
+    expression: Avg(Age)
+    precision: 0
+    position: 4
+    ordering: null
+    source: 1
+- model: reportcraft.datafield
+  pk: 6
+  fields:
+    created: 2025-03-17 18:15:44.492200+00:00
+    modified: 2025-03-17 18:15:44.492214+00:00
+    name: youngest
+    model: 1
+    label: Youngest
+    default: 0
+    expression: Min(Age)
+    precision: 0
+    position: 5
+    ordering: null
+    source: 1
+- model: reportcraft.datafield
+  pk: 7
+  fields:
+    created: 2025-03-17 18:16:22.652267+00:00
+    modified: 2025-03-17 18:16:22.652282+00:00
+    name: oldest
+    model: 1
+    label: Oldest
+    default: 0
+    expression: Max(age)
+    precision: 0
+    position: 6
+    ordering: null
+    source: 1
+- model: reportcraft.datafield
+  pk: 9
+  fields:
+    created: 2025-03-17 19:09:22.547813+00:00
+    modified: 2025-03-17 19:09:22.547860+00:00
+    name: users
+    model: 3
+    label: Users
+    default: 0
+    expression: Count(this)
+    precision: 0
+    position: 1
+    ordering: null
+    source: 2
+- model: reportcraft.datafield
+  pk: 10
+  fields:
+    created: 2025-03-17 19:13:00.705941+00:00
+    modified: 2025-03-18 04:23:40.210127+00:00
+    name: category
+    model: 3
+    label: Category
+    default: null
+    expression: Type
+    precision: null
+    position: 0
+    ordering: null
+    source: 2
+- model: reportcraft.datafield
+  pk: 11
+  fields:
+    created: 2025-03-18 04:51:21.379146+00:00
+    modified: 2025-03-18 04:51:21.379176+00:00
+    name: user
+    model: 5
+    label: People
+    default: null
+    expression: Concat(FirstName, " ", LastName)
+    precision: null
+    position: 0
+    ordering: null
+    source: 3
+- model: reportcraft.datafield
+  pk: 12
+  fields:
+    created: 2025-03-18 04:52:27.789678+00:00
+    modified: 2025-03-21 00:23:22.207165+00:00
+    name: age
+    model: 5
+    label: Age
+    default: null
+    expression: ''
+    precision: null
+    position: 1
+    ordering: 1
+    source: 3
+- model: reportcraft.datafield
+  pk: 13
+  fields:
+    created: 2025-03-18 04:55:53.195277+00:00
+    modified: 2025-03-18 04:58:42.183409+00:00
+    name: inst_name
+    model: 6
+    label: Institution
+    default: null
+    expression: Name
+    precision: null
+    position: 0
+    ordering: 1
+    source: 4
+- model: reportcraft.datafield
+  pk: 14
+  fields:
+    created: 2025-03-18 04:56:49.532685+00:00
+    modified: 2025-03-24 22:46:03.508254+00:00
+    name: total_people
+    model: 6
+    label: People
+    default: 0
+    expression: Count(People, distinct=True)
+    precision: null
+    position: 1
+    ordering: null
+    source: 4
+- model: reportcraft.datafield
+  pk: 16
+  fields:
+    created: 2025-03-18 05:08:44.275647+00:00
+    modified: 2025-03-18 05:14:07.957505+00:00
+    name: num_people
+    model: 7
+    label: People
+    default: 0
+    expression: Count(People)
+    precision: null
+    position: 1
+    ordering: null
+    source: 5
+- model: reportcraft.datafield
+  pk: 19
+  fields:
+    created: 2025-03-18 05:13:24.401930+00:00
+    modified: 2025-03-24 22:48:35.969595+00:00
+    name: country_name
+    model: 7
+    label: Country
+    default: null
+    expression: Country
+    precision: null
+    position: 0
+    ordering: null
+    source: 5
+- model: reportcraft.datafield
+  pk: 21
+  fields:
+    created: 2025-03-20 04:44:16.752971+00:00
+    modified: 2025-03-20 04:44:16.776420+00:00
+    name: category
+    model: 1
+    label: Category
+    default: null
+    expression: Upper(Type)
+    precision: null
+    position: 1
+    ordering: null
+    source: 1
+- model: reportcraft.datafield
+  pk: 22
+  fields:
+    created: 2025-03-20 04:44:30.548915+00:00
+    modified: 2025-03-20 04:44:30.571750+00:00
+    name: category
+    model: 2
+    label: Category
+    default: null
+    expression: Upper(People.Type)
+    precision: null
+    position: 1
+    ordering: null
+    source: 1
+- model: reportcraft.datafield
+  pk: 23
+  fields:
+    created: 2025-03-20 05:21:33.508365+00:00
+    modified: 2025-03-24 22:48:10.814251+00:00
+    name: num_institutions
+    model: 7
+    label: Institutions
+    default: 0
+    expression: Count(this, distinct=True)
+    precision: null
+    position: 2
+    ordering: null
+    source: 5
+- model: reportcraft.datafield
+  pk: 24
+  fields:
+    created: 2025-03-21 00:25:35.891288+00:00
+    modified: 2025-07-24 19:03:04.556086+00:00
+    name: age
+    model: 8
+    label: Age
+    default: null
+    expression: Age
+    precision: null
+    position: 0
+    ordering: null
+    source: 6
+- model: reportcraft.datafield
+  pk: 25
+  fields:
+    created: 2025-03-21 00:27:27.237259+00:00
+    modified: 2025-03-21 00:28:50.665209+00:00
+    name: total
+    model: 8
+    label: Total
+    default: 0
+    expression: Count(this)
+    precision: null
+    position: 1
+    ordering: null
+    source: 6
+- model: reportcraft.datafield
+  pk: 26
+  fields:
+    created: 2025-03-24 02:02:01.691014+00:00
+    modified: 2025-03-24 02:02:01.691054+00:00
+    name: latitude
+    model: 6
+    label: Latitude
+    default: 0
+    expression: ''
+    precision: null
+    position: 2
+    ordering: null
+    source: 4
+- model: reportcraft.datafield
+  pk: 27
+  fields:
+    created: 2025-03-24 02:02:32.791666+00:00
+    modified: 2025-03-24 02:03:15.527137+00:00
+    name: longitude
+    model: 6
+    label: Longitude
+    default: null
+    expression: ''
+    precision: null
+    position: 3
+    ordering: null
+    source: 4
+- model: reportcraft.datafield
+  pk: 28
+  fields:
+    created: 2025-03-24 22:46:50.739420+00:00
+    modified: 2025-03-24 22:46:50.739485+00:00
+    name: total_institutions
+    model: 6
+    label: Institutions
+    default: 0
+    expression: Count(this, distinct=True)
+    precision: null
+    position: 4
+    ordering: null
+    source: 4
+- model: reportcraft.datafield
+  pk: 29
+  fields:
+    created: 2025-03-25 05:42:16.131953+00:00
+    modified: 2025-03-25 05:45:08.111753+00:00
+    name: longitude
+    model: 7
+    label: Longitude
+    default: 0
+    expression: ''
+    precision: 3
+    position: 3
+    ordering: null
+    source: 5
+- model: reportcraft.datafield
+  pk: 30
+  fields:
+    created: 2025-03-25 05:42:51.732921+00:00
+    modified: 2025-03-25 05:45:12.817695+00:00
+    name: latitude
+    model: 7
+    label: Latitude
+    default: 0
+    expression: ''
+    precision: 3
+    position: 4
+    ordering: null
+    source: 5
+- model: reportcraft.datafield
+  pk: 31
+  fields:
+    created: 2025-03-25 05:48:06.599532+00:00
+    modified: 2025-03-25 05:48:06.599588+00:00
+    name: name
+    model: 7
+    label: Institution
+    default: null
+    expression: ''
+    precision: null
+    position: 5
+    ordering: null
+    source: 5
+- model: reportcraft.report
+  pk: 1
+  fields:
+    created: 2025-03-17 14:51:48.907356+00:00
+    modified: 2025-07-24 16:15:37.633678+00:00
+    slug: user-statistics
+    title: User Statistics
+    description: A report of user statistics
+    style: ''
+    notes: ''
+    section: ''
+- model: reportcraft.report
+  pk: 2
+  fields:
+    created: 2025-03-18 04:47:59.756926+00:00
+    modified: 2025-07-24 16:15:19.351670+00:00
+    slug: top-tens
+    title: Statistics of People and Institutions
+    description: A summary report showing statistics of people and institutions
+    style: ''
+    notes: ''
+    section: ''
+- model: reportcraft.entry
+  pk: 1
+  fields:
+    created: 2025-03-17 16:23:04.929205+00:00
+    modified: 2025-03-20 05:11:45.782123+00:00
+    title: Users Per Year
+    description: ''
+    notes: ''
+    style: col-md-6
+    kind: bars
+    source: 1
+    report: 1
+    position: 0
+    attrs:
+      x_axis: year
+      y_value: users
+      sort_by: year
+      y_axis:
+      - category
+      stack:
+      - - category
+      wrap_x_labels: false
+      vertical: true
+      sort_desc: false
+      colors: Live8
+- model: reportcraft.entry
+  pk: 2
+  fields:
+    created: 2025-03-17 19:02:09.479422+00:00
+    modified: 2025-08-10 14:45:16.868166+00:00
+    title: Statistics Summary
+    description: ''
+    notes: ''
+    style: col-md-12
+    kind: table
+    source: 1
+    report: 1
+    position: 2
+    attrs:
+      columns: year
+      rows:
+      - users
+      - institutions
+      - avg_age
+      - youngest
+      - oldest
+      total_row: false
+      total_column: false
+      force_strings: false
+      transpose: false
+- model: reportcraft.entry
+  pk: 4
+  fields:
+    created: 2025-03-17 19:10:54.843697+00:00
+    modified: 2025-08-10 14:45:09.053758+00:00
+    title: User Types
+    description: ''
+    notes: ''
+    style: col-md-6
+    kind: pie
+    source: 2
+    report: 1
+    position: 1
+    attrs:
+      value: users
+      label: category
+      colors: Live8
+- model: reportcraft.entry
+  pk: 5
+  fields:
+    created: 2025-03-18 04:53:13.446290+00:00
+    modified: 2025-03-24 22:45:39.520034+00:00
+    title: Top 10 oldest People
+    description: ''
+    notes: ''
+    style: col-md-6
+    kind: list
+    source: 3
+    report: 2
+    position: 1
+    attrs:
+      columns:
+      - user
+      - age
+      order_by: -age
+      limit: 10
+- model: reportcraft.entry
+  pk: 6
+  fields:
+    created: 2025-03-18 04:57:52.534597+00:00
+    modified: 2025-03-18 04:59:10.882190+00:00
+    title: 'Top 10 Institutions by # of People'
+    description: ''
+    notes: ''
+    style: col-md-6
+    kind: list
+    source: 4
+    report: 2
+    position: 1
+    attrs:
+      columns:
+      - inst_name
+      - total_people
+      order_by: -total_people
+      limit: 10
+- model: reportcraft.entry
+  pk: 7
+  fields:
+    created: 2025-03-18 05:07:39.730325+00:00
+    modified: 2025-03-24 22:53:00.523387+00:00
+    title: 'Top 10 Countries by # of People'
+    description: ''
+    notes: Λορεμ ιπσθμ δολορ σιτ αμετ, αθτεμ μελιορε θτ νεc, εροσ δενιqθε ει ηασ.
+      Ρεγιονε δελενιτι αδιπισcι θτ ηισ, cονστιτθαμ αππελλαντθρ σιτ θτ, ερρορ φαβελλασ
+      θτ εαμ. Δελενιτ νομινατι περcιπιτθρ qθι αν, εξ ιδqθε ιμπερδιετ δισπθτατιονι
+      σιτ. Ιδ σεα δοcτθσ δελιcατισσιμι, νο σεα σαλε λαβορεσ ιμπεδιτ. Ενιμ δοcτθσ ρατιονιβθσ
+      νε qθο, vενιαμ νθμqθαμ ηασ αν, εα vελ προδεσσετ σαδιπσcινγ δετερρθισσετ. Μινιμθμ
+      cονστιτθτο θτ μεα, νεc ατ αππαρεατ περσεqθερισ θλλαμcορπερ. Τε παρτεμ βονορθμ
+      qθι.
+    style: col-md-12
+    kind: list
+    source: 5
+    report: 2
+    position: 2
+    attrs:
+      columns:
+      - country_name
+      - num_people
+      - num_institutions
+      order_by: -num_people
+      limit: 10
+- model: reportcraft.entry
+  pk: 8
+  fields:
+    created: 2025-03-20 05:05:01.169638+00:00
+    modified: 2025-08-10 14:44:57.876027+00:00
+    title: ''
+    description: ''
+    notes: You may leave out titles and description entries from Rich Text and instead
+      include any titles you want with Markdown.  Also, Rich Text entries do not use
+      the Source property.
+    style: col-md-12
+    kind: text
+    source: null
+    report: 1
+    position: 5
+    attrs:
+      rich_text: "Lorem markdownum indulgere est classe praemia ducens thalamos tecta
+        cum iam\r\nmunere abest lateque, litat contorta? Relictus non vocis narrantia
+        faciat\r\nnefandis tenet et amat adsidua ima quidam partem nostroque. Num
+        mora mundus.\r\n\r\n```js\r\nif (ppp) {\r\n    agp(igpCybercrime, teraflopsCore);\r\n}
+        else {\r\n    install += 90;\r\n    intranet_input += task_rate;\r\n}\r\nif
+        (lcdSystem >= adware_noc_recursive) {\r\n    asp_suffix += trinitron * macClipboard
+        + 1;\r\n    leaf_ieee += pdf_cross;\r\n}\r\ncursor *= windows;\r\njson = multiprocessing_pppoe;\r\n```\r\n\r\n##
+        Tempora recubare habet ad Theron potest\r\n\r\nOssa Iove leto quo, Dryope,
+        gerens viso solidas sinat accessit venere ruinas\r\nraptum, cumque, quid.
+        Sit **nuper poterat totidemque** eventuque pennis votis,\r\nut vixque. Draconi
+        me postera saxum nubila paries exposcere illic sensitque: a\r\naret.\r\n\r\n재판의
+        전심절차로서 행정심판을 할 수 있다. 법률이 정하는 주요방위산업체에 종사하는 근로자의 단체행동권은 법률이 정하는 바에 의하여 이를 제한하거나
+        인정하지 아니할 수 있다. 고용·임금 및 근로조건에 있어서 부당한 차별을 받지 아니한다. 위원은 탄핵 또는 금고 이상의 형의 선고에
+        의하지 아니하고는 파면되지 아니한다.\r\n\r\n재의의 요구가 있을 때에는 국회는 재의에 붙이고. 탄핵의 결정, 사회적 특수계급의
+        제도는 인정되지 아니하며. 대통령은 헌법과 법률이 정하는 바에 의하여 국군을 통수한다.\r\n\r\n대통령은 즉시 이를 공포하여야 한다,
+        대법원장의 임기는 6년으로 하며. 나는 헌법을 준수하고 국가를 보위하며 조국의 평화적 통일과 국민의 자유와 복리의 증진 및 민족문화의
+        창달에 노력하여 대통령으로서의 직책을 성실히 수행할 것을 국민 앞에 엄숙히 선서합니다. 정부나 법원의 권한에 관하여 특별한 조치를 할
+        수 있다.\r\n\r\n선거에 있어서 최고득표자가 2인 이상인 때에는 국회의 재적의원 과반수가 출석한 공개회의에서 다수표를 얻은 자를
+        당선자로 한다, 국가는 농·어민과 중소기업의 자조조직을 육성하여야 하며. 국가는 노인과 청소년의 복지향상을 위한 정책을 실시할 의무를
+        진다, 이 경우 그 명령에 의하여 개정 또는 폐지되었던 법률은 그 명령이 승인을 얻지 못한 때부터 당연히 효력을 회복한다.\r\n\r\n모든
+        국민은 신체의 자유를 가진다. 행정각부의 장은 국무위원 중에서 국무총리의 제청으로 대통령이 임명한다, 국가나 국민에게 중대한 재정적
+        부담을 지우는 조약 또는 입법사항에 관한 조약의 체결·비준에 대한 동의권을 가진다. 모든 국민은 법률이 정하는 바에 의하여 선거권을
+        가진다.\r\n\r\n헌법재판소 재판관은 탄핵 또는 금고 이상의 형의 선고에 의하지 아니하고는 파면되지 아니한다. 국회는 회계연도 개시
+        30일전까지 이를 의결하여야 한다. 모든 국민은 법률이 정하는 바에 의하여 공무담임권을 가진다. 대통령은 제3항과 제4항의 사유를 지체없이
+        공포하여야 한다.\r\n\r\n모든 국민은 고문을 받지 아니하며. 선거운동은 각급 선거관리위원회의 관리하에 법률이 정하는 범위안에서
+        하되. 200인 이상으로 한다, 행정심판의 절차는 법률로 정하되.\r\n\r\n중요한 국제조직에 관한 조약. 제1항의 지시를 받은 당해
+        행정기관은 이에 응하여야 한다. 이 헌법공포 당시의 국회의원의 임기는 제1항에 의한 국회의 최초의 집회일 전일까지로 한다. 그 정치적
+        중립성은 준수된다.\r\n\r\n국회의 임시회는 대통령 또는 국회재적의원 4분의 1 이상의 요구에 의하여 집회된다. 감사위원은 원장의
+        제청으로 대통령이 임명하고. 법령의 범위안에서 자치에 관한 규정을 제정할 수 있다, 나는 헌법을 준수하고 국가를 보위하며 조국의 평화적
+        통일과 국민의 자유와 복리의 증진 및 민족문화의 창달에 노력하여 대통령으로서의 직책을 성실히 수행할 것을 국민 앞에 엄숙히 선서합니다.\r\n\r\n제한하는
+        경우에도 자유와 권리의 본질적인 내용을 침해할 수 없다. 국가는 법률이 정하는 바에 의하여 정당운영에 필요한 자금을 보조할 수 있다,
+        민주평화통일자문회의의 조직·직무범위 기타 필요한 사항은 법률로 정한다. 비상계엄하의 군사재판은 군인·군무원의 범죄나 군사에 관한 간첩죄의
+        경우와 초병·초소·유독음식물공급·포로에 관한 죄중 법률이 정한 경우에 한하여 단심으로 할 수 있다."
+- model: reportcraft.entry
+  pk: 9
+  fields:
+    created: 2025-03-20 05:23:37.054538+00:00
+    modified: 2025-08-10 14:45:25.602384+00:00
+    title: Top 10 Countries by Number of Institutions
+    description: ''
+    notes: Calculated from the Institutions data model.
+    style: col-md-6
+    kind: bars
+    source: 5
+    report: 1
+    position: 4
+    attrs:
+      x_axis: country_name
+      sort_by: num_institutions
+      y_axis:
+      - num_institutions
+      wrap_x_labels: false
+      aspect_ratio: 1.6
+      vertical: false
+      sort_desc: true
+      limit: 10
+      colors: Live16
+- model: reportcraft.entry
+  pk: 10
+  fields:
+    created: 2025-03-21 00:56:27.632266+00:00
+    modified: 2025-03-21 13:09:50.884202+00:00
+    title: Number of Persons per age group
+    description: ''
+    notes: ''
+    style: col-md-6
+    kind: plot
+    source: 6
+    report: 1
+    position: 3
+    attrs:
+      y_axis:
+      - - total
+      x_axis: age
+      y1_label: People
+      y2_label: ''
+      scatter: false
+      colors: Live8
+- model: reportcraft.entry
+  pk: 11
+  fields:
+    created: 2025-03-21 23:53:40.671951+00:00
+    modified: 2025-03-25 14:36:10.512854+00:00
+    title: Global Distribution
+    description: ''
+    notes: "연소자의 근로는 특별한 보호를 받는다. 신체장애자 및 질병·노령 기타의 사유로 생활능력이 없는 국민은 법률이 정하는 바에 의하여
+      국가의 보호를 받는다. 국토와 자원은 국가의 보호를 받으며. 이 헌법공포 당시의 국회의원의 임기는 제1항에 의한 국회의 최초의 집회일 전일까지로
+      한다.\r\n\r\n국무총리·국무위원 또는 정부위원은 국회나 그 위원회에 출석하여 국정처리상황을 보고하거나 의견을 진술하고 질문에 응답할
+      수 있다, 모든 국민의 재산권은 보장된다. 대통령에 대한 탄핵소추는 국회재적의원 과반수의 발의와 국회재적의원 3분의 2 이상의 찬성이 있어야
+      한다. 사면·감형 및 복권에 관한 사항은 법률로 정한다."
+    style: col-md-12
+    kind: map
+    source: 5
+    report: 2
+    position: 0
+    attrs:
+      value: num_people
+      name: name
+      latitude: latitude
+      longitude: longitude
+      colors: Oranges
+      region: '013'
+      resolution: countries
+      mode: markers
