@@ -177,6 +177,12 @@ ICONS = {
         'path d="M10 3.2a9 9 0 1 0 10.8 10.8a1 1 0 0 0 -1 -1h-6.8a2 2 0 0 1 -2 -2v-7a.9 .9 0 0 0 -1 -.8" />'
         '<path d="M15 3.5a9 9 0 0 1 5.5 5.5h-4.5a1 1 0 0 1 -1 -1v-4.5" />'
     ),
+    'column': (
+        '<path stroke="none" d="M0 0h24v24H0z" fill="none"/>'
+        '<path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />'
+        '<path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />'
+        '<path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" /><path d="M4 20h14" />'
+    ),
     'bars': (
         '<path stroke="none" d="M0 0h24v24H0z" fill="none"/>'
         '<path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />'
@@ -217,7 +223,25 @@ ICONS = {
         '<path d="M9 4v13" /><path d="M15 7v5.5" />'
         '<path d="M21.121 20.121a3 3 0 1 0 -4.242 0c.418 .419 1.125 1.045 2.121 1.879c1.051 -.89 1.759 '
         '-1.516 2.121 -1.879z" /><path d="M19 18v.01" />'
+    ),
+    'donut': (
+        '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 3.2a9 9 0 1 0 10.8 10.8a1 1 0 0 0 -1 '
+        '-1h-3.8a4.1 4.1 0 1 1 -5 -5v-4a.9 .9 0 0 0 -1 -.8" /><path d="M15 3.5a9 9 0 0 1 5.5 5.5h-4.5a9 9 0 0 0 '
+        '-1 -1v-4.5" />'
+    ),
+    'mixed': (
+        '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 19l4 -6l4 2l4 -5l4 4l0 5l-16 0" />'
+        '<path d="M4 12l3 -4l4 2l5 -6l4 4" />'
+    ),
+    'line': (
+        '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 19l16 0" />'
+        '<path d="M4 15l4 -6l4 2l4 -5l4 4" />'
+    ),
+    'area': (
+        '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 19l16 0" />'
+        '<path d="M4 15l4 -6l4 2l4 -5l4 4l0 5l-16 0" />'
     )
+
 }
 DEFAULT_ICON = (
     '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />'

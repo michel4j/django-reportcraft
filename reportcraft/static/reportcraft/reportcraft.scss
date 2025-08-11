@@ -439,6 +439,10 @@ $grid-breakpoints: (
       .#{$breakpoint}-#{$num}-cols {
         column-count: $num;
         column-gap: var(--bs-column-gap);
+        li {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
       }
     }
   }

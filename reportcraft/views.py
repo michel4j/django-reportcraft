@@ -384,19 +384,24 @@ class DeleteSourceField(*EDIT_MIXINS, ModalDeleteView):
 
 class ConfigureEntry(*EDIT_MIXINS, ModalUpdateView):
     model = models.Entry
+    FORM_CLASSES = {
+        model.Types.TABLE: forms.TableForm,
+        model.Types.BARS: forms.BarsForm,
+        model.Types.COLUMN: forms.BarsForm,
+        model.Types.PIE: forms.PieForm,
+        model.Types.PLOT: forms.PlotForm,
+        model.Types.LIST: forms.ListForm,
+        model.Types.TIMELINE: forms.TimelineForm,
+        model.Types.TEXT: forms.RichTextForm,
+        model.Types.HISTOGRAM: forms.HistogramForm,
+        model.Types.MAP: forms.GeoCharForm,
+        model.Types.DONUT: forms.PieForm,
+        model.Types.AREA: forms.BarsForm,
+        model.Types.LINE: forms.BarsForm,
+    }
 
     def get_form_class(self):
-        return {
-            models.Entry.Types.TABLE: forms.TableForm,
-            models.Entry.Types.BARS: forms.BarsForm,
-            models.Entry.Types.PIE: forms.PieForm,
-            models.Entry.Types.PLOT: forms.PlotForm,
-            models.Entry.Types.LIST: forms.ListForm,
-            models.Entry.Types.TIMELINE: forms.TimelineForm,
-            models.Entry.Types.TEXT: forms.RichTextForm,
-            models.Entry.Types.HISTOGRAM: forms.HistogramForm,
-            models.Entry.Types.MAP: forms.GeoCharForm,
-        }.get(self.object.kind, forms.EntryForm)
+        return self.FORM_CLASSES.get(self.object.kind, forms.EntryForm)
 
     def get_success_url(self):
         return reverse('report-editor', kwargs={'pk': self.object.report.pk})

@@ -2,8 +2,19 @@
 
 
 const figureTypes = [
-    "histogram", "lineplot", "barchart", "scatterplot", "pie", "gauge", "timeline", "columnchart",
-    "plot", "histo", "bar", 'geochart'
+    "histogram",
+    "lines",
+    "bars",
+    "scatter",
+    "pie",
+    "gauge",
+    "timeline",
+    "column",
+    "plot",
+    "histo",
+    'geochart',
+    'donut',
+    'area',
 ];
 
 const ColorSchemes = {
@@ -128,7 +139,7 @@ function encodeObj(obj) {
     // encode object as base64 string
     const utf8Bytes = encodeURIComponent(JSON.stringify(obj)).replace(/%([0-9A-F]{2})/g,
         function toSolidBytes(match, p1) {
-            return String.fromCharCode('0x' + p1);
+            return String.fromCharCode(`0x${p1}`);
         });
     return btoa(utf8Bytes);
 }
@@ -365,7 +376,7 @@ function migrateXYData(chart) {
     }
 }
 
-function drawBarChart(figure, chart, options) {
+function drawBarChart(figure, chart, options, type = 'bar') {
     let series = [];
     let flavors = [];
     let hidden = [];
@@ -373,7 +384,7 @@ function drawBarChart(figure, chart, options) {
     // migrate data
     migrateData(chart);
 
-    let colorfunc = function (color, d) {
+    let color_func = function (color, d) {
         return color;
     };
 
@@ -404,7 +415,7 @@ function drawBarChart(figure, chart, options) {
         });
 
         // update color function for color-by
-        colorfunc = function (color, d) {
+        color_func = function (color, d) {
             if (typeof d === "object") {
                 let flavor = chart['data'][d.index][key];
                 return options.colors[flavor];
@@ -425,41 +436,31 @@ function drawBarChart(figure, chart, options) {
         return num >= 1000 ? (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K' : num.toString();
     }
 
-    let line_axes = {};
-    let line_types = {};
-    let axis_y2 = {show: chart['line'] && true || false, label: chart['line']};
+
     let x_ticks = {
         culling: {'max': chart["x-culling"] || false},
         multiline: chart["wrap-x-labels"] || false,
     };
 
-    if (chart['line']) {
-        line_types[chart['line']] = "line";
-        line_axes[chart['line']] = "y2";
-        if (chart['line-limits']) {
-            axis_y2 = $.extend(axis_y2, {
-                min: chart['line-limits'][0],
-                max: chart['line-limits'][1],
-                padding: 0,
-            });
-        }
+    let series_types = {};
+    if (chart['types']) {
+        series_types = chart['types'];
     }
 
     let c3chart = c3.generate({
         bindto: `#${figure.attr('id')}`,
         size: {width: options.width, height: options.height},
         data: {
-            type: 'bar',
+            type: type,
             json: chart["data"],
             hide: hidden,
-            color: colorfunc,  // used for color-by
+            color: color_func,  // used for color-by
             colors: options.colors,
             keys: {
                 x: chart["x-label"],
                 value: series
             },
-            axes: chart["line"] && line_axes || {},
-            types: chart["line"] && line_types || {},
+            types: series_types,
             groups: chart["stack"] || [],
             order: null
         },
@@ -473,7 +474,6 @@ function drawBarChart(figure, chart, options) {
             y: {
                 tick: {format: formatKilo}
             },
-            y2: axis_y2,
             rotated: (options.horizontal || false)
         },
         legend: {hide: (series.length === 1)},
@@ -545,11 +545,10 @@ function drawHistogram(figure, chart, options) {
     figure.data('c3-chart', c3chart);
 }
 
-function drawPieChart(figure, chart, options) {
+function drawPieChart(figure, chart, options, type = 'pie') {
     let data = {};
     let series = [];
     let colors = {};
-
     // remove raw data from dom
     figure.removeData('chart');
     figure.removeAttr('data-chart');
@@ -564,12 +563,16 @@ function drawPieChart(figure, chart, options) {
         bindto: `#${figure.attr('id')}`,
         size: {width: options.width, height: options.height},
         data: {
-            type: 'pie',
+            type: type,
             json: [data],
             colors: colors,
             keys: {
                 value: series
             },
+        },
+        donut: {
+            title: chart.title || '',
+            width: chart['donut-width'] || null,
         },
         onresize: function () {
             this.api.resize({
@@ -580,16 +583,6 @@ function drawPieChart(figure, chart, options) {
     });
     figure.data('c3-chart', c3chart);
 }
-
-
-function drawScatterChart(figure, chart, options) {
-    drawXYChart(figure, chart, options, 'scatter');
-}
-
-function drawLineChart(figure, chart, options) {
-    drawXYChart(figure, chart, options, 'line');
-}
-
 
 function callout(g, value, color) {
     if (!value) return g.style("display", "none");
@@ -900,24 +893,33 @@ function drawGeoChart(figure, chart, options) {
             }
 
             switch (figure.data('type')) {
-                case 'barchart':
+                case 'bars':
                     options.horizontal = true;
-                    drawBarChart(figure, chart, options);
+                    drawBarChart(figure, chart, options, 'bar');
                     break;
-                case 'columnchart':
-                    drawBarChart(figure, chart, options);
+                case 'column':
+                    drawBarChart(figure, chart, options, 'bar');
                     break;
-                case 'lineplot':
-                    drawLineChart(figure, chart, options);
+                case 'area':
+                    drawBarChart(figure, chart, options, 'area');
+                    break;
+                case 'lines':
+                    drawBarChart(figure, chart, options, 'line');
+                    break;
+                case 'plot':
+                    drawXYChart(figure, chart, options, 'line');
                     break;
                 case 'histogram':
                     drawHistogram(figure, chart, options);
                     break;
                 case 'pie':
-                    drawPieChart(figure, chart, options);
+                    drawPieChart(figure, chart, options, 'pie');
                     break;
-                case 'scatterplot':
-                    drawScatterChart(figure, chart, options);
+                case 'donut':
+                    drawPieChart(figure, chart, options, 'donut');
+                    break;
+                case 'scatter':
+                    drawXYChart(figure, chart, options, 'scatter');
                     break;
                 case 'timeline':
                     drawTimeline(figure, chart, options);

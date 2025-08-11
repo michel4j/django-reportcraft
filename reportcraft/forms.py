@@ -1,12 +1,11 @@
 import re
 
 from datetime import datetime
-from crispy_forms.bootstrap import StrictButton
-from crispy_forms.layout import Div, Field, Layout
+from crispy_forms.bootstrap import Tab, TabHolder
+from crispy_forms.layout import Div, Field, Layout, HTML
 from django import forms
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse_lazy
 from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
 from crisp_modals.forms import (
@@ -285,7 +284,7 @@ class TableForm(ModalModelForm):
     class Meta:
         model = models.Entry
         fields = (
-            'attrs', 'columns', 'rows', 'values', 'total_row', 'total_column', 'force_strings', 'transpose',
+            'attrs',
         )
         widgets = {
             'attrs': forms.HiddenInput(),
@@ -293,7 +292,7 @@ class TableForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _("Configure Table")
+        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
         self.update_initial()
         self.body.append(
             Div(
@@ -360,9 +359,12 @@ class BarsForm(ModalModelForm):
     stack_1 = forms.ModelMultipleChoiceField(label='Stack', required=False, queryset=models.DataField.objects.none())
     stack_2 = forms.ModelMultipleChoiceField(label='Stack', required=False, queryset=models.DataField.objects.none())
 
+    areas = forms.ModelMultipleChoiceField(label='Areas', required=False, queryset=models.DataField.objects.none())
+    bars = forms.ModelMultipleChoiceField(label='Bars', required=False, queryset=models.DataField.objects.none())
+    lines = forms.ModelMultipleChoiceField(label='Lines', required=False, queryset=models.DataField.objects.none())
+
     color_field = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
     colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
-    line = forms.ModelChoiceField(label='Line', required=False, queryset=models.DataField.objects.none())
     x_culling = forms.IntegerField(label="Culling", required=False)
     wrap_x_labels = forms.BooleanField(label="Wrap Labels", required=False)
     aspect_ratio = forms.FloatField(label="Aspect Ratio", required=False)
@@ -375,9 +377,7 @@ class BarsForm(ModalModelForm):
     class Meta:
         model = models.Entry
         fields = (
-            'attrs', 'x_axis', 'y_axis', 'y_value', 'stack_0', 'stack_1', 'stack_2', 'color_field', 'line',
-            'x_culling', 'wrap_x_labels', 'aspect_ratio', 'sort_by', 'sort_desc', 'vertical', 'limit',
-            'colors'
+            'attrs',
         )
         widgets = {
             'attrs': forms.HiddenInput(),
@@ -385,8 +385,7 @@ class BarsForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.body.title = _("Configure Barchart")
+        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
         self.update_initial()
         self.body.append(
             Div(
@@ -402,17 +401,30 @@ class BarsForm(ModalModelForm):
                 css_class='row'
             ),
             Div(
-                Div('aspect_ratio', css_class='col-3'),
-                Div('x_culling', css_class='col-3'),
-                Div('limit', css_class='col-3'),
-                Div(Field('line', css_class='select'), css_class='col-3'),
+                Div('aspect_ratio', css_class='col-4'),
+                Div('x_culling', css_class='col-4'),
+                Div('limit', css_class='col-4'),
                 css_class='row'
             ),
-            Div(
-                Div(Field('stack_0', css_class='select'), css_class='col-12'),
-                Div(Field('stack_1', css_class='select'), css_class='col-12'),
-                Div(Field('stack_2', css_class='select'), css_class='col-12'),
-                css_class='row'
+            TabHolder(
+                Tab(
+                    'Stacks',
+                    Div(
+                        Div(Field('stack_0', css_class='select'), css_class='col-12'),
+                        Div(Field('stack_1', css_class='select'), css_class='col-12'),
+                        Div(Field('stack_2', css_class='select'), css_class='col-12'),
+                        css_class='row'
+                    ),
+                ),
+                Tab(
+                    'Mixed Types',
+                    Div(
+                        Div(Field('areas', css_class='select'), css_class='col-12'),
+                        Div(Field('bars', css_class='select'), css_class='col-12'),
+                        Div(Field('lines', css_class='select'), css_class='col-12'),
+                        css_class='row'
+                    ),
+                )
             ),
             Div(
                 Div(
@@ -429,14 +441,20 @@ class BarsForm(ModalModelForm):
         attrs = self.instance.attrs
         field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
         field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
-        for field in ['x_axis', 'y_axis', 'y_value', 'stack_0', 'stack_1', 'stack_2', 'color_field', 'line', 'sort_by']:
+        field_fields = [
+            'x_axis', 'y_axis', 'y_value', 'stack_0', 'stack_1', 'stack_2', 'color_field',  'sort_by',
+            'areas', 'bars', 'lines'
+        ]
+        for field in field_fields:
             self.fields[field].queryset = field_queryset
 
-        for field in ['x_axis', 'y_value', 'line', 'color_field', 'sort_by']:
+        for field in ['x_axis', 'y_value', 'color_field', 'sort_by']:
             if field in attrs:
                 self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
-        if 'y_axis' in attrs:
-            self.fields['y_axis'].initial = field_queryset.filter(name__in=attrs['y_axis'])
+
+        for field in ['y_axis', 'areas', 'lines', 'bars']:
+            if field in attrs:
+                self.fields[field].initial = field_queryset.filter(name__in=attrs[field])
 
         if 'stack' in attrs:
             for i, stack in enumerate(attrs['stack']):
@@ -452,12 +470,14 @@ class BarsForm(ModalModelForm):
         cleaned_data = super().clean()
         new_attrs = {}
 
-        for field in ['x_axis', 'y_value', 'line', 'color_field', 'sort_by']:
+        for field in ['x_axis', 'y_value', 'color_field', 'sort_by']:
             if field in cleaned_data and cleaned_data[field] is not None:
                 new_attrs[field] = cleaned_data[field].name
 
-        if 'y_axis' in cleaned_data and cleaned_data['y_axis'].exists():
-            new_attrs['y_axis'] = [y.name for y in cleaned_data['y_axis'].order_by('position')]
+        for field in ['y_axis', 'areas', 'lines', 'bars']:
+            if field in cleaned_data and cleaned_data[field].exists():
+                new_attrs[field] = [y.name for y in cleaned_data[field].order_by('position')]
+                mixed = True
 
         stack = []
         for i in range(3):
@@ -497,7 +517,7 @@ class PlotForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _("Configure Plot")
+        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
         self.update_initial()
         self.body.append(
             Row(
@@ -567,7 +587,7 @@ class ListForm(ModalModelForm):
     class Meta:
         model = models.Entry
         fields = (
-            'attrs', 'columns', 'limit', 'order_by', 'order_desc'
+            'attrs',
         )
         widgets = {
             'attrs': forms.HiddenInput(),
@@ -575,7 +595,7 @@ class ListForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _("Configure List")
+        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
         self.update_initial()
         self.body.append(
             Row(
@@ -641,8 +661,7 @@ class PieForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.body.title = _("Configure Pie")
+        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
         self.update_initial()
         self.body.append(
             Row(
@@ -696,7 +715,7 @@ class TimelineForm(ModalModelForm):
     class Meta:
         model = models.Entry
         fields = (
-            'attrs', 'min_time', 'max_time', 'start_field', 'end_field', 'label_field', 'type_field', 'colors',
+            'attrs',
         )
         widgets = {
             'attrs': forms.HiddenInput(),
@@ -706,7 +725,7 @@ class TimelineForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _("Configure Timeline")
+        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
         self.update_initial()
         self.body.append(
             Row(
@@ -768,7 +787,7 @@ class RichTextForm(ModalModelForm):
     class Meta:
         model = models.Entry
         fields = (
-            'attrs', 'rich_text',
+            'attrs',
         )
         widgets = {
             'attrs': forms.HiddenInput(),
@@ -776,8 +795,7 @@ class RichTextForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.body.title = _("Configure Rich Text")
+        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
         self.update_initial()
         self.body.append(
             Row(
@@ -811,7 +829,7 @@ class HistogramForm(ModalModelForm):
     class Meta:
         model = models.Entry
         fields = (
-            'attrs', 'values', 'bins', 'colors',
+            'attrs',
         )
         widgets = {
             'attrs': forms.HiddenInput(),
@@ -819,7 +837,7 @@ class HistogramForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _("Configure Histogram")
+        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
         self.update_initial()
         self.body.append(
             Row(
@@ -896,7 +914,7 @@ class GeoCharForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _("Configure Geo Chart")
+        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
         self.update_initial()
         self.body.append(
             Row(
