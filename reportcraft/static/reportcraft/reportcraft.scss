@@ -424,11 +424,43 @@ svg circle {
   opacity: 0.75;
 }
 
-$list-columns: (2, 3, 4, 6);
+$list-columns: (1, 2, 3, 4, 6);
+$grid-breakpoints: (
+        xs: 0,
+        sm: 576px,
+        md: 768px,
+        lg: 992px,
+        xl: 1200px,
+        xxl: 1400px
+);
+@each $breakpoint, $value in $grid-breakpoints {
+  @media (min-width: $value) {
+    @each $num in $list-columns {
+      .#{$breakpoint}-#{$num}-cols {
+        column-count: $num;
+        column-gap: var(--bs-column-gap);
+      }
+    }
+  }
+}
 
-@each $num in $list-columns {
-  .list-group-#{$num}-cols {
-    column-count: $num;
-    column-gap: 1em;
+.list-unstyled {
+  --bs-list-group-color: var(--bs-body-color);
+  --bs-list-group-bg: var(--bs-body-bg);
+  --bs-list-group-border-color: var(--bs-border-color);
+  --bs-list-group-border-width: var(--bs-border-width);
+  --bs-list-group-border-radius: var(--bs-border-radius);
+  --bs-list-group-item-padding-x: 1rem;
+  --bs-list-group-item-padding-y: 0.5rem;
+  --bs-list-group-disabled-color: var(--bs-secondary-color);
+  --bs-list-group-disabled-bg: var(--bs-body-bg);
+  .list-group-item{
+    border-width: 0 0 var(--bs-border-width);
+    color: var(--bs-body-color);
+    background: var(--bs-body-bg);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
 }
