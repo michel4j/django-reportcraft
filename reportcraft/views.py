@@ -366,12 +366,12 @@ class DeleteSourceModel(*EDIT_MIXINS, ModalDeleteView):
 
 class DeleteReport(*EDIT_MIXINS, ModalDeleteView):
     model = models.Report
-    success_url = reverse_lazy('report-list')
+    success_url = reverse_lazy('report-editor-root')
 
 
 class DeleteDataSource(*EDIT_MIXINS, ModalDeleteView):
     model = models.DataSource
-    success_url = reverse_lazy('data-source-list')
+    success_url = reverse_lazy('report-editor-root')
 
 
 class DeleteEntry(*EDIT_MIXINS, ModalDeleteView):
