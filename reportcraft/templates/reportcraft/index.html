@@ -7,7 +7,6 @@
 {% block page-content %}
     {% include "itemlist/filters.html" %}
     <ul class="list-unstyled md-2-cols xl-3-cols">
-        {% for i in test_range %}
         {% for report in object_list %}
             <li class="list-group-item d-flex flex-row align-items-center ps-0">
                 <div class="text-muted me-3">{% svg_icon 'report' size="lg" stroke="1" %}</div>
@@ -19,7 +18,6 @@
                 </div>
             </li>
         {% endfor %}
-    {% endfor %}
     </ul>
 {% include "itemlist/pagination.html" %}
 {% endblock %}
