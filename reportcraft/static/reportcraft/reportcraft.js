@@ -447,6 +447,12 @@ function drawBarChart(figure, chart, options, type = 'bar') {
         series_types = chart['types'];
     }
 
+    if (type === 'bar') {
+        options.horizontal = true;
+    } else if (type === 'column') {
+        type = 'bar';
+    }
+    
     let c3chart = c3.generate({
         bindto: `#${figure.attr('id')}`,
         size: {width: options.width, height: options.height},
@@ -474,7 +480,7 @@ function drawBarChart(figure, chart, options, type = 'bar') {
             y: {
                 tick: {format: formatKilo}
             },
-            rotated: (options.horizontal || false)
+            rotated: options.horizontal
         },
         legend: {hide: (series.length === 1)},
         bar: {width: {ratio: .6}},
@@ -894,11 +900,10 @@ function drawGeoChart(figure, chart, options) {
 
             switch (figure.data('type')) {
                 case 'bars':
-                    options.horizontal = true;
                     drawBarChart(figure, chart, options, 'bar');
                     break;
                 case 'column':
-                    drawBarChart(figure, chart, options, 'bar');
+                    drawBarChart(figure, chart, options, 'column');
                     break;
                 case 'area':
                     drawBarChart(figure, chart, options, 'area');

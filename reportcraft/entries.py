@@ -101,18 +101,6 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
     lines = entry.attrs.get('lines', [])
     bars = entry.attrs.get('bars', [])
 
-    types = {
-        **{field: 'area' for field in areas},
-        **{field: 'line' for field in lines},
-        **{field: 'bar' for field in bars},
-    }
-    if not types:
-        types = {
-            **{y: 'bar' for y in y_axis if kind in ['bars', 'columns']},
-            **{y: 'line' for y in y_axis if kind == 'line'},
-            **{y: 'area' for y in y_axis if kind == 'area'},
-        }
-
     if not x_axis or not y_axis:
         return {}
 
@@ -122,8 +110,25 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
         y_axis = y_axis[0]
         y_labels = list(filter(None, dict.fromkeys(item[y_axis] for item in raw_data)))
         y_stack = [y_labels for group in stack for y in group if y == y_axis]
+        types = {
+            **{y: 'bar' for y in y_labels if kind in ['bars', 'columns']},
+            **{y: 'line' for y in y_labels if kind == 'line'},
+            **{y: 'area' for y in y_labels if kind == 'area'},
+        }
+
     else:
         y_stack = [[labels.get(y, y) for y in group] for group in stack]
+        types = {
+            **{labels.get(field, field): 'area' for field in areas},
+            **{labels.get(field, field): 'line' for field in lines},
+            **{labels.get(field, field): 'bar' for field in bars},
+        }
+        if not types:
+            types = {
+                **{labels.get(y, y): 'bar' for y in y_axis if kind in ['bars', 'columns']},
+                **{labels.get(y, y): 'line' for y in y_axis if kind == 'line'},
+                **{labels.get(y, y): 'area' for y in y_axis if kind == 'area'},
+            }
 
     data = regroup_data(
         raw_data, x_axis=x_axis, y_axis=y_axis, y_value=y_value, labels=labels,
