@@ -97,6 +97,11 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
     x_culling = entry.attrs.get('x_culling', 15)
     limit = entry.attrs.get('limit', None)
 
+    # For compatibility with older reports, convert 'bars' to 'columns' if vertical is True
+    if vertical and kind == 'bars':
+        kind = 'columns'
+        vertical = False
+
     areas = entry.attrs.get('areas', [])
     lines = entry.attrs.get('lines', [])
     bars = entry.attrs.get('bars', [])
