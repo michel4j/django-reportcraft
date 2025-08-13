@@ -37,7 +37,7 @@
 
 {% block page-content %}
     <div class="row report-editor ">
-        <div class="col-md-9 col-sm-12">
+        <div class="col-md-9 col-sm-12 d-flex flex-column">
             <div class="card mb-3">
                 <div class="card-header py-2 d-flex align-items-center">
                     <h5>Models</h5>
@@ -82,11 +82,6 @@
                                            data-modal-url="{% url 'edit-source-model' source=source.pk pk=src_model.pk %}"
                                            title="Edit">
                                             {% tool_icon icon='pencil' size='sm' %}
-                                        </a>
-                                        <a href="#0"
-                                           data-modal-url="{% url 'delete-source-model' source=source.pk pk=src_model.pk %}"
-                                           title="Delete">
-                                            {% tool_icon icon='x' size='sm' %}
                                         </a>
                                     </div>
                                 </div>
@@ -135,11 +130,6 @@
                                            title="Edit">
                                             {% tool_icon icon='pencil' size='sm' %}
                                         </a>
-                                        <a href="#0"
-                                           data-modal-url="{% url 'delete-source-field' source=source.pk pk=field.pk %}"
-                                           title="Delete">
-                                            {% tool_icon icon='x' size='sm' %}
-                                        </a>
                                     </div>
                                 </div>
                             </td>
@@ -148,7 +138,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="card mb-3">
+            <div class="card mb-3 flex-grow-1">
                 <div class="card-header py-2 d-flex align-items-center">
                     <h4 class="my-0"><span class="text-muted">Data</span></h4>
                     <div class="toolbox ms-auto pr-0">
@@ -170,14 +160,14 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-12">
+        <div class="col-md-3 col-sm-12 d-flex flex-column">
             <div class="card mb-3">
-                <div class="card-header py-2 d-flex align-items-center">
-                    <h5 class="my-0"><span class="text-muted">Reports</span></h5>
+                <div class="card-header py-2">
+                    <h5 class="my-0"><span class="text-muted">Related Reports</span></h5>
                 </div>
                 <ul class="list-group list-group-flush">
                     {% for report in source.reports %}
-                        <li class="list-group-item">
+                        <li class="list-group-item bg-transparent">
                             <a href="{% url 'report-editor' pk=report.pk %}">
                                 <small>{{ report }}</small>
                             </a>
@@ -185,18 +175,18 @@
                     {% endfor %}
                 </ul>
             </div>
-            <div class="card mb-3">
-                <div class="card-header py-2 d-flex align-items-center">
-                    <h5 class="my-0"><span class="text-muted">Available Fields</span></h5>
+            <div class="card mb-3 flex-grow-1" >
+                <div class="card-header py-2">
+                    <h5 class="my-0"><span class="text-muted">DB Records</span></h5>
                 </div>
-                <div class="" style="font-size: 0.8em; overflow-y: auto; overflow-x: hidden; max-height: 50vh;">
-                <ul class="list-group-flush list-group" >
+                <div style="min-height: 0;">
+                <ul class="list-group-flush list-group small">
                     {% for model in source.models.all %}
                         <li class="fs-6 list-group-item bg-body-secondary">
                         {{ model }}
                         </li>
                         {% for name, type in model.get_model_specs %}
-                        <li class="list-group-item overflow ellipsis" data-bs-toggle="tooltip" title="{{ name }} [{{ type }}]">
+                        <li class="list-group-item  bg-transparent overflow ellipsis" data-bs-toggle="tooltip" title="{{ name }} [{{ type }}]">
                             <code class="font-monospace text-nowrap" >{{ name }}</code>
                         </li>
                         {% endfor %}

@@ -269,6 +269,9 @@ class EditSourceField(*EDIT_MIXINS, ModalUpdateView):
     form_class = forms.DataFieldForm
     model = models.DataField
 
+    def get_delete_url(self):
+        return reverse('delete-source-field', kwargs={'source': self.object.source.pk, 'pk': self.object.pk})
+
     def get_success_url(self):
         return reverse('source-editor', kwargs={'pk': self.object.source.pk})
 
@@ -337,6 +340,9 @@ class EditSourceModel(*EDIT_MIXINS, ModalUpdateView):
         kwargs = super().get_form_kwargs()
         kwargs['source'] = models.DataSource.objects.filter(pk=self.kwargs.get('source')).first()
         return kwargs
+
+    def get_delete_url(self):
+        return reverse('delete-source-model', kwargs={'source': self.object.source.pk, 'pk': self.object.pk})
 
     def get_success_url(self):
         return reverse('source-editor', kwargs={'pk': self.object.source.pk})
