@@ -387,7 +387,7 @@ class ConfigureEntry(*EDIT_MIXINS, ModalUpdateView):
     FORM_CLASSES = {
         model.Types.TABLE: forms.TableForm,
         model.Types.BARS: forms.BarsForm,
-        model.Types.COLUMN: forms.BarsForm,
+        model.Types.COLUMNS: forms.BarsForm,
         model.Types.PIE: forms.PieForm,
         model.Types.PLOT: forms.PlotForm,
         model.Types.LIST: forms.ListForm,

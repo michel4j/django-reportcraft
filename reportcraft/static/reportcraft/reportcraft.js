@@ -3,13 +3,13 @@
 
 const figureTypes = [
     "histogram",
-    "lines",
+    "line",
     "bars",
     "scatter",
     "pie",
     "gauge",
     "timeline",
-    "column",
+    "columns",
     "plot",
     "histo",
     'geochart',
@@ -902,16 +902,17 @@ function drawGeoChart(figure, chart, options) {
                 case 'bars':
                     drawBarChart(figure, chart, options, 'bar');
                     break;
-                case 'column':
+                case 'columns':
                     drawBarChart(figure, chart, options, 'column');
                     break;
                 case 'area':
                     drawBarChart(figure, chart, options, 'area');
                     break;
-                case 'lines':
+                case 'line':
                     drawBarChart(figure, chart, options, 'line');
                     break;
                 case 'plot':
+                    console.log(chart);
                     drawXYChart(figure, chart, options, 'line');
                     break;
                 case 'histogram':
@@ -924,6 +925,7 @@ function drawGeoChart(figure, chart, options) {
                     drawPieChart(figure, chart, options, 'donut');
                     break;
                 case 'scatter':
+
                     drawXYChart(figure, chart, options, 'scatter');
                     break;
                 case 'timeline':

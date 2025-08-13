@@ -53,15 +53,23 @@ def load_object(import_path):
     return getattr(module, object_name)
 
 
-class DisplayName(Case):
+class DisplayName(F):
+    """
+    Display Name Placeholder for a field that is used to display a human-readable name
+    """
+
+    def __init__(self, field_spec):
+        if isinstance(field_spec, F):
+            super().__init__(field_spec.name)
+        else:
+            super().__init__(field_spec)
+
+
+class ChoiceName(Case):
     """
     Queries display names for a Django choices field
     """
-
-    def __init__(self, model_name: str | V, field_ref: str | F, condition=None, then=None, **lookups):
-
-        if isinstance(model_name, V):
-            model_name = model_name.value
+    def __init__(self, model_name: str, field_ref: str | F, condition=None, then=None, **lookups):
 
         if isinstance(field_ref, F):
             field_ref = field_ref.name
@@ -69,8 +77,11 @@ class DisplayName(Case):
         model = apps.get_model(model_name)
         field_name = field_ref.split('__')[-1]
         choices = dict(model._meta.get_field(field_name).flatchoices)
-        whens = [When(**{field_ref: k, 'then': V(v)}) for k, v in choices.items()]
-        super().__init__(*whens, output_field=CharField())
+        whens = [
+            When(**{field_ref: k, 'then': V(v)})
+            for k, v in choices.items()
+        ]
+        super().__init__(*whens, output_field=CharField(), default=V(''), condition=condition, then=then, **lookups)
 
 
 class Hours(models.Func):
@@ -1161,3 +1172,22 @@ def region_choices(data):
 
 REGION_CHOICES = sorted([('world', '001 - World')] + list(region_choices(REGION_DATA)), key=lambda x: x[1])
 
+
+def camel_case(snake_str: str) -> str:
+    """
+    Convert a snake_case string to CamelCase.
+    :param snake_str: The snake_case string to convert.
+    :return: The CamelCase version of the string.
+    """
+    return ''.join(x.capitalize() for x in snake_str.split('_'))
+
+
+def sanitize_field(field_spec: str) -> str:
+    """
+    Prepare a django database field lookup for display.
+    :param field_spec: The field lookup as a string. Related fields with a '__' lookup separator are
+    converted to '.' for display. snake case is converted to CamelCase.
+    :return: Sanitized field lookup string.
+    """
+
+    return '.'.join([camel_case(name) for name in field_spec.split('__')])

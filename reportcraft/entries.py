@@ -90,16 +90,17 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
     y_value = entry.attrs.get('y_value', '')
     colors = entry.attrs.get('colors', 'Live16')
     color_field = entry.attrs.get('color_field', None)
-    line = entry.attrs.get('line', None)
-    line_limits = entry.attrs.get('line_limits', None)
     aspect_ratio = entry.attrs.get('aspect_ratio', None)
     wrap_x_labels = entry.attrs.get('wrap_x_labels', False)
     x_culling = entry.attrs.get('x_culling', 15)
     limit = entry.attrs.get('limit', None)
 
-    # For compatibility with older reports, convert 'bars' to 'columns' if vertical is True
+    # For compatibility with older reports, convert 'bars' to 'columns' and vice versa if vertical is True
     if vertical and kind == 'bars':
         kind = 'columns'
+        vertical = False
+    elif vertical and kind == 'columns':
+        kind = 'bars'
         vertical = False
 
     areas = entry.attrs.get('areas', [])
@@ -151,10 +152,6 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
         'x-label': x_label,
     }
 
-    if line:
-        info['line'] = line
-    if line_limits:
-        info['line-limits'] = line_limits
     if aspect_ratio:
         info['aspect-ratio'] = aspect_ratio
     if y_stack:
@@ -186,7 +183,7 @@ def generate_line(entry, *args, **kwargs):
 
 
 def generate_columns(entry, *args, **kwargs):
-    return generate_bars(entry, *args, kind='column', **kwargs)
+    return generate_bars(entry, *args, kind='columns', **kwargs)
 
 
 def generate_list(entry, *args, **kwargs):

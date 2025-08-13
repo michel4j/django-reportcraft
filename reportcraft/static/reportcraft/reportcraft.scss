@@ -468,3 +468,25 @@ $grid-breakpoints: (
     }
   }
 }
+
+// fix for bootstrap tabs
+.nav-tabs {
+  margin-top: 1em;
+
+  .nav-item {
+    margin-left: 0.25em;
+
+    &:first-child {
+      margin-left: 1em;
+    }
+  }
+}
+
+ul.nav-tabs.nav-tabs-sm {
+  li {
+    > a {
+      margin-right: 2px;
+      line-height: 1;
+    }
+  }
+}

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import itertools
 from collections import defaultdict
 from typing import Any, Literal
 
@@ -9,7 +12,6 @@ from django.db.models.functions import Round, Abs, Sign
 from django.utils.text import slugify, gettext_lazy as _
 
 from . import utils, entries
-
 
 
 VALUE_TYPES = {
@@ -221,6 +223,47 @@ class DataModel(models.Model):
         model = self.model.model_class()
         return any(f.name == field_name for f in model._meta.get_fields())
 
+    def get_field_spec(self, field, parent: str = None, depth: int = 0) -> list[tuple]:
+        """
+        Get the field specification for a given field
+        :param field: the field name
+        :param parent: optional parent field name for nested fields
+        :param depth: current recursion depth (used to prevent infinite recursion)
+        :return: dictionary with field specifications
+        """
+        spec = '__'.join([parent, field.name] if parent else [field.name])
+        field_type = field.get_internal_type()
+        disallowed_types = [
+            'AutoField', 'BigAutoField', 'UUIDField', 'BinaryField', 'FileField', 'ImageField', 'ForeignKey',
+            'GenericForeignKey', 'GenericRelation', 'OneToOneRel', 'ManyToManyField', 'ManyToOneRel',
+        ]
+
+        if isinstance(field, (models.OneToOneField, models.ForeignKey, models.ManyToManyField)):
+            return self.get_model_specs(field.related_model, parent=spec, depth=depth + 1)
+        elif field_type not in disallowed_types:
+            return [(utils.sanitize_field(spec), field_type.replace('Field', ''))]
+        return []
+
+    def get_model_specs(self, model=None, parent: str = None, depth: int = 0, max_depth: int = 3) -> list[tuple]:
+        """
+        Get the field specifications for this model
+        :param model: optional model class to inspect
+        :param parent: optional parent field name for nested fields
+        :param depth: current recursion depth (used to prevent infinite recursion)
+        :param max_depth: maximum recursion depth to prevent infinite loops
+        :return: list of field names and types
+        """
+        starting_model = self.model.model_class()
+        if model is None:
+            model = starting_model
+        if depth >= max_depth or model is None:
+            return []
+        return list(
+            itertools.chain.from_iterable(
+                (self.get_field_spec(sub_field, parent, depth) for sub_field in model._meta.get_fields())
+            )
+        )
+
     def __str__(self):
         app, name = self.name.split('.')
         return f'{app}.{name.title()}'
@@ -251,9 +294,12 @@ class DataField(models.Model):
         parser = utils.ExpressionParser()
         if self.expression:
             db_expression = parser.parse(self.expression)
+            if isinstance(db_expression, utils.DisplayName):
+                db_expression = utils.ChoiceName(self.model.name, db_expression.name)
             if self.precision is not None:
                 db_expression = Round(db_expression, self.precision)
             return db_expression
+        return None
 
 
 class Report(models.Model):
@@ -272,19 +318,19 @@ class Report(models.Model):
 
 class Entry(models.Model):
     class Types(models.TextChoices):
-        BARS = 'bars', _('Bar Chart')
-        COLUMN = 'column', _('Column Chart')
-        TABLE = 'table', _('Table')
-        LIST = 'list', _('List')
-        PLOT = 'plot', _('XY Plot')
-        PIE = 'pie', _('Pie Chart')
-        HISTOGRAM = 'histogram', _('Histogram')
-        TIMELINE = 'timeline', _('Timeline')
-        TEXT = 'text', _('Rich Text')
-        MAP = 'map', _('Geo Chart')
-        DONUT = 'donut', _('Donut Chart')
-        LINE = 'line', _('Line Chart')
         AREA = 'area', _('Area Chart')
+        BARS = 'bars', _('Bar Chart')
+        COLUMNS = 'columns', _('Column Chart')
+        DONUT = 'donut', _('Donut Chart')
+        HISTOGRAM = 'histogram', _('Histogram')
+        LINE = 'line', _('Line Chart')
+        LIST = 'list', _('List')
+        MAP = 'map', _('Map Chart')
+        PIE = 'pie', _('Pie Chart')
+        TEXT = 'text', _('Rich Text')
+        TABLE = 'table', _('Table')
+        TIMELINE = 'timeline', _('Timeline')
+        PLOT = 'plot', _('XY Plot')
 
     class Widths(models.TextChoices):
         QUARTER = "col-md-3", _("One Quarter")
@@ -326,7 +372,7 @@ class Entry(models.Model):
         Types.MAP: entries.generate_geochart,
         Types.LINE: entries.generate_line,
         Types.AREA: entries.generate_area,
-        Types.COLUMN: entries.generate_columns,
+        Types.COLUMNS: entries.generate_columns,
     }
 
     def generate(self, *args, **kwargs):

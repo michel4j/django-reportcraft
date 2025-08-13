@@ -368,7 +368,7 @@ class BarsForm(ModalModelForm):
     x_culling = forms.IntegerField(label="Culling", required=False)
     wrap_x_labels = forms.BooleanField(label="Wrap Labels", required=False)
     aspect_ratio = forms.FloatField(label="Aspect Ratio", required=False)
-    vertical = forms.BooleanField(label="Vertical Bars", required=False)
+    vertical = forms.BooleanField(label="Rotate", required=False)
 
     sort_by = forms.ModelChoiceField(label='Sort By', required=False, queryset=models.DataField.objects.none())
     sort_desc = forms.BooleanField(label="Sort Descending", required=False)
@@ -424,7 +424,8 @@ class BarsForm(ModalModelForm):
                         Div(Field('lines', css_class='select'), css_class='col-12'),
                         css_class='row'
                     ),
-                )
+                ),
+                css_class='nav-tabs-sm my-2'
             ),
             Div(
                 Div(
@@ -497,19 +498,20 @@ class BarsForm(ModalModelForm):
 
 class PlotForm(ModalModelForm):
     x_axis = forms.ModelChoiceField(label='X-axis', required=True, queryset=models.DataField.objects.none())
-    y1_axis = forms.ModelMultipleChoiceField(label='Y1-axis', required=True, queryset=models.DataField.objects.none())
-    y2_axis = forms.ModelMultipleChoiceField(label='Y2-axis', required=False, queryset=models.DataField.objects.none())
     y1_label = forms.CharField(label='Y1 Label', required=False)
     y2_label = forms.CharField(label='Y2 Label', required=False)
-    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
 
+    y1_axis = forms.ModelMultipleChoiceField(label='Y1-axis', required=True, queryset=models.DataField.objects.none())
+    y2_axis = forms.ModelMultipleChoiceField(label='Y2-axis', required=False, queryset=models.DataField.objects.none())
+
+    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
     tick_precision = forms.IntegerField(label="Precision", required=False)
     scatter = forms.BooleanField(label="Scatter Plot", required=False)
 
     class Meta:
         model = models.Entry
         fields = (
-            'attrs', 'x_axis', 'y1_axis', 'y1_axis', 'y2_axis', 'y2_label', 'tick_precision', 'scatter', 'colors'
+            'attrs',
         )
         widgets = {
             'attrs': forms.HiddenInput(),
@@ -518,6 +520,7 @@ class PlotForm(ModalModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.body.title = _(f"Configure {self.instance.get_kind_display()}")
+
         self.update_initial()
         self.body.append(
             Row(
