@@ -13,7 +13,7 @@ from crisp_modals.forms import (
 )
 
 from . import models, utils
-from .utils import CATEGORICAL_COLORS, SEQUENTIAL_COLORS, REGION_CHOICES
+from .utils import CATEGORICAL_COLORS, SEQUENTIAL_COLORS, REGION_CHOICES, AXIS_CHOICES
 
 disabled_widget = forms.HiddenInput(attrs={'readonly': True})
 
@@ -496,17 +496,17 @@ class BarsForm(ModalModelForm):
         return cleaned_data
 
 
+PLOT_SERIES = 4
+
+
 class PlotForm(ModalModelForm):
-    x_axis = forms.ModelChoiceField(label='X-axis', required=True, queryset=models.DataField.objects.none())
+    x_label = forms.CharField(label='X Label', required=False)
     y1_label = forms.CharField(label='Y1 Label', required=False)
     y2_label = forms.CharField(label='Y2 Label', required=False)
-
-    y1_axis = forms.ModelMultipleChoiceField(label='Y1-axis', required=True, queryset=models.DataField.objects.none())
-    y2_axis = forms.ModelMultipleChoiceField(label='Y2-axis', required=False, queryset=models.DataField.objects.none())
-
     colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
     tick_precision = forms.IntegerField(label="Precision", required=False)
-    scatter = forms.BooleanField(label="Scatter Plot", required=False)
+    aspect_ratio = forms.FloatField(label="Aspect Ratio", required=False)
+    scatter = forms.BooleanField(label="No Lines", required=False)
 
     class Meta:
         model = models.Entry
@@ -520,64 +520,89 @@ class PlotForm(ModalModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.body.title = _(f"Configure {self.instance.get_kind_display()}")
+        print(self.instance)
+        for i in range(PLOT_SERIES):
+            self.fields[f'x__{i}'] = forms.ModelChoiceField(
+                label=f'X-Value', required=False, queryset=models.DataField.objects.none()
+            )
+            self.fields[f'y__{i}'] = forms.ModelChoiceField(
+                label=f'Y-Value', required=False, queryset=models.DataField.objects.none()
+            )
+            self.fields[f'z__{i}'] = forms.ModelChoiceField(
+                label=f'Z-Value', required=False, queryset=models.DataField.objects.none()
+            )
+            self.fields[f'axis__{i}'] = forms.ChoiceField(label="Axis", choices=AXIS_CHOICES, required=False)
 
         self.update_initial()
         self.body.append(
             Row(
-                ThirdWidth(Field('x_axis', css_class='select')),
-                ThirdWidth('tick_precision'),
-                ThirdWidth(Field('colors', css_class='select')),
-            ),
-            Row(
+                ThirdWidth('x_label'),
                 ThirdWidth('y1_label'),
-                TwoThirdWidth(Field('y1_axis', css_class='select')),
-            ),
-            Row(
                 ThirdWidth('y2_label'),
-                TwoThirdWidth(Field('y2_axis', css_class='select')),
             ),
             Row(
-                ThirdWidth('scatter'), Field('attrs'),
+                ThirdWidth('tick_precision'),
+                ThirdWidth('colors'),
+                ThirdWidth('aspect_ratio'),
             ),
+        )
+        for i in range(PLOT_SERIES):
+            self.body.append(
+                Row(
+                    QuarterWidth(f'x__{i}'),
+                    QuarterWidth(f'y__{i}'),
+                    QuarterWidth(f'z__{i}'),
+                    QuarterWidth(f'axis__{i}'),
+                ),
+            )
+        self.body.append(
+            Row(
+                HalfWidth('scatter'),
+                Field('attrs')
+            )
         )
 
     def update_initial(self):
         attrs = self.instance.attrs
         field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
         field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
-        for field in ['x_axis', 'y1_axis', 'y2_axis']:
-            self.fields[field].queryset = field_queryset
 
-        if 'x_axis' in attrs:
-            self.fields['x_axis'].initial = field_queryset.filter(name=attrs['x_axis']).first()
+        for i in range(PLOT_SERIES):
+            for f in ['x', 'y', 'z']:
+                self.fields[f'{f}__{i}'].queryset = field_queryset
 
-        if 'y_axis' in attrs:
-            for i, y_group in enumerate(attrs['y_axis']):
-                self.fields[f'y{i + 1}_axis'].initial = field_queryset.filter(name__in=y_group)
+        for i, group in enumerate(attrs.get('groups', [])):
+            for f in ['x', 'y', 'z']:
+                if f in group:
+                    self.fields[f'{f}__{i}'].initial = field_queryset.filter(name=group[f]).first()
+            self.fields[f'axis__{i}'].initial = group.get('axis', 'y1')
 
-        for field in ['y1_label', 'y2_label', 'tick_precision', 'scatter', 'aspect_ratio', 'colors']:
+        for field in ['x_label', 'y1_label', 'y2_label', 'tick_precision', 'scatter', 'aspect_ratio', 'colors']:
             if field in attrs:
                 self.fields[field].initial = attrs[field]
 
     def clean(self):
         cleaned_data = super().clean()
         new_attrs = {
-            'y_axis': []
+            'groups': []
         }
 
-        for field in ['x_axis']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = cleaned_data[field].name
+        for i in range(PLOT_SERIES):
+            group = {}
+            for f in ['x', 'y', 'z']:
+                if f'{f}__{i}' in cleaned_data and cleaned_data[f'{f}__{i}']:
+                    group[f] = cleaned_data[f'{f}__{i}'].name
 
-        for i in range(2):
-            if f'y{i + 1}_axis' in cleaned_data and cleaned_data[f'y{i + 1}_axis'].exists():
-                new_attrs[f'y_axis'].append([y.name for y in cleaned_data[f'y{i + 1}_axis']])
+            if f'axis__{i}' in cleaned_data and cleaned_data[f'axis__{i}']:
+                group['axis'] = cleaned_data[f'axis__{i}']
+            if group:
+                new_attrs['groups'].append(group)
 
-        for field in ['y1_label', 'y2_label', 'tick_precision', 'scatter', 'colors']:
+        for field in ['x_label', 'y1_label', 'y2_label', 'tick_precision', 'scatter', 'aspect_ratio', 'colors']:
             if field in cleaned_data:
                 new_attrs[field] = cleaned_data[field]
 
-        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, []]}
+        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, '', [], {}]}
         return cleaned_data
 
 

@@ -235,8 +235,8 @@ def generate_plot(entry, *args, **kwargs):
     """
     labels = entry.source.get_labels()
 
-    x_axis = entry.attrs.get('x_axis', '')
-    y_axis = entry.attrs.get('y_axis', [])
+    groups = entry.attrs.get('groups', [])
+    x_label = entry.attrs.get('x_label', '')
     y1_label = entry.attrs.get('y1_label', '')
     y2_label = entry.attrs.get('y2_label', '')
     scatter = entry.attrs.get('scatter', False)
@@ -244,44 +244,49 @@ def generate_plot(entry, *args, **kwargs):
     colors = entry.attrs.get('colors', 'Live16')
     tick_precision = entry.attrs.get('tick_precision', 0)
 
-    if not x_axis or not y_axis:
+    valid_groups = [
+        {
+            'label': labels.get(group['y'], group['y']),
+            **group
+        }
+        for group in groups if set(group.keys()) & {'x', 'y'}
+    ]
+    if not valid_groups:
         return {}
 
-    x_label = labels.get(x_axis, x_axis)
-    y_groups = [[labels.get(y, y) for y in group] for group in y_axis]
+    x_fields = [group['x'] for group in valid_groups]
+    y_fields = [group['y'] for group in valid_groups]
+    z_fields = [group.get('z') for group in valid_groups if 'z' in group]
+
     raw_data = entry.source.get_data(*args, **kwargs)
-
-    y_fields = [y for group in y_axis for y in group]
-
-    data = regroup_data(raw_data, x_axis=x_axis, y_axis=y_fields, labels=labels)
-
-    data.sort(key=lambda x: x[x_label])
+    data = regroup_data(raw_data, x_axis=x_fields[0], y_axis=x_fields[1:] + y_fields + z_fields, labels=labels)
+    sort_key = labels.get(x_fields[0], x_fields[0])
+    data.sort(key=lambda x: x[sort_key])
+    x_labels = [labels.get(x, x) for x in x_fields]
+    y_labels = [labels.get(y, y) for y in y_fields]
+    z_labels = [labels.get(z, z) for z in z_fields if z]  # Filter out None values
 
     report_data = [
-        [x_label] + [item[x_label] for item in data]
+        [x] + [item[x] for item in data]
+        for x in x_labels
+    ] + [
+        [y] + [item[y] for item in data]
+        for y in y_labels
+    ] + [
+        [z] + [item[z] for item in data]
+        for z in z_labels
     ]
-    series = {}
-    for i, group in enumerate(y_groups):
-        series[i] = group
-        report_data.extend(
-            [
-                [group_name] + [item.get(group_name, 0) for item in data]
-                for group_name in group
-            ]
-        )
 
     return {
         'title': entry.title,
         'description': entry.description,
         'kind': 'scatter' if scatter else 'plot',
         'style': entry.style,
-        'x-label': x_label,
         'aspect-ratio': aspect_ratio,
         'colors': colors,
         'x-tick-precision': tick_precision,
-        'x': x_label,
-        'y1': series.get(0, []),
-        'y2': series.get(1, []),
+        'groups': valid_groups,
+        'x-label': x_label,
         'y1-label': y1_label,
         'y2-label': y2_label,
         'data': report_data,
