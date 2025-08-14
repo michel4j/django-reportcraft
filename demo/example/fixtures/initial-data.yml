@@ -93811,16 +93811,6 @@
     name: example.Person
     source: 1
 - model: reportcraft.datamodel
-  pk: 2
-  fields:
-    created: 2025-03-17 18:13:20.523691+00:00
-    modified: 2025-03-20 04:44:30.592963+00:00
-    model:
-    - example
-    - institution
-    name: example.Institution
-    source: 1
-- model: reportcraft.datamodel
   pk: 3
   fields:
     created: 2025-03-17 19:08:31.193116+00:00
@@ -93899,29 +93889,15 @@
     ordering: null
     source: 1
 - model: reportcraft.datafield
-  pk: 3
-  fields:
-    created: 2025-03-17 18:13:20.560014+00:00
-    modified: 2025-03-20 04:44:30.525730+00:00
-    name: year
-    model: 2
-    label: Year
-    default: null
-    expression: Created.Year
-    precision: null
-    position: 0
-    ordering: null
-    source: 1
-- model: reportcraft.datafield
   pk: 4
   fields:
     created: 2025-03-17 18:13:49.299593+00:00
-    modified: 2025-03-17 18:13:49.299609+00:00
+    modified: 2025-08-11 19:21:16.129186+00:00
     name: institutions
-    model: 2
+    model: 1
     label: Institutions
     default: 0
-    expression: Count(this)
+    expression: Count(Institution, distinct=True)
     precision: null
     position: 3
     ordering: null
@@ -94095,29 +94071,15 @@
     ordering: null
     source: 1
 - model: reportcraft.datafield
-  pk: 22
-  fields:
-    created: 2025-03-20 04:44:30.548915+00:00
-    modified: 2025-03-20 04:44:30.571750+00:00
-    name: category
-    model: 2
-    label: Category
-    default: null
-    expression: Upper(People.Type)
-    precision: null
-    position: 1
-    ordering: null
-    source: 1
-- model: reportcraft.datafield
   pk: 23
   fields:
     created: 2025-03-20 05:21:33.508365+00:00
-    modified: 2025-03-24 22:48:10.814251+00:00
+    modified: 2025-08-13 18:09:27.771024+00:00
     name: num_institutions
     model: 7
     label: Institutions
     default: 0
-    expression: Count(this, distinct=True)
+    expression: Count(this)
     precision: null
     position: 2
     ordering: null
@@ -94234,6 +94196,48 @@
     position: 5
     ordering: null
     source: 5
+- model: reportcraft.datafield
+  pk: 36
+  fields:
+    created: 2025-08-13 19:18:01.049588+00:00
+    modified: 2025-08-13 19:19:00.337346+00:00
+    name: latitude
+    model: 8
+    label: Latitude
+    default: 0
+    expression: Avg(Institution.Latitude)
+    precision: 1
+    position: 2
+    ordering: null
+    source: 6
+- model: reportcraft.datafield
+  pk: 37
+  fields:
+    created: 2025-08-13 19:18:43.906215+00:00
+    modified: 2025-08-13 19:18:43.906227+00:00
+    name: logitude
+    model: 8
+    label: Longitude
+    default: 0
+    expression: Avg(Institution.Longitude)
+    precision: 1
+    position: 3
+    ordering: null
+    source: 6
+- model: reportcraft.datafield
+  pk: 38
+  fields:
+    created: 2025-08-13 19:21:56.769664+00:00
+    modified: 2025-08-13 20:51:17.631548+00:00
+    name: category
+    model: 8
+    label: Category
+    default: null
+    expression: Upper(Type)
+    precision: null
+    position: 4
+    ordering: null
+    source: 6
 - model: reportcraft.report
   pk: 1
   fields:
@@ -94256,16 +94260,38 @@
     style: ''
     notes: ''
     section: ''
+- model: reportcraft.report
+  pk: 3
+  fields:
+    created: 2025-03-18 19:38:15.597173+00:00
+    modified: 2025-03-19 21:45:56.179865+00:00
+    slug: institution-stats
+    title: Institution Statistics
+    description: This report presents the distribution of users and institutions
+    style: ''
+    notes: ''
+    section: ''
+- model: reportcraft.report
+  pk: 4
+  fields:
+    created: 2025-03-25 15:22:01.110988+00:00
+    modified: 2025-03-25 15:22:01.111014+00:00
+    slug: user-distribution
+    title: Distribution of Users
+    description: ''
+    style: ''
+    notes: ''
+    section: ''
 - model: reportcraft.entry
   pk: 1
   fields:
     created: 2025-03-17 16:23:04.929205+00:00
-    modified: 2025-03-20 05:11:45.782123+00:00
+    modified: 2025-08-13 17:43:19.916394+00:00
     title: Users Per Year
     description: ''
     notes: ''
     style: col-md-6
-    kind: bars
+    kind: columns
     source: 1
     report: 1
     position: 0
@@ -94275,10 +94301,12 @@
       sort_by: year
       y_axis:
       - category
+      lines:
+      - institutions
       stack:
       - - category
       wrap_x_labels: false
-      vertical: true
+      vertical: false
       sort_desc: false
       colors: Live8
 - model: reportcraft.entry
@@ -94440,7 +94468,7 @@
   pk: 9
   fields:
     created: 2025-03-20 05:23:37.054538+00:00
-    modified: 2025-08-10 14:45:25.602384+00:00
+    modified: 2025-08-13 18:11:16.510596+00:00
     title: Top 10 Countries by Number of Institutions
     description: ''
     notes: Calculated from the Institutions data model.
@@ -94464,7 +94492,7 @@
   pk: 10
   fields:
     created: 2025-03-21 00:56:27.632266+00:00
-    modified: 2025-03-21 13:09:50.884202+00:00
+    modified: 2025-08-14 20:32:13.283099+00:00
     title: Number of Persons per age group
     description: ''
     notes: ''
@@ -94474,11 +94502,18 @@
     report: 1
     position: 3
     attrs:
-      y_axis:
-      - - total
-      x_axis: age
+      groups:
+      - x: age
+        y: total
+        z: latitude
+      - x: age
+        y: logitude
+        z: total
+      - x: logitude
+        y: latitude
+        z: age
+        axis: y2
       y1_label: People
-      y2_label: ''
       scatter: false
       colors: Live8
 - model: reportcraft.entry
@@ -94507,3 +94542,46 @@
       region: '013'
       resolution: countries
       mode: markers
+- model: reportcraft.entry
+  pk: 16
+  fields:
+    created: 2025-08-11 16:47:27.874636+00:00
+    modified: 2025-08-11 19:05:56.238883+00:00
+    title: Types of Users
+    description: ''
+    notes: ''
+    style: col-md-12
+    kind: donut
+    source: 2
+    report: 4
+    position: 0
+    attrs:
+      value: users
+      label: category
+      colors: Live8
+- model: reportcraft.entry
+  pk: 17
+  fields:
+    created: 2025-08-11 18:56:46.086450+00:00
+    modified: 2025-08-11 22:45:16.988723+00:00
+    title: ''
+    description: ''
+    notes: ''
+    style: col-md-12
+    kind: area
+    source: 1
+    report: 4
+    position: 1
+    attrs:
+      x_axis: year
+      y_axis:
+      - users
+      - institutions
+      bars:
+      - institutions
+      stack:
+      - - users
+      wrap_x_labels: false
+      vertical: false
+      sort_desc: false
+      colors: Live8
