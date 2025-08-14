@@ -11,6 +11,7 @@ const figureTypes = [
     "timeline",
     "columns",
     "plot",
+    "xyplot",
     "histo",
     'geochart',
     'donut',
@@ -327,6 +328,195 @@ function drawXYChart(figure, chart, options, type = 'spline') {
         axis: axis_opts,
         grid: {y: {show: true}},
         //zoom: {enabled: true, type: 'drag'},
+        onresize: function () {
+            this.api.resize({
+                width: figure.width(),
+                height: figure.width() * options.height / options.width
+            });
+        }
+    });
+    if (chart.annotations) {
+        c3chart.xgrids(chart.annotations)
+    }
+    figure.data('c3-chart', c3chart);
+}
+
+function drawScatterPlot(figure, chart, options, type = 'spline') {
+
+    let data_type = type;
+    let spline_opts = {interpolation: {}};
+    let axis_opts = {x: {tick: {culling: true}}, y: {}, y2: {}};
+
+    const xdata = [];
+    $.each(chart.groups, function (i, item) {
+        xdata.push(...item.x);
+    });
+    const x_min = Math.min(...xdata);
+    const x_max = Math.max(...xdata);
+    
+    let xscale = d3.scaleLinear().domain([x_min, x_max]);
+    let tick_values = xscale.ticks(NUM_TICKS);
+    let prec = chart['x-tick-precision'];
+    const radius = chart['point-radius'] || 2.5;
+
+    if (prec == null) {
+        prec = getPrecision(tick_values);
+    }
+
+    // conversion functions,
+    let xForward = function (x) {
+        return x
+    };
+    let xBackward = function (x) {
+        return x
+    };
+
+    // X-axis scale
+    switch (chart['x-scale']) {
+        case 'time':
+            xForward = function (x) {
+                return Date.parse(x)
+            };
+            axis_opts.x = $.extend(axis_opts.x, {
+                type: 'timeseries',
+                tick: {format: chart['time-format'], culling: {max: 13}}
+            });
+            break;
+        case 'pow':
+        case 'inv-square':
+            let mult = (chart['x-scale'] === 'pow') ? 1 : -1;
+            xForward = d3.scalePow().exponent(mult * 2).domain([x_min, x_max]);
+            xBackward = xForward.invert;
+
+            xscale.domain([xForward(x_min), xForward(x_max)]);
+            tick_values = xscale.ticks(NUM_TICKS);
+
+            prec = getPrecision(tick_values);
+            axis_opts.x = $.extend(axis_opts.x, {
+                tick: {
+                    values: tick_values,
+                    multiline: false,
+                    format: x => xBackward(x).toFixed(prec)
+                }
+            });
+            break;
+        case 'log':
+            xForward = d3.scaleLog().domain([x_min, x_max]);
+            xBackward = xForward.invert;
+            xscale.domain([xForward(x_min), xForward(x_max)]);
+            tick_values = xscale.ticks(NUM_TICKS);
+            prec = getPrecision(tick_values);
+            axis_opts.x = $.extend(axis_opts.x, {
+                tick: {
+                    values: tick_values,
+                    multiline: false,
+                    format: x => xBackward(x).toFixed(prec)
+                }
+            });
+            break;
+        case 'identity':
+            axis_opts.x = $.extend(axis_opts.x, {
+                type: 'index',
+                tick: {
+                    multiline: false,
+                }
+            });
+            break;
+        default:    // linear
+            axis_opts.x = $.extend(axis_opts.x, {
+                tick: {
+                    culling: true,
+                    fit: true,
+                    // values: tick_values,
+                    multiline: false,
+                    format: x => xBackward(x).toFixed(prec)
+                }
+            });
+    }
+
+    // Axis limits
+    if (chart['x-limits']) {
+        axis_opts.x = $.extend(axis_opts.x, {
+            min: xForward(chart['x-limits'][0]),
+            max: xForward(chart['x-limits'][1]),
+            padding: 0,
+        });
+    }
+    if (chart['y1-limits']) {
+        axis_opts.y = $.extend(axis_opts.y, {
+            min: chart['y1-limits'][0],
+            max: chart['y1-limits'][1],
+            padding: 0,
+        });
+    }
+    if (chart['y2-limits']) {
+        axis_opts.y2 = $.extend(axis_opts.y2, {
+            min: chart['y2-limits'][0],
+            max: chart['y2-limits'][1],
+            padding: 0,
+        });
+    }
+
+    // Spline Plo type
+    if (["cardinal", "basis", "step", "step-before", "step-after"].includes(chart['interpolation'])) {
+        data_type = 'spline';
+        spline_opts.interpolation.type = chart['interpolation'];
+    }
+
+    // convert x values and setup column datat
+    let columns = [];
+    let series = {};
+    let axes = {};
+    const groups = {};
+
+    $.each(chart.groups, function (i, group) {
+        if (i === 0) {
+            axis_opts.x.label = chart["x-label"] || group.x;
+        }
+        axes[group.y] = group.axis || 'y';
+        if (axes[group.y] === 'y2') {
+            axis_opts.y2.show = true;
+            axis_opts.y2.label = chart["y2-label"] || group.y;
+        } else if (axes[group.y] === 'y') {
+            axis_opts.y.label = chart["y1-label"] || group.y;
+        }
+
+        columns.push([group.x, ...chart.data[group.x].map(xForward)]);
+        columns.push([group.y, ...chart.data[group.y]]);
+        series[group.y] = group.x;
+        groups[group.y] = group;
+    });
+
+    const getSize = function(d){
+        const group = groups[d.id];
+        if (group.z) {
+            return Math.max(chart.data[group.z][d.index] || 0.0, 0.0) * radius;
+        } else {
+            return 2.5;
+        }
+    };
+
+    Object.entries(series).forEach(([key, value], index) => {
+        options.colors[key] = options.scheme[index % options.scheme.length];
+    });
+
+    // remove raw data from dom, not needed anymore
+    figure.removeData('chart').removeAttr('data-chart');
+    let c3chart = c3.generate({
+        bindto: `#${figure.attr('id')}`,
+        size: {width: options.width, height: options.height},
+        data: {
+            type: "scatter",
+            columns: columns,
+            colors: options.colors,
+            xs: series,
+        },
+        spline: spline_opts,
+        point: {
+           r: getSize,
+        },
+        axis: axis_opts,
+        grid: {y: {show: true}, x: {show: true}},
         onresize: function () {
             this.api.resize({
                 width: figure.width(),
@@ -912,8 +1102,10 @@ function drawGeoChart(figure, chart, options) {
                     drawBarChart(figure, chart, options, 'line');
                     break;
                 case 'plot':
-                    console.log(chart);
                     drawXYChart(figure, chart, options, 'line');
+                    break;
+                case 'xyplot':
+                    drawScatterPlot(figure, chart, options, 'line');
                     break;
                 case 'histogram':
                     drawHistogram(figure, chart, options);
@@ -925,7 +1117,6 @@ function drawGeoChart(figure, chart, options) {
                     drawPieChart(figure, chart, options, 'donut');
                     break;
                 case 'scatter':
-
                     drawXYChart(figure, chart, options, 'scatter');
                     break;
                 case 'timeline':

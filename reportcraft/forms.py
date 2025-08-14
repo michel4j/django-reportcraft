@@ -575,7 +575,7 @@ class PlotForm(ModalModelForm):
             for f in ['x', 'y', 'z']:
                 if f in group:
                     self.fields[f'{f}__{i}'].initial = field_queryset.filter(name=group[f]).first()
-            self.fields[f'axis__{i}'].initial = group.get('axis', 'y1')
+            self.fields[f'axis__{i}'].initial = group.get('axis', '')
 
         for field in ['x_label', 'y1_label', 'y2_label', 'tick_precision', 'scatter', 'aspect_ratio', 'colors']:
             if field in attrs:

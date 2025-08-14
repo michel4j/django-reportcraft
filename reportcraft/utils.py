@@ -717,7 +717,7 @@ SEQUENTIAL_SCHEMES = {
 
 CATEGORICAL_COLORS = [(scheme, scheme) for scheme in CATEGORICAL_SCHEMES.keys()]
 SEQUENTIAL_COLORS = [(scheme, scheme) for scheme in SEQUENTIAL_SCHEMES.keys()]
-AXIS_CHOICES = [('', ''), ('y1', 'Y1-Axis'), ('y2', 'Y2-Axis')]
+AXIS_CHOICES = [('', 'Choose...'), ('y', 'Y1-Axis'), ('y2', 'Y2-Axis')]
 
 
 def map_colors(data, scheme='Live16'):

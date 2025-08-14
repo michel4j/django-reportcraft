@@ -259,32 +259,25 @@ def generate_plot(entry, *args, **kwargs):
     z_fields = [group.get('z') for group in valid_groups if 'z' in group]
 
     raw_data = entry.source.get_data(*args, **kwargs)
-    data = regroup_data(raw_data, x_axis=x_fields[0], y_axis=x_fields[1:] + y_fields + z_fields, labels=labels)
-    sort_key = labels.get(x_fields[0], x_fields[0])
+    data = regroup_data(raw_data, x_axis=x_fields[0], y_axis=x_fields[1:] + y_fields + z_fields)
+    sort_key = x_fields[0]
     data.sort(key=lambda x: x[sort_key])
-    x_labels = [labels.get(x, x) for x in x_fields]
-    y_labels = [labels.get(y, y) for y in y_fields]
-    z_labels = [labels.get(z, z) for z in z_fields if z]  # Filter out None values
 
-    report_data = [
-        [x] + [item[x] for item in data]
-        for x in x_labels
-    ] + [
-        [y] + [item[y] for item in data]
-        for y in y_labels
-    ] + [
-        [z] + [item[z] for item in data]
-        for z in z_labels
-    ]
+    report_data = {
+        field_name: [item[field_name] for item in data if field_name in item]
+        for field_name in x_fields + y_fields + z_fields
+    }
 
     return {
         'title': entry.title,
         'description': entry.description,
-        'kind': 'scatter' if scatter else 'plot',
+        'kind': 'xyplot',
+        'lines': not scatter,
         'style': entry.style,
         'aspect-ratio': aspect_ratio,
         'colors': colors,
         'x-tick-precision': tick_precision,
+        'point-radius': .25,
         'groups': valid_groups,
         'x-label': x_label,
         'y1-label': y1_label,
