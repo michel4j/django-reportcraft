@@ -567,11 +567,9 @@ def regroup_data(
     :param sort: Name of field to sort by or empty string to disable sorting
     :param sort_desc: Sort in descending order
     """
-
     labels = labels or {}
     x_label = labels.get(x_axis, x_axis)
     x_values = list(dict.fromkeys(filter(None, [item[x_axis] for item in data])))
-
     if isinstance(y_axis, str):
         y_labels = list(filter(None, dict.fromkeys(item[y_axis] for item in data)))
     else:
@@ -583,7 +581,6 @@ def regroup_data(
     }
 
     raw_data = {value: {x_label: value, **defaults} for value in x_values}
-
     # reorganize data into dictionary of dictionaries with appropriate fields
     for item in data:
         x_value = item[x_axis]

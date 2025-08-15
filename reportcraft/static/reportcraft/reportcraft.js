@@ -58,7 +58,7 @@ const ColorSchemes = {
 
 const styleTemplate = _.template('<%= selector %> { <%= rules %> }');
 const contentTemplate = _.template(
-    '<div id="entry-<%= id %>" <% let style = entry.style || ""; %> class="section-entry <%= style %>" >' +
+    '<div id="entry-<%= id %>" <% let style = entry.style || ""; %> class="section-entry <%= entry.kind %> <%= style %>" >' +
     '   <% if ((entry.title) && ((!entry.kind) || (entry.kind === "richtext")))  { %>' +
     '       <h4><%= entry.title %></h4>' +
     '   <% } %>' +
@@ -341,26 +341,29 @@ function drawXYChart(figure, chart, options, type = 'spline') {
     figure.data('c3-chart', c3chart);
 }
 
-function drawScatterPlot(figure, chart, options, type = 'spline') {
-
-    let data_type = type;
+function drawScatterPlot(figure, chart, options) {
     let spline_opts = {interpolation: {}};
-    let axis_opts = {x: {tick: {culling: true}}, y: {}, y2: {}};
+    let axisOptions = {x: {tick: {culling: true}}, y: {}, y2: {}};
 
-    const xdata = [];
+    const xData = [], zData= [];
     $.each(chart.groups, function (i, item) {
-        xdata.push(...item.x);
+        xData.push(...chart.data[item.x]);
+        zData.push(... (chart.data[item.z] || []));
     });
-    const x_min = Math.min(...xdata);
-    const x_max = Math.max(...xdata);
-    
-    let xscale = d3.scaleLinear().domain([x_min, x_max]);
-    let tick_values = xscale.ticks(NUM_TICKS);
-    let prec = chart['x-tick-precision'];
-    const radius = chart['point-radius'] || 2.5;
+    const xMin = Math.min(...xData);
+    const xMax = Math.max(...xData);
+    const maxRadius = chart['max-radius'] || 2.5;
+    const zMin = zData.length ? Math.min(...zData) : 0.0;
+    const zMax = zData.length ? Math.max(...zData) : 1.0;
 
-    if (prec == null) {
-        prec = getPrecision(tick_values);
+    let xScale = d3.scaleLinear().domain([xMin, xMax]);
+    const zScale = d3.scaleLinear().domain([zMin, zMax]).range([1, maxRadius]);
+    let tickValues = xScale.ticks(NUM_TICKS);
+    let precision = chart['x-tick-precision'];
+
+
+    if (precision == null) {
+        precision = getPrecision(tickValues);
     }
 
     // conversion functions,
@@ -377,7 +380,7 @@ function drawScatterPlot(figure, chart, options, type = 'spline') {
             xForward = function (x) {
                 return Date.parse(x)
             };
-            axis_opts.x = $.extend(axis_opts.x, {
+            axisOptions.x = $.extend(axisOptions.x, {
                 type: 'timeseries',
                 tick: {format: chart['time-format'], culling: {max: 13}}
             });
@@ -385,37 +388,37 @@ function drawScatterPlot(figure, chart, options, type = 'spline') {
         case 'pow':
         case 'inv-square':
             let mult = (chart['x-scale'] === 'pow') ? 1 : -1;
-            xForward = d3.scalePow().exponent(mult * 2).domain([x_min, x_max]);
+            xForward = d3.scalePow().exponent(mult * 2).domain([xMin, xMax]);
             xBackward = xForward.invert;
 
-            xscale.domain([xForward(x_min), xForward(x_max)]);
-            tick_values = xscale.ticks(NUM_TICKS);
+            xScale.domain([xForward(xMin), xForward(xMax)]);
+            tickValues = xScale.ticks(NUM_TICKS);
 
-            prec = getPrecision(tick_values);
-            axis_opts.x = $.extend(axis_opts.x, {
+            precision = getPrecision(tickValues);
+            axisOptions.x = $.extend(axisOptions.x, {
                 tick: {
-                    values: tick_values,
+                    values: tickValues,
                     multiline: false,
-                    format: x => xBackward(x).toFixed(prec)
+                    format: x => xBackward(x).toFixed(precision)
                 }
             });
             break;
         case 'log':
-            xForward = d3.scaleLog().domain([x_min, x_max]);
+            xForward = d3.scaleLog().domain([xMin, xMax]);
             xBackward = xForward.invert;
-            xscale.domain([xForward(x_min), xForward(x_max)]);
-            tick_values = xscale.ticks(NUM_TICKS);
-            prec = getPrecision(tick_values);
-            axis_opts.x = $.extend(axis_opts.x, {
+            xScale.domain([xForward(xMin), xForward(xMax)]);
+            tickValues = xScale.ticks(NUM_TICKS);
+            precision = getPrecision(tickValues);
+            axisOptions.x = $.extend(axisOptions.x, {
                 tick: {
-                    values: tick_values,
+                    values: tickValues,
                     multiline: false,
-                    format: x => xBackward(x).toFixed(prec)
+                    format: x => xBackward(x).toFixed(precision)
                 }
             });
             break;
         case 'identity':
-            axis_opts.x = $.extend(axis_opts.x, {
+            axisOptions.x = $.extend(axisOptions.x, {
                 type: 'index',
                 tick: {
                     multiline: false,
@@ -423,74 +426,63 @@ function drawScatterPlot(figure, chart, options, type = 'spline') {
             });
             break;
         default:    // linear
-            axis_opts.x = $.extend(axis_opts.x, {
+            axisOptions.x = $.extend(axisOptions.x, {
                 tick: {
                     culling: true,
                     fit: true,
-                    // values: tick_values,
+                    values: tickValues,
                     multiline: false,
-                    format: x => xBackward(x).toFixed(prec)
+                    format: x => xBackward(x).toFixed(precision)
                 }
             });
     }
 
     // Axis limits
     if (chart['x-limits']) {
-        axis_opts.x = $.extend(axis_opts.x, {
+        axisOptions.x = $.extend(axisOptions.x, {
             min: xForward(chart['x-limits'][0]),
             max: xForward(chart['x-limits'][1]),
             padding: 0,
         });
     }
-    if (chart['y1-limits']) {
-        axis_opts.y = $.extend(axis_opts.y, {
-            min: chart['y1-limits'][0],
-            max: chart['y1-limits'][1],
-            padding: 0,
-        });
-    }
-    if (chart['y2-limits']) {
-        axis_opts.y2 = $.extend(axis_opts.y2, {
-            min: chart['y2-limits'][0],
-            max: chart['y2-limits'][1],
+    if (chart['y-limits']) {
+        axisOptions.y = $.extend(axisOptions.y, {
+            min: chart['y-limits'][0],
+            max: chart['y-limits'][1],
             padding: 0,
         });
     }
 
     // Spline Plo type
     if (["cardinal", "basis", "step", "step-before", "step-after"].includes(chart['interpolation'])) {
-        data_type = 'spline';
         spline_opts.interpolation.type = chart['interpolation'];
     }
 
     // convert x values and setup column datat
     let columns = [];
     let series = {};
-    let axes = {};
     const groups = {};
-
+    const types = {};
     $.each(chart.groups, function (i, group) {
         if (i === 0) {
-            axis_opts.x.label = chart["x-label"] || group.x;
+            axisOptions.x.label = chart["x-label"] || group.x;
+            axisOptions.y.label = chart["y-label"] || group.y;
         }
-        axes[group.y] = group.axis || 'y';
-        if (axes[group.y] === 'y2') {
-            axis_opts.y2.show = true;
-            axis_opts.y2.label = chart["y2-label"] || group.y;
-        } else if (axes[group.y] === 'y') {
-            axis_opts.y.label = chart["y1-label"] || group.y;
-        }
-
         columns.push([group.x, ...chart.data[group.x].map(xForward)]);
         columns.push([group.y, ...chart.data[group.y]]);
         series[group.y] = group.x;
         groups[group.y] = group;
+        if (group.type) {
+            types[group.y] = group.type;
+        }
     });
 
     const getSize = function(d){
         const group = groups[d.id];
-        if (group.z) {
-            return Math.max(chart.data[group.z][d.index] || 0.0, 0.0) * radius;
+        if (group.type === 'line') {
+            return 0;
+        } else if (group.z) {
+            return zScale(chart.data[group.z][d.index] || 0.0);
         } else {
             return 2.5;
         }
@@ -506,8 +498,8 @@ function drawScatterPlot(figure, chart, options, type = 'spline') {
         bindto: `#${figure.attr('id')}`,
         size: {width: options.width, height: options.height},
         data: {
-            type: "scatter",
             columns: columns,
+            types: types,
             colors: options.colors,
             xs: series,
         },
@@ -515,7 +507,7 @@ function drawScatterPlot(figure, chart, options, type = 'spline') {
         point: {
            r: getSize,
         },
-        axis: axis_opts,
+        axis: axisOptions,
         grid: {y: {show: true}, x: {show: true}},
         onresize: function () {
             this.api.resize({

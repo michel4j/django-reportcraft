@@ -237,51 +237,63 @@ def generate_plot(entry, *args, **kwargs):
 
     groups = entry.attrs.get('groups', [])
     x_label = entry.attrs.get('x_label', '')
-    y1_label = entry.attrs.get('y1_label', '')
-    y2_label = entry.attrs.get('y2_label', '')
-    scatter = entry.attrs.get('scatter', False)
-    aspect_ratio = entry.attrs.get('aspect_ratio', None)
+    y_label = entry.attrs.get('y_label', '')
+    x_value = entry.attrs.get('x_value', '')
+    group_by = entry.attrs.get('group_by', None)
     colors = entry.attrs.get('colors', 'Live16')
-    tick_precision = entry.attrs.get('tick_precision', 0)
+    precision = entry.attrs.get('precision', 0)
 
     valid_groups = [
         {
-            'label': labels.get(group['y'], group['y']),
+            'x': x_value,       # All groups share the same x-value
             **group
         }
-        for group in groups if set(group.keys()) & {'x', 'y'}
+        for group in groups if 'y' in group
     ]
+
     if not valid_groups:
         return {}
 
-    x_fields = [group['x'] for group in valid_groups]
     y_fields = [group['y'] for group in valid_groups]
     z_fields = [group.get('z') for group in valid_groups if 'z' in group]
 
     raw_data = entry.source.get_data(*args, **kwargs)
-    data = regroup_data(raw_data, x_axis=x_fields[0], y_axis=x_fields[1:] + y_fields + z_fields)
-    sort_key = x_fields[0]
+    if len(valid_groups) == 1 and group_by:
+        pass
+
+    data = regroup_data(raw_data, x_axis=x_value, y_axis=y_fields + z_fields)
+
+    print(raw_data)
+    print(data)
+    sort_key = x_value
     data.sort(key=lambda x: x[sort_key])
 
-    report_data = {
-        field_name: [item[field_name] for item in data if field_name in item]
-        for field_name in x_fields + y_fields + z_fields
-    }
+    group_info = []
+    for group in valid_groups:
+        new_group = {
+            'x': labels.get(group['x'], group['x']),
+            'y': labels.get(group['y'], group['y']),
+            'z': labels.get(group.get('z', ''), group.get('z', '')),
+            'type': group.get('type', ''),
+        }
+        group_info.append({k: v for k, v in new_group.items() if v})
 
+    report_data = {
+        labels.get(field_name, field_name): [item[field_name] for item in data if field_name in item]
+        for field_name in [x_value] + y_fields + z_fields
+    }
     return {
         'title': entry.title,
         'description': entry.description,
         'kind': 'xyplot',
-        'lines': not scatter,
+        'lines': False,
         'style': entry.style,
-        'aspect-ratio': aspect_ratio,
         'colors': colors,
-        'x-tick-precision': tick_precision,
-        'point-radius': .25,
-        'groups': valid_groups,
+        'x-tick-precision': precision,
+        'max-radius': 20,
+        'groups': group_info,
         'x-label': x_label,
-        'y1-label': y1_label,
-        'y2-label': y2_label,
+        'y-label': y_label,
         'data': report_data,
         'notes': entry.notes
     }

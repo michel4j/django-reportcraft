@@ -497,16 +497,16 @@ class BarsForm(ModalModelForm):
 
 
 PLOT_SERIES = 4
+XY_MARKERS = [('scatter', 'Points'), ('line', 'Lines'), ('', 'Both')]
 
 
 class PlotForm(ModalModelForm):
     x_label = forms.CharField(label='X Label', required=False)
-    y1_label = forms.CharField(label='Y1 Label', required=False)
-    y2_label = forms.CharField(label='Y2 Label', required=False)
+    y_label = forms.CharField(label='Y Label', required=False)
+    x_value = forms.ModelChoiceField(label='X-Value', required=False, queryset=models.DataField.objects.none())
     colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
-    tick_precision = forms.IntegerField(label="Precision", required=False)
-    aspect_ratio = forms.FloatField(label="Aspect Ratio", required=False)
-    scatter = forms.BooleanField(label="No Lines", required=False)
+    group_by = forms.ModelChoiceField(label='Group By', required=False, queryset=models.DataField.objects.none())
+    precision = forms.IntegerField(label="Precision", required=False)
 
     class Meta:
         model = models.Entry
@@ -520,64 +520,61 @@ class PlotForm(ModalModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.body.title = _(f"Configure {self.instance.get_kind_display()}")
-        print(self.instance)
         for i in range(PLOT_SERIES):
-            self.fields[f'x__{i}'] = forms.ModelChoiceField(
-                label=f'X-Value', required=False, queryset=models.DataField.objects.none()
-            )
             self.fields[f'y__{i}'] = forms.ModelChoiceField(
                 label=f'Y-Value', required=False, queryset=models.DataField.objects.none()
             )
             self.fields[f'z__{i}'] = forms.ModelChoiceField(
                 label=f'Z-Value', required=False, queryset=models.DataField.objects.none()
             )
-            self.fields[f'axis__{i}'] = forms.ChoiceField(label="Axis", choices=AXIS_CHOICES, required=False)
+            self.fields[f'type__{i}'] = forms.ChoiceField(label="Type", required=False, choices=XY_MARKERS)
 
         self.update_initial()
         self.body.append(
             Row(
+                ThirdWidth('x_value'),
                 ThirdWidth('x_label'),
-                ThirdWidth('y1_label'),
-                ThirdWidth('y2_label'),
+                ThirdWidth('y_label'),
             ),
             Row(
-                ThirdWidth('tick_precision'),
+                ThirdWidth('group_by'),
                 ThirdWidth('colors'),
-                ThirdWidth('aspect_ratio'),
+                ThirdWidth('precision'),
             ),
         )
         for i in range(PLOT_SERIES):
             self.body.append(
                 Row(
-                    QuarterWidth(f'x__{i}'),
-                    QuarterWidth(f'y__{i}'),
-                    QuarterWidth(f'z__{i}'),
-                    QuarterWidth(f'axis__{i}'),
+                    ThirdWidth(f'y__{i}'),
+                    ThirdWidth(f'z__{i}'),
+                    ThirdWidth(f'type__{i}'),
                 ),
             )
-        self.body.append(
-            Row(
-                HalfWidth('scatter'),
-                Field('attrs')
-            )
-        )
 
     def update_initial(self):
         attrs = self.instance.attrs
         field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
         field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
 
+        for field in ['x_value', 'group_by']:
+            self.fields[field].queryset = field_queryset
+
         for i in range(PLOT_SERIES):
-            for f in ['x', 'y', 'z']:
+            for f in ['y', 'z']:
                 self.fields[f'{f}__{i}'].queryset = field_queryset
 
+        for field in ['x_value', 'group_by']:
+            self.fields[field].queryset = field_queryset
+            if field in attrs:
+                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
+
         for i, group in enumerate(attrs.get('groups', [])):
-            for f in ['x', 'y', 'z']:
+            for f in ['y', 'z']:
                 if f in group:
                     self.fields[f'{f}__{i}'].initial = field_queryset.filter(name=group[f]).first()
-            self.fields[f'axis__{i}'].initial = group.get('axis', '')
+            self.fields[f'type__{i}'].initial = group.get('type', '')
 
-        for field in ['x_label', 'y1_label', 'y2_label', 'tick_precision', 'scatter', 'aspect_ratio', 'colors']:
+        for field in ['x_label', 'y_label', 'precision', 'colors']:
             if field in attrs:
                 self.fields[field].initial = attrs[field]
 
@@ -589,16 +586,20 @@ class PlotForm(ModalModelForm):
 
         for i in range(PLOT_SERIES):
             group = {}
-            for f in ['x', 'y', 'z']:
+            for f in ['y', 'z']:
                 if f'{f}__{i}' in cleaned_data and cleaned_data[f'{f}__{i}']:
                     group[f] = cleaned_data[f'{f}__{i}'].name
 
-            if f'axis__{i}' in cleaned_data and cleaned_data[f'axis__{i}']:
-                group['axis'] = cleaned_data[f'axis__{i}']
-            if group:
+            if f'type__{i}' in cleaned_data and cleaned_data[f'type__{i}']:
+                group['type'] = cleaned_data[f'type__{i}']
+            if 'y' in group.keys():
                 new_attrs['groups'].append(group)
 
-        for field in ['x_label', 'y1_label', 'y2_label', 'tick_precision', 'scatter', 'aspect_ratio', 'colors']:
+        for field in ['x_value', 'group_by']:
+            if field in cleaned_data and cleaned_data[field] is not None:
+                new_attrs[field] = cleaned_data[field].name
+
+        for field in ['x_label', 'y_label', 'precision', 'colors']:
             if field in cleaned_data:
                 new_attrs[field] = cleaned_data[field]
 
