@@ -497,13 +497,13 @@ class BarsForm(ModalModelForm):
 
 
 PLOT_SERIES = 4
-XY_MARKERS = [('scatter', 'Points'), ('line', 'Lines'), ('', 'Both')]
+XY_MARKERS = [('scatter', 'Points'), ('line', 'Lines'), ('', 'Lines & Points')]
 
 
 class PlotForm(ModalModelForm):
     x_label = forms.CharField(label='X Label', required=False)
     y_label = forms.CharField(label='Y Label', required=False)
-    x_value = forms.ModelChoiceField(label='X-Value', required=False, queryset=models.DataField.objects.none())
+    x_value = forms.ModelChoiceField(label='X-Value', required=True, queryset=models.DataField.objects.none())
     colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
     group_by = forms.ModelChoiceField(label='Group By', required=False, queryset=models.DataField.objects.none())
     precision = forms.IntegerField(label="Precision", required=False)
@@ -535,11 +535,13 @@ class PlotForm(ModalModelForm):
                 ThirdWidth('x_value'),
                 ThirdWidth('x_label'),
                 ThirdWidth('y_label'),
+                style='g-3'
             ),
             Row(
                 ThirdWidth('group_by'),
                 ThirdWidth('colors'),
                 ThirdWidth('precision'),
+                style='g-3'
             ),
         )
         for i in range(PLOT_SERIES):
@@ -548,6 +550,7 @@ class PlotForm(ModalModelForm):
                     ThirdWidth(f'y__{i}'),
                     ThirdWidth(f'z__{i}'),
                     ThirdWidth(f'type__{i}'),
+                    style='g-3'
                 ),
             )
 

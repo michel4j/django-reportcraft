@@ -9,10 +9,12 @@ import threading
 from datetime import datetime, timedelta
 from functools import wraps, reduce
 from importlib import import_module
+from inspect import getframeinfo, stack
 from operator import or_
 from typing import Any, Sequence
 
 import pyparsing as pp
+import yaml
 from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
@@ -69,8 +71,8 @@ class ChoiceName(Case):
     """
     Queries display names for a Django choices field
     """
-    def __init__(self, model_name: str, field_ref: str | F, condition=None, then=None, **lookups):
 
+    def __init__(self, model_name: str, field_ref: str | F, condition=None, then=None, **lookups):
         if isinstance(field_ref, F):
             field_ref = field_ref.name
 
@@ -194,7 +196,6 @@ OPERATOR_FUNCTIONS = {
     '/': 'DIV()',
 }
 
-
 ALLOWED_FUNCTIONS = {
     Sum, Avg, Count, Max, Min, Concat, Greatest, Least,
     Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan, ATan2, Mod, Sign, Trunc,
@@ -202,7 +203,6 @@ ALLOWED_FUNCTIONS = {
     Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
     Radians, Degrees, Hours, Minutes, ShiftStart, ShiftEnd, Q, DisplayName
 }
-
 
 REPORTCRAFT_FUNCTIONS = getattr(settings, 'REPORTCRAFT_FUNCTIONS', [])  # list of string paths to importable functions
 for func_path in REPORTCRAFT_FUNCTIONS:
@@ -212,7 +212,6 @@ for func_path in REPORTCRAFT_FUNCTIONS:
             ALLOWED_FUNCTIONS.add(func)
     except (ImportError, AttributeError) as e:
         print(f"Error importing function {func_path}: {e}")
-
 
 FUNCTIONS = {
     func.__name__: func for func in ALLOWED_FUNCTIONS
@@ -337,7 +336,9 @@ class Parser:
 class ExpressionParser(Parser):
     def __init__(self):
         self.expr = pp.Forward()
-        self.double = pp.Combine(pp.Optional('-') + pp.Word(pp.nums) + '.' + pp.Word(pp.nums)).setParseAction(self.parse_float)
+        self.double = pp.Combine(pp.Optional('-') + pp.Word(pp.nums) + '.' + pp.Word(pp.nums)).setParseAction(
+            self.parse_float
+        )
         self.integer = pp.Combine(pp.Optional('-') + pp.Word(pp.nums)).setParseAction(self.parse_int)
         self.boolean = pp.oneOf('True False true false').setParseAction(self.parse_bool)
         self.variable = pp.Word(pp.alphas + '.').setParseAction(self.parse_var)
@@ -459,12 +460,14 @@ class FilterParser:
             'isnull': 'isnull',
         }
         # Operators
-        operator = reduce(or_, [
-            pp.Literal(f'{op_prefix}{op}').setParseAction(pp.replace_with(f'{lookup_prefix}{lookup}'))
-            for op_prefix, lookup_prefix in [('!', 'not_'), ('', '')]
-            for op, lookup in extr_operators.items()
+        operator = reduce(
+            or_, [
+                pp.Literal(f'{op_prefix}{op}').setParseAction(pp.replace_with(f'{lookup_prefix}{lookup}'))
+                for op_prefix, lookup_prefix in [('!', 'not_'), ('', '')]
+                for op, lookup in extr_operators.items()
 
-        ])
+            ]
+        )
 
         # Values
         number = pp.pyparsing_common.number
@@ -477,10 +480,12 @@ class FilterParser:
         condition.setParseAction(self._make_q_object)
 
         # Define the boolean logic using an operator precedence parser
-        q_expression = pp.infixNotation(condition, [
-            (pp.CaselessLiteral("and"), 2, pp.opAssoc.LEFT, self._process_and),
-            (pp.CaselessLiteral("or"), 2, pp.opAssoc.LEFT, self._process_or),
-        ])
+        q_expression = pp.infixNotation(
+            condition, [
+                (pp.CaselessLiteral("and"), 2, pp.opAssoc.LEFT, self._process_and),
+                (pp.CaselessLiteral("or"), 2, pp.opAssoc.LEFT, self._process_or),
+            ]
+        )
 
         return q_expression
 
@@ -550,6 +555,7 @@ def regroup_data(
         x_axis: str = '',
         y_axis: list[str] | str = '',
         y_value: str = '',
+        others: list[str] = None,
         labels: dict = None,
         default: Any = None,
         sort: str = '',
@@ -562,12 +568,14 @@ def regroup_data(
     :param x_axis: Name of the x-axis field
     :param y_axis: List of y-axis field names or a single field name to group by
     :param y_value: Field name for y-axis if a single field is used for y-axis
+    :param others: List of other fields to include in the output if any
     :param labels: Field labels
     :param default: Default value for missing fields
     :param sort: Name of field to sort by or empty string to disable sorting
     :param sort_desc: Sort in descending order
     """
     labels = labels or {}
+    others = others or []
     x_label = labels.get(x_axis, x_axis)
     x_values = list(dict.fromkeys(filter(None, [item[x_axis] for item in data])))
     if isinstance(y_axis, str):
@@ -587,7 +595,7 @@ def regroup_data(
         if x_value not in x_values:
             continue
         if isinstance(y_axis, str):
-            if item[y_axis] is not None:
+            if item.get(y_axis) is not None:
                 raw_data[x_value][item[y_axis]] = item.get(y_value, 0)
         elif isinstance(y_axis, list):
             for y_field in y_axis:
@@ -598,12 +606,41 @@ def regroup_data(
                     raw_data[x_value][y_label] = item.get(y_field, 0)
                 elif y_label not in raw_data[x_value]:
                     raw_data[x_value][y_label] = default
+        # Add other fields to the raw data
+        for other in others:
+            if other in item:
+                raw_data[x_value][labels.get(other, other)] = item[other]
+
     data_list = list(raw_data.values())
 
     if sort:
         sort_key = labels.get(sort, sort)
         data_list.sort(key=lambda item: item.get(sort_key, 0), reverse=sort_desc)
+
     return data_list
+
+
+def split_data(
+        data: list[dict],
+        group_by: str,
+        default_group: str = 'Unknown',
+) -> dict:
+    """
+    Split data into a dictionary of lists keyed by the values of a field
+
+    :param data: list of dictionaries
+    :param group_by: Name of the field to split by
+    :param default_group: Name of the default group if the field is missing or empty
+    """
+    grouped_data = {}
+    for item in data:
+        group_value = item.get(group_by, default_group)
+        if group_value in ['', None]:
+            group_value = default_group
+        if group_value not in grouped_data:
+            grouped_data[group_value] = []
+        grouped_data[group_value].append(item)
+    return grouped_data
 
 
 CACHE_TIMEOUT = 86400
@@ -632,7 +669,9 @@ def cached_model_method(duration: int = 30):
                 if cached_result is not None:
                     if now - expiry > timedelta(seconds=duration):
                         # Asynchronously replace cache value if it is about to expire, next request will get the fresh value
-                        threading.Thread(target=_update_cache, args=(self, func, cache_key, args, kwargs, duration)).start()
+                        threading.Thread(
+                            target=_update_cache, args=(self, func, cache_key, args, kwargs, duration)
+                        ).start()
                     return cached_result
 
                 # Compute and store the fresh result
@@ -640,6 +679,7 @@ def cached_model_method(duration: int = 30):
             except Exception as e:
                 print(f"Cache error: {e}")
                 return func(self, *args, **kwargs)
+
         return wrapper
 
     return decorator
@@ -649,7 +689,8 @@ def _update_cache(self, func, cache_key, args, kwargs, duration):
     """Updates the cache value asynchronously."""
     result = func(self, *args, **kwargs)
     cache_expiry_key = f"{cache_key}:expiry"
-    cache.set_many({
+    cache.set_many(
+        {
             cache_key: result,
             cache_expiry_key: datetime.now() + timedelta(seconds=duration)
         }, timeout=CACHE_TIMEOUT
@@ -669,7 +710,7 @@ def epoch(dt: datetime = None) -> int:
 
 def list_colors(specifier):
     return [
-       f'#{specifier[i:i+6]}' for i in range(0, len(specifier), 6)
+        f'#{specifier[i:i + 6]}' for i in range(0, len(specifier), 6)
     ]
 
 
@@ -678,7 +719,9 @@ CATEGORICAL_SCHEMES = {
     "Dark2": list_colors("1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666"),
     "Live4": list_colors("8f9f9ac560529f6dbfa0b552"),
     "Live8": list_colors("073b4c06d6a0ffd166ef476f118ab27f7effafc76578c5e7"),
-    "Live16": list_colors("67aec1c45a81cdc339ae8e6b6dc758a084b6667ccdcd4f55805cd6cf622da69e4c9b97956db586c255b6073b4cffd166"),
+    "Live16": list_colors(
+        "67aec1c45a81cdc339ae8e6b6dc758a084b6667ccdcd4f55805cd6cf622da69e4c9b97956db586c255b6073b4cffd166"
+    ),
     "Paired": list_colors("a6cee31f78b4b2df8a33a02cfb9a99e31a1cfdbf6fff7f00cab2d66a3d9affff99b15928"),
     "Pastel1": list_colors("fbb4aeb3cde3ccebc5decbe4fed9a6ffffcce5d8bdfddaecf2f2f2"),
     "Pastel2": list_colors("b3e2cdfdcdaccbd5e8f4cae4e6f5c9fff2aef1e2cccccccc"),
@@ -752,10 +795,12 @@ def get_models(exclude: Sequence = ('django', 'rest_framework')) -> dict:
         info[app_name] = {}
         for model in app.get_models():
             info[app_name][model.__name__] = {
-                field.name: re.sub(r'Field$', '', field.get_internal_type()) for field in model._meta.get_fields() if not field.is_relation
+                field.name: re.sub(r'Field$', '', field.get_internal_type()) for field in model._meta.get_fields() if
+                not field.is_relation
             }
             info[app_name][model.__name__].update(
-                {field.name: f"{get_model_name(field.related_model)}" for field in model._meta.get_fields() if field.is_relation and field.related_model}
+                {field.name: f"{get_model_name(field.related_model)}" for field in model._meta.get_fields() if
+                 field.is_relation and field.related_model}
             )
         if not info[app_name]:
             del info[app_name]
@@ -766,6 +811,7 @@ class MinMax:
     """
     A class to find the minimum and maximum values in comprehensions
     """
+
     def __init__(self):
         self.min = None
         self.max = None
@@ -1189,3 +1235,17 @@ def sanitize_field(field_spec: str) -> str:
     """
 
     return '.'.join([camel_case(name) for name in field_spec.split('__')])
+
+
+def debug_value(value, name=None):
+    """
+    Returns a string representation of the value for debugging purposes.
+    If 'name' is provided, it will be included in the output.
+    """
+    caller = getframeinfo(stack()[1][0])
+    print('=' * 80)
+    print(f'Name: {name}\nType: {type(value)}\nFile: {caller.filename}\nLine #: {caller.lineno}')
+    print('-' * 80)
+    print(yaml.dump(value))
+    print('=' * 80)
+    print('\n')

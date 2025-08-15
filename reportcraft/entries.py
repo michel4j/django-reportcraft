@@ -1,6 +1,6 @@
 from collections import defaultdict
 from typing import Any, Literal
-from .utils import regroup_data, MinMax, epoch, map_colors, get_histogram_points
+from .utils import regroup_data, MinMax, epoch, map_colors, get_histogram_points, split_data, debug_value
 
 
 def generate_table(entry, *args, **kwargs) -> dict:
@@ -33,7 +33,7 @@ def generate_table(entry, *args, **kwargs) -> dict:
         rows = rows[0]
         row_names = list(dict.fromkeys(item[rows] for item in raw_data))
     else:
-        row_names = [labels.get(y, y) for y in rows]
+        row_names = [labels.get(y, y.title()) for y in rows]
     data = regroup_data(
         raw_data, x_axis=columns, y_axis=rows, y_value=values, labels=labels, default=0, sort=columns
     )
@@ -110,7 +110,7 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
     if not x_axis or not y_axis:
         return {}
 
-    x_label = labels.get(x_axis, x_axis)
+    x_label = labels.get(x_axis, x_axis.title())
     raw_data = entry.source.get_data(*args, **kwargs)
     if len(y_axis) == 1 and y_value:
         y_axis = y_axis[0]
@@ -123,17 +123,17 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
         }
 
     else:
-        y_stack = [[labels.get(y, y) for y in group] for group in stack]
+        y_stack = [[labels.get(y, y.title()) for y in group] for group in stack]
         types = {
-            **{labels.get(field, field): 'area' for field in areas},
-            **{labels.get(field, field): 'line' for field in lines},
-            **{labels.get(field, field): 'bar' for field in bars},
+            **{labels.get(field, field.title()): 'area' for field in areas},
+            **{labels.get(field, field.title()): 'line' for field in lines},
+            **{labels.get(field, field.title()): 'bar' for field in bars},
         }
         if not types:
             types = {
-                **{labels.get(y, y): 'bar' for y in y_axis if kind in ['bars', 'columns']},
-                **{labels.get(y, y): 'line' for y in y_axis if kind == 'line'},
-                **{labels.get(y, y): 'area' for y in y_axis if kind == 'area'},
+                **{labels.get(y, y.title()): 'bar' for y in y_axis if kind in ['bars', 'columns']},
+                **{labels.get(y, y.title()): 'line' for y in y_axis if kind == 'line'},
+                **{labels.get(y, y.title()): 'area' for y in y_axis if kind == 'area'},
             }
 
     data = regroup_data(
@@ -210,11 +210,11 @@ def generate_list(entry, *args, **kwargs):
         data = data[:limit]
 
     table_data = [
-                     [labels.get(field, field) for field in columns]
-                 ] + [
-                     [item.get(field, '') for field in columns]
-                     for item in data
-                 ]
+        [labels.get(field, field.title()) for field in columns]
+    ] + [
+        [item.get(field, '') for field in columns]
+        for item in data
+    ]
 
     return {
         'title': entry.title,
@@ -258,42 +258,83 @@ def generate_plot(entry, *args, **kwargs):
     z_fields = [group.get('z') for group in valid_groups if 'z' in group]
 
     raw_data = entry.source.get_data(*args, **kwargs)
+
     if len(valid_groups) == 1 and group_by:
-        pass
+        internal_groups = True
+        data = regroup_data(raw_data, x_axis=x_value, y_axis=y_fields, others=[group_by] + z_fields)
+        grouped_data = split_data(data, group_by)
+        internal_groups = list(grouped_data.keys())
+    else:
+        internal_groups = False
+        grouped_data = {}
+        data = regroup_data(raw_data, x_axis=x_value, y_axis=y_fields, others=z_fields)
 
-    data = regroup_data(raw_data, x_axis=x_value, y_axis=y_fields + z_fields)
+    # sort data
+    types = {group.get('type') for group in valid_groups}
+    sort_keys = [x_value]
+    reverse_sort = False
+    if z_fields and types == {'scatter'}:
+        sort_keys = z_fields
+        reverse_sort = True
 
-    print(raw_data)
-    print(data)
-    sort_key = x_value
-    data.sort(key=lambda x: x[sort_key])
+    data.sort(key=lambda x: tuple(x.get(f) for f in sort_keys), reverse=reverse_sort)
 
+    # get data groups
     group_info = []
-    for group in valid_groups:
-        new_group = {
-            'x': labels.get(group['x'], group['x']),
-            'y': labels.get(group['y'], group['y']),
-            'z': labels.get(group.get('z', ''), group.get('z', '')),
-            'type': group.get('type', ''),
-        }
-        group_info.append({k: v for k, v in new_group.items() if v})
+    report_data = {}
+    if internal_groups:
+        group = valid_groups[0]
+        for group_name, group_data in grouped_data.items():
+            x_name = f'{group_name}_{group["x"]}'
+            z_name = f'{group_name}_{group.get("z", "")}' if "z" in group else ''
+            y_name = group_name.title()
+            new_group = {
+                'x': x_name,
+                'y': y_name,
+                'z': z_name,
+                'type': group.get('type', ''),
+            }
+            # sort to show bigger bubbles first
+            if group.get('type') == 'scatter' and group.get('z'):
+                group_data.sort(key=lambda x: x.get(group['z'], 0), reverse=True)
 
-    report_data = {
-        labels.get(field_name, field_name): [item[field_name] for item in data if field_name in item]
-        for field_name in [x_value] + y_fields + z_fields
-    }
+            group_info.append({k: v for k, v in new_group.items() if v})
+            sub_data = {
+                x_name: [item[group['x']] for item in group_data if group['x'] in item],
+                y_name: [item[group['y']] for item in group_data if group['y'] in item],
+            }
+            if 'z' in group:
+                sub_data[z_name] = [item[group['z']] for item in group_data if group['z'] in item]
+            report_data.update(sub_data)
+    else:
+        for group in valid_groups:
+            x_name = labels.get(group['x'], group['x'].title())
+            y_name = labels.get(group['y'], group['y'].title())
+            z_name = labels.get(group.get('z', ''), group.get('z', '').title())
+            new_group = {
+                'x': x_name,
+                'y': y_name,
+                'z': z_name,
+                'type': group.get('type', ''),
+            }
+            group_info.append({k: v for k, v in new_group.items() if v})
+
+        report_data.update({
+            labels.get(field_name, field_name.title()): [item[field_name] for item in data if field_name in item]
+            for field_name in [x_value] + y_fields + z_fields
+        })
+
     return {
         'title': entry.title,
         'description': entry.description,
         'kind': 'xyplot',
-        'lines': False,
         'style': entry.style,
         'colors': colors,
-        'x-tick-precision': precision,
         'max-radius': 20,
         'groups': group_info,
         'x-label': x_label,
         'y-label': y_label,
+        'x-tick-precision': precision,
         'data': report_data,
         'notes': entry.notes
     }
@@ -310,6 +351,7 @@ def generate_pie(entry, kind: Literal['pie', 'donut'] = 'pie', *args, **kwargs):
     colors = entry.attrs.get('colors', None)
     value_field = entry.attrs.get('value', '')
     label_field = entry.attrs.get('label', '')
+    labels = entry.source.get_labels()
 
     raw_data = entry.source.get_data(*args, **kwargs)
     data = defaultdict(int)
@@ -322,7 +364,7 @@ def generate_pie(entry, kind: Literal['pie', 'donut'] = 'pie', *args, **kwargs):
         'kind': kind,
         'style': entry.style,
         'colors': colors,
-        'data': [{'label': label, 'value': value} for label, value in data.items()],
+        'data': [{'label': labels.get(label, label.title()), 'value': value} for label, value in data.items()],
         'notes': entry.notes
     }
 

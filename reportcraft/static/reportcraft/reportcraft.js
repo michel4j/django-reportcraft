@@ -355,9 +355,10 @@ function drawScatterPlot(figure, chart, options) {
     const maxRadius = chart['max-radius'] || 2.5;
     const zMin = zData.length ? Math.min(...zData) : 0.0;
     const zMax = zData.length ? Math.max(...zData) : 1.0;
+    const zRange = chart['z-range'] || [zMin, zMax];
 
     let xScale = d3.scaleLinear().domain([xMin, xMax]);
-    const zScale = d3.scaleLinear().domain([zMin, zMax]).range([1, maxRadius]);
+    const zScale = d3.scaleLinear().domain(zRange).range([1, maxRadius]);
     let tickValues = xScale.ticks(NUM_TICKS);
     let precision = chart['x-tick-precision'];
 
