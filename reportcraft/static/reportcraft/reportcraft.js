@@ -58,7 +58,7 @@ const ColorSchemes = {
 
 const styleTemplate = _.template('<%= selector %> { <%= rules %> }');
 const contentTemplate = _.template(
-    '<div id="entry-<%= id %>" <% let style = entry.style || ""; %> class="section-entry <%= entry.kind %> <%= style %>" >' +
+    '<div id="entry-<%= id %>" <% let style = entry.style || ""; %> class="section-entry <%= entry.kind %>-entry <%= style %>" >' +
     '   <% if ((entry.title) && ((!entry.kind) || (entry.kind === "richtext")))  { %>' +
     '       <h4><%= entry.title %></h4>' +
     '   <% } %>' +

@@ -144,6 +144,10 @@ section {
       margin-block-end: 1rem;
       padding-inline-start: 2rem;
     }
+    li {
+      background-color: inherit;
+    }
+
   }
 }
 
@@ -491,7 +495,7 @@ ul.nav-tabs.nav-tabs-sm {
   }
 }
 
-.section-entry.xyplot {
+.section-entry.xyplot-entry {
   svg circle {
     stroke: var(--bs-body-color);
     //opacity: 1 !important;
