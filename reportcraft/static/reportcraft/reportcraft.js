@@ -358,7 +358,7 @@ function drawScatterPlot(figure, chart, options) {
     const zRange = chart['z-range'] || [zMin, zMax];
 
     let xScale = d3.scaleLinear().domain([xMin, xMax]);
-    const zScale = d3.scaleLinear().domain(zRange).range([1, maxRadius]);
+    const zScale = d3.scaleSqrt().domain(zRange).range([1, maxRadius]);
     let tickValues = xScale.ticks(NUM_TICKS);
     let precision = chart['x-tick-precision'];
 
