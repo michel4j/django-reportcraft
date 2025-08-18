@@ -620,6 +620,60 @@ def regroup_data(
     return data_list
 
 
+def merge_data(
+        data: list[dict],
+        unique: list[str],
+        fields: list[str] = None,
+        labels: dict = None,
+        default: Any = None,
+        sort: str = '',
+        sort_desc: bool = False
+) -> list[dict]:
+    """
+    Combine data from multiple models into neat key-value pairs translating keys to labels according to labels
+    dictionary. if multiple entries exist for the same x-axis value, they are merged into a single entry with
+    later duplicated key values taking precedence.
+
+    :param data: list of dictionaries
+    :param unique: Names of unique axes
+    :param fields: List of other field names to include in the output in addition to the x_axis. Include all if None.
+    :param labels: Field labels
+    :param default: Default value for missing fields
+    :param sort: Name of field to sort by or empty string to disable sorting
+    :param sort_desc: Sort in descending order
+    """
+    labels = labels or {}
+
+    # make a dictionary mapping x_axis values to unique entries, these will be populated later
+    unique_values = list(
+        dict.fromkeys(filter(None, [tuple(item[f] for f in unique) for item in data]))
+    )
+
+    raw_data = {value: {} for value in unique_values}
+
+    # first pass to populate raw_data
+    for item in data:
+        key = tuple(item[f] for f in unique)
+        if not fields:
+            raw_data[key].update(item)
+        else:
+            raw_data[key].update({field: item.get(field, default) for field in fields + unique})
+
+    # get the unique list of dictionaries
+    data_list = list(raw_data.values())
+    # sort the data if a sort field is provided
+    if sort:
+        sort_key = sort
+        print(sort_key)
+        data_list.sort(key=lambda item: item.get(sort_key, 0), reverse=sort_desc)
+
+    # translate the keys to labels if labels are provided
+    if labels:
+        data_list = [{labels.get(k, k): v for k, v in item.items()} for item in data_list]
+
+    return data_list
+
+
 def split_data(
         data: list[dict],
         group_by: str,

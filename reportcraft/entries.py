@@ -1,6 +1,6 @@
 from collections import defaultdict
 from typing import Any, Literal
-from .utils import regroup_data, MinMax, epoch, map_colors, get_histogram_points, split_data, debug_value
+from .utils import regroup_data, MinMax, epoch, map_colors, get_histogram_points, split_data, debug_value, merge_data
 
 
 def generate_table(entry, *args, **kwargs) -> dict:
@@ -81,99 +81,69 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
     labels = entry.source.get_labels()
-    vertical = entry.attrs.get('vertical', True)
-    x_axis = entry.attrs.get('x_axis', '')
-    y_axis = entry.attrs.get('y_axis', [])
+
+    categories = entry.attrs.get('categories', '')
+    values = entry.attrs.get('values', [])
+    color_by = entry.attrs.get('color_by', None)
+    group_by = entry.attrs.get('group_by', None)
+    limit = entry.attrs.get('limit', None)
     sort_by = entry.attrs.get('sort_by', None)
     sort_desc = entry.attrs.get('sort_desc', False)
-    stack = entry.attrs.get('stack', [])
-    y_value = entry.attrs.get('y_value', '')
-    colors = entry.attrs.get('colors', 'Live16')
-    color_field = entry.attrs.get('color_field', None)
-    aspect_ratio = entry.attrs.get('aspect_ratio', None)
-    wrap_x_labels = entry.attrs.get('wrap_x_labels', False)
-    x_culling = entry.attrs.get('x_culling', 15)
-    limit = entry.attrs.get('limit', None)
+    stacked = entry.attrs.get('stack', False)
+    vertical = (kind == "columns")
 
-    # For compatibility with older reports, convert 'bars' to 'columns' and vice versa if vertical is True
-    if vertical and kind == 'bars':
-        kind = 'columns'
-        vertical = False
-    elif vertical and kind == 'columns':
-        kind = 'bars'
-        vertical = False
-
-    areas = entry.attrs.get('areas', [])
-    lines = entry.attrs.get('lines', [])
-    bars = entry.attrs.get('bars', [])
-
-    if not x_axis or not y_axis:
+    if not categories or not values:
         return {}
 
-    x_label = labels.get(x_axis, x_axis.title())
+    types = []
+    category_name = labels.get(categories, categories)
+    category_axis = 'x' if vertical else 'y'
+    value_axis = 'y' if vertical else 'x'
+    unique = [categories]
+    for value in values:
+        mark = {
+            category_axis: category_name,
+            value_axis: labels.get(value, value),
+            'type': kind,
+            'stacked': stacked
+        }
+        # Add color channel
+        if color_by:
+            mark['colors'] = labels.get(color_by, color_by)
+            unique.append(color_by)
+
+        # Add facet channel
+        if group_by:
+            mark['groups'] = labels.get(group_by, group_by)
+            unique.append(group_by)
+
+        # Add sort channel
+        if sort_by:
+            sort = labels.get(sort_by, sort_by)
+            mark['sort'] = f'-{sort}' if sort_desc else sort
+
+        types.append(mark)
+
+    extra_fields = values + ([color_by] if color_by else []) + ([group_by] if group_by else [])
+
     raw_data = entry.source.get_data(*args, **kwargs)
-    if len(y_axis) == 1 and y_value:
-        y_axis = y_axis[0]
-        y_labels = list(filter(None, dict.fromkeys(item[y_axis] for item in raw_data)))
-        y_stack = [y_labels for group in stack for y in group if y == y_axis]
-        types = {
-            **{y: 'bar' for y in y_labels if kind in ['bars', 'columns']},
-            **{y: 'line' for y in y_labels if kind == 'line'},
-            **{y: 'area' for y in y_labels if kind == 'area'},
-        }
+    data = merge_data(raw_data, unique=unique, fields=extra_fields, labels=labels, sort=sort_by, sort_desc=sort_desc)
 
-    else:
-        y_stack = [[labels.get(y, y.title()) for y in group] for group in stack]
-        types = {
-            **{labels.get(field, field.title()): 'area' for field in areas},
-            **{labels.get(field, field.title()): 'line' for field in lines},
-            **{labels.get(field, field.title()): 'bar' for field in bars},
-        }
-        if not types:
-            types = {
-                **{labels.get(y, y.title()): 'bar' for y in y_axis if kind in ['bars', 'columns']},
-                **{labels.get(y, y.title()): 'line' for y in y_axis if kind == 'line'},
-                **{labels.get(y, y.title()): 'area' for y in y_axis if kind == 'area'},
-            }
-
-    data = regroup_data(
-        raw_data, x_axis=x_axis, y_axis=y_axis, y_value=y_value, labels=labels,
-        sort=sort_by, sort_desc=sort_desc, default=0,
-    )
-
-    print(entry, raw_data)
+    # limit data if specified
+    if limit:
+        data = data[limit:] if limit < 0 else data[:limit]
 
     info = {
         'title': entry.title,
         'description': entry.description,
         'kind': kind,
         'types': types,
-        'y-ticks': None if vertical else 5,
         'style': entry.style,
+        'scheme': entry.attrs.get('scheme', 'Live16'),
         'notes': entry.notes,
-        'x-label': x_label,
+        'data': data,
     }
 
-    if aspect_ratio:
-        info['aspect-ratio'] = aspect_ratio
-    if y_stack:
-        info['stack'] = y_stack
-    if color_field:
-        color_key = labels.get(color_field)
-        info['color-by'] = color_key
-        color_keys = list(dict.fromkeys([item.get(color_field) for item in raw_data if color_field in item]))
-        info['colors'] = map_colors(color_keys, colors)
-    elif colors:
-        info['colors'] = colors
-    if x_culling:
-        info['x-culling'] = x_culling
-    if wrap_x_labels:
-        info['wrap-x-labels'] = wrap_x_labels
-
-    if limit:
-        data = data[limit:] if limit < 0 else data[:limit]
-
-    info['data'] = data
     return info
 
 
@@ -366,7 +336,7 @@ def generate_pie(entry, kind: Literal['pie', 'donut'] = 'pie', *args, **kwargs):
         'description': entry.description,
         'kind': kind,
         'style': entry.style,
-        'colors': colors,
+        'scheme': colors,
         'data': [{'label': labels.get(label, label.title()), 'value': value} for label, value in data.items()],
         'notes': entry.notes
     }

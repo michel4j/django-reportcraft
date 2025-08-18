@@ -94214,8 +94214,8 @@
   pk: 37
   fields:
     created: 2025-08-13 19:18:43.906215+00:00
-    modified: 2025-08-13 19:18:43.906227+00:00
-    name: logitude
+    modified: 2025-08-15 15:40:41.971744+00:00
+    name: longitude
     model: 8
     label: Longitude
     default: 0
@@ -94286,7 +94286,7 @@
   pk: 1
   fields:
     created: 2025-03-17 16:23:04.929205+00:00
-    modified: 2025-08-13 17:43:19.916394+00:00
+    modified: 2025-08-18 19:03:23.897757+00:00
     title: Users Per Year
     description: ''
     notes: ''
@@ -94296,19 +94296,13 @@
     report: 1
     position: 0
     attrs:
-      x_axis: year
-      y_value: users
-      sort_by: year
-      y_axis:
-      - category
-      lines:
-      - institutions
-      stack:
-      - - category
-      wrap_x_labels: false
-      vertical: false
+      categories: year
+      color_by: category
+      values:
+      - users
+      stack: true
       sort_desc: false
-      colors: Live8
+      scheme: Live8
 - model: reportcraft.entry
   pk: 2
   fields:
@@ -94338,12 +94332,12 @@
   pk: 4
   fields:
     created: 2025-03-17 19:10:54.843697+00:00
-    modified: 2025-08-10 14:45:09.053758+00:00
+    modified: 2025-08-18 20:55:28.790028+00:00
     title: User Types
     description: ''
     notes: ''
     style: col-md-6
-    kind: pie
+    kind: donut
     source: 2
     report: 1
     position: 1
@@ -94468,7 +94462,7 @@
   pk: 9
   fields:
     created: 2025-03-20 05:23:37.054538+00:00
-    modified: 2025-08-13 18:11:16.510596+00:00
+    modified: 2025-08-18 17:56:01.549252+00:00
     title: Top 10 Countries by Number of Institutions
     description: ''
     notes: Calculated from the Institutions data model.
@@ -94478,21 +94472,19 @@
     report: 1
     position: 4
     attrs:
-      x_axis: country_name
-      sort_by: num_institutions
-      y_axis:
-      - num_institutions
-      wrap_x_labels: false
-      aspect_ratio: 1.6
-      vertical: false
+      categories: country_name
+      sort_by: num_people
+      values:
+      - num_people
+      stack: false
       sort_desc: true
       limit: 10
-      colors: Live16
+      scheme: Live16
 - model: reportcraft.entry
   pk: 10
   fields:
     created: 2025-03-21 00:56:27.632266+00:00
-    modified: 2025-08-14 20:32:13.283099+00:00
+    modified: 2025-08-15 22:36:34.288437+00:00
     title: Number of Persons per age group
     description: ''
     notes: ''
@@ -94503,18 +94495,13 @@
     position: 3
     attrs:
       groups:
-      - x: age
-        y: total
-        z: latitude
-      - x: age
-        y: logitude
+      - y: longitude
         z: total
-      - x: logitude
-        y: latitude
-        z: age
-        axis: y2
-      y1_label: People
-      scatter: false
+        type: scatter
+      x_value: latitude
+      group_by: category
+      x_label: Position
+      precision: 0
       colors: Live8
 - model: reportcraft.entry
   pk: 11

@@ -351,26 +351,15 @@ class TableForm(ModalModelForm):
 
 
 class BarsForm(ModalModelForm):
-    x_axis = forms.ModelChoiceField(label='X-axis', required=True, queryset=models.DataField.objects.none())
-    y_axis = forms.ModelMultipleChoiceField(label='Y-axis', required=True, queryset=models.DataField.objects.none())
-    y_value = forms.ModelChoiceField(label='Values', required=False, queryset=models.DataField.objects.none())
-
-    stack_0 = forms.ModelMultipleChoiceField(label='Stack', required=False, queryset=models.DataField.objects.none())
-    stack_1 = forms.ModelMultipleChoiceField(label='Stack', required=False, queryset=models.DataField.objects.none())
-    stack_2 = forms.ModelMultipleChoiceField(label='Stack', required=False, queryset=models.DataField.objects.none())
-
-    areas = forms.ModelMultipleChoiceField(label='Areas', required=False, queryset=models.DataField.objects.none())
-    bars = forms.ModelMultipleChoiceField(label='Bars', required=False, queryset=models.DataField.objects.none())
-    lines = forms.ModelMultipleChoiceField(label='Lines', required=False, queryset=models.DataField.objects.none())
-
-    color_field = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
-    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
-    x_culling = forms.IntegerField(label="Culling", required=False)
-    wrap_x_labels = forms.BooleanField(label="Wrap Labels", required=False)
-    aspect_ratio = forms.FloatField(label="Aspect Ratio", required=False)
-    vertical = forms.BooleanField(label="Rotate", required=False)
-
+    categories = forms.ModelChoiceField(label='Categories', required=True, queryset=models.DataField.objects.none())
+    values = forms.ModelMultipleChoiceField(label='Values', required=True, queryset=models.DataField.objects.none())
+    color_by = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
+    group_by = forms.ModelChoiceField(label='Group By', required=False, queryset=models.DataField.objects.none())
     sort_by = forms.ModelChoiceField(label='Sort By', required=False, queryset=models.DataField.objects.none())
+    stack = forms.BooleanField(
+        label='Stack', required=False, initial=False, widget=forms.Select(choices=((True, 'Yes'), (False, 'No')))
+    )
+    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
     sort_desc = forms.BooleanField(label="Sort Descending", required=False)
     limit = forms.IntegerField(label="Limit", required=False)
 
@@ -388,52 +377,22 @@ class BarsForm(ModalModelForm):
         self.body.title = _(f"Configure {self.instance.get_kind_display()}")
         self.update_initial()
         self.body.append(
-            Div(
-                Div(Field('x_axis', css_class='select'), css_class='col-4'),
-                Div(Field('y_axis', css_class='select'), css_class='col-8'),
-                css_class='row'
+            Row(
+                ThirdWidth('categories'),
+                ThirdWidth('values'),
+                ThirdWidth('color_by'),
+            ),
+            Row(
+                ThirdWidth('scheme'),
+                ThirdWidth('group_by'),
+                ThirdWidth('stack'),
+            ),
+            Row(
+                ThirdWidth('sort_by'),
+                ThirdWidth('sort_desc'),
+                ThirdWidth('limit'),
             ),
             Div(
-                Div(Field('y_value', css_class='select'), css_class='col-3'),
-                Div(Field('sort_by', css_class='select'), css_class='col-3'),
-                Div(Field('color_field', css_class='select'), css_class='col-3'),
-                Div(Field('colors', css_class='select'), css_class='col-3'),
-                css_class='row'
-            ),
-            Div(
-                Div('aspect_ratio', css_class='col-4'),
-                Div('x_culling', css_class='col-4'),
-                Div('limit', css_class='col-4'),
-                css_class='row'
-            ),
-            TabHolder(
-                Tab(
-                    'Stacks',
-                    Div(
-                        Div(Field('stack_0', css_class='select'), css_class='col-12'),
-                        Div(Field('stack_1', css_class='select'), css_class='col-12'),
-                        Div(Field('stack_2', css_class='select'), css_class='col-12'),
-                        css_class='row'
-                    ),
-                ),
-                Tab(
-                    'Mixed Types',
-                    Div(
-                        Div(Field('areas', css_class='select'), css_class='col-12'),
-                        Div(Field('bars', css_class='select'), css_class='col-12'),
-                        Div(Field('lines', css_class='select'), css_class='col-12'),
-                        css_class='row'
-                    ),
-                ),
-                css_class='nav-tabs-sm my-2'
-            ),
-            Div(
-                Div(
-                    Div('wrap_x_labels', css_class='col-4'),
-                    Div('vertical', css_class='col-4'),
-                    Div('sort_desc', css_class='col-4'),
-                    css_class='row'
-                ),
                 Field('attrs'),
             ),
         )
@@ -442,53 +401,43 @@ class BarsForm(ModalModelForm):
         attrs = self.instance.attrs
         field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
         field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
-        field_fields = [
-            'x_axis', 'y_axis', 'y_value', 'stack_0', 'stack_1', 'stack_2', 'color_field',  'sort_by',
-            'areas', 'bars', 'lines'
-        ]
-        for field in field_fields:
+
+        for field in ['categories', 'values', 'color_by', 'group_by', 'sort_by']:
             self.fields[field].queryset = field_queryset
 
-        for field in ['x_axis', 'y_value', 'color_field', 'sort_by']:
+        # single select
+        for field in ['categories', 'color_by', 'group_by', 'sort_by']:
             if field in attrs:
                 self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
 
-        for field in ['y_axis', 'areas', 'lines', 'bars']:
+        # multiple select
+        for field in ['values']:
             if field in attrs:
                 self.fields[field].initial = field_queryset.filter(name__in=attrs[field])
 
-        if 'stack' in attrs:
-            for i, stack in enumerate(attrs['stack']):
-                self.fields[f'stack_{i}'].initial = field_queryset.filter(name__in=stack)
+        # other fields
+        self.fields[f'stack'].initial = attrs.get('stack', False)
 
-        for field in ['x_culling', 'wrap_x_labels', 'aspect_ratio', 'sort_desc', 'limit', 'colors']:
+        for field in ['stack', 'sort_desc', 'limit', 'scheme']:
             if field in attrs:
                 self.fields[field].initial = attrs[field]
-
-        self.fields['vertical'].initial = attrs.get('vertical', True)
 
     def clean(self):
         cleaned_data = super().clean()
         new_attrs = {}
 
-        for field in ['x_axis', 'y_value', 'color_field', 'sort_by']:
+        # single select fields
+        for field in ['categories', 'color_by', 'group_by', 'sort_by']:
             if field in cleaned_data and cleaned_data[field] is not None:
                 new_attrs[field] = cleaned_data[field].name
 
-        for field in ['y_axis', 'areas', 'lines', 'bars']:
+        # multiple select fields
+        for field in ['values']:
             if field in cleaned_data and cleaned_data[field].exists():
                 new_attrs[field] = [y.name for y in cleaned_data[field].order_by('position')]
-                mixed = True
 
-        stack = []
-        for i in range(3):
-            if f'stack_{i}' in cleaned_data and cleaned_data[f'stack_{i}'].exists():
-                stack.append([y.name for y in cleaned_data[f'stack_{i}'].order_by('position')])
-
-        if stack:
-            new_attrs['stack'] = stack
-
-        for field in ['x_culling', 'wrap_x_labels', 'aspect_ratio', 'vertical', 'sort_desc', 'limit', 'colors']:
+        # other fields
+        for field in ['stack', 'sort_desc', 'limit', 'scheme']:
             if field in cleaned_data and cleaned_data[field] is not None:
                 new_attrs[field] = cleaned_data[field]
 

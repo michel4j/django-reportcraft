@@ -1,5 +1,5 @@
 import * as Plot from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
-import _, { map } from "https://cdn.jsdelivr.net/npm/underscore@1.13.7/+esm";
+import _ from "https://cdn.jsdelivr.net/npm/underscore@1.13.7/+esm";
 import showdown from "https://cdn.jsdelivr.net/npm/showdown@1.9.1/+esm";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
@@ -201,35 +201,29 @@ export function showReport(selector, report) {
     });
     
     // now fill the content of each section
-    target.querySelectorAll('figure').forEach(function (figure) {
-        let chart = decodeObj(figure.getAttribute('data-chart'));
-        let aspect_ratio = chart['aspect-ratio'] || 16 / 9;
-        let chart_colors = chart.colors;
-        if (typeof chart.data === 'object') {
-            aspect_ratio = chart.data['aspect-ratio'] || aspect_ratio;
-            chart_colors = chart.data.colors || chart_colors;
-        }
-        let options = {
+    target.querySelectorAll('figure').forEach(function (figure, index) {
+        const chart = decodeObj(figure.getAttribute('data-chart'));
+        const aspectRatio = chart.data['aspect-ratio'] || 16/9;
+        const options = {
+            uid: (index + Date.now()).toString(36),
             width: figure.offsetWidth,
-            height: figure.offsetWidth / aspect_ratio,
-            colors: {}
+            height: figure.offsetWidth / aspectRatio,
+            scheme: ColorSchemes[chart.scheme] || ColorSchemes.Tableau10,
+            aspectRatio: aspectRatio,
         };
-
-        if (Array.isArray(chart_colors)) {
-            options.scheme = chart_colors;
-        } else if (typeof chart_colors === 'object') {
-            options.scheme = ColorSchemes.Tableau10;
-            options.colors = chart_colors;
-        } else {
-            options.scheme = ColorSchemes[chart_colors] || ColorSchemes.Tableau10;
-        }
         console.log(chart);
+
         switch (figure.dataset.type) {
             case 'bars':
+            case 'columns':
                 drawBarChart(figure, chart, options);
                 break;
-            case 'columns':
-                drawColumnChart(figure, chart, options);
+            case 'pie':
+            case 'donut':
+                drawPieChart(figure, chart, options);
+                break;
+            case 'xyplot':
+                drawXYPlot(figure, chart, options);
                 break;
         }
 
@@ -245,72 +239,187 @@ export function showReport(selector, report) {
     });
 }
 
-function drawBarChart(figure, chart, options) {
+function getFontSize() {
+    const rootStyles = getComputedStyle(document.documentElement);
+    return parseFloat(rootStyles.fontSize);
+}
+
+
+function drawXYPlot(figure, chart, options) {
     let marks = [];
-    Object.entries(chart.types).forEach(([key, type]) => {
-        if (type === 'bar') {
-            marks.push(Plot.barX(chart.data, {
-                y: chart.x || chart["x-label"],
-                x: key,
-                fill: options.scheme[type % options.scheme.length],
-                sort: { y: "x", reverse: true },
-            }));
-        } else if (key === 'line') {
-            marks.push(Plot.lineX(chart.data, {
-                y: chart.x || chart["x-label"],
-                x: key,
-                stroke: options.scheme[type % options.scheme.length],
-            }));
-        } else if (key === 'area') {
-            marks.push(Plot.areaX(chart.data, {
-                y: chart.x || chart["x-label"],
-                x: key,
-                fill: options.scheme[type % options.scheme.length],
-            }));
+    const markTypes = chart.types || [];
+    const plotOptions = {
+        aspectRatio: options.aspectRatio,
+        width: options.width || 800,
+        height: options.height || 400,
+        marginLeft: 20,
+        marginRight: 20,
+        marginTop: 20,
+        marginBottom: 40,
+        color: {
+            legend: true,
+        },
+        marks: marks
+    };
+
+    markTypes.forEach(function(mark, index){
+        const markOptions = {x: mark.x,  y: mark.y};
+        if (mark.r) {
+            markOptions.r = mark.r;
+        } else {
+            // If no colors are specified, use the default color scheme
+            markOptions.fill = options.scheme[0];
+        }
+        if (mark.colors) {
+            plotOptions.color["range"] = options.scheme;
+            plotOptions.color["domain"] = [...d3.union(chart.data.map(d => d[mark.colors]))];
+        }
+
+        if (chart.kind === 'line') {
+            marks.push(new Plot.line(chart.data, markOptions));
+        } else if (chart.kind === 'scatter') {
+            marks.push(new Plot.dot(chart.data, markOptions));
+        }
+        else if (chart.kind === 'area') {
+            marks.push(new Plot.areaX(chart.data, markOptions));
+        } else if (chart.kind === 'histo') {
+            marks.push(new Plot.binX(chart.data, markOptions));
+        } else {
+            console.warn(`Unknown chart kind: ${chart.kind}`);
         }
     });
-
-    // Create the bar chart
-    const plot = Plot.plot({
-        x: {
-            axis: "top",
-            grid: true,
-        },
-        marks: marks,
-    });
+    // Create chart
+    const plot = Plot.plot(plotOptions);
+    const svg = plot.querySelector('svg[viewBox]'); // Fix the width and let CSS handle the height
+    if (svg){
+        svg.setAttribute('width', '100%');
+        svg.removeAttribute('height'); // Let CSS handle the height
+    }
     figure.appendChild(plot);
 }
 
-function drawColumnChart(figure, chart, options) {
+function drawBarChart(figure, chart, options) {
     let marks = [];
-    Object.entries(chart.types).forEach(([key, type]) => {
-        if (type === 'bar') {
-            marks.push(Plot.barY(chart.data, {
-                x: chart.x || chart["x-label"],
-                y: key,
-                fill: options.scheme[type % options.scheme.length],
-            }));
-        } else if (key === 'line') {
-            marks.push(Plot.lineY(chart.data, {
-                x: chart.x || chart["x-label"],
-                y: key,
-                stroke: options.scheme[type % options.scheme.length],
-            }));
-        } else if (key === 'area') {
-            marks.push(Plot.areaX(chart.data, {
-                x: chart.x || chart["x-label"],
-                y: key,
-                fill: options.scheme[type % options.scheme.length],
-            }));
+    const markTypes = chart.types || [];
+    const valueAxis = (chart.kind === 'bars') ? 'x' : 'y';
+    const categoryAxis = (chart.kind === 'bars') ? 'y' : 'x';
+    let maxLabelLength = 10;
+    const plotOptions = {
+        width: options.width || 800,
+        height: options.height || 400,
+        aspectRatio: options.aspectRatio,
+        marginLeft: 20,
+        marginRight: 20,
+        marginTop: 20,
+        marginBottom: 40,
+        color: {
+            legend: true,
+        },
+        [categoryAxis]: {
+            tickFormat: d => typeof(d) === 'number' ? `${d}` : d,
+        },
+        [valueAxis]: {
+            grid: true,
+        },
+        marks: marks
+    };
+
+    markTypes.forEach(function(mark, index){
+        const markOptions = {x: mark.x,  y: mark.y, sort: null};
+
+        maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[mark[categoryAxis]]}`.length || 0));
+        if (mark.colors) {
+            markOptions.fill = mark.colors;
+            plotOptions.color["range"] = options.scheme;
+            plotOptions.color["domain"] = [...d3.union(chart.data.map(d => d[mark.colors]))];
+        } else {
+            // If no colors are specified, use the default color scheme
+            markOptions.fill = options.scheme[0];
+        }
+        if (mark.groups) {
+            markOptions.fx = () => mark.groups;
+        }
+        if (mark.sort) {
+            markOptions.sort = mark.sort.startsWith('-') ? {[categoryAxis]: `-${valueAxis}`}: {[categoryAxis]: valueAxis};
+        }
+
+        if (chart.kind === 'bars') {
+            marks.push(new Plot.ruleX([0]));
+            marks.push(new Plot.rectX(chart.data, markOptions));
+        } else {
+            marks.push(new Plot.ruleY([0]));
+            marks.push(new Plot.rectY(chart.data, markOptions));
         }
     });
 
     // Create the bar chart
-    const plot = Plot.plot({
-        x: {
-            grid: true,
-        },
-        marks: marks,
-    });
+    const fontSize = 10; //getFontSize();
+    plotOptions.marginLeft = (chart.kind === 'bars') ? maxLabelLength * fontSize * 0.8 : fontSize * 3;
+    plotOptions.marginBottom = (chart.kind === 'columns') ? fontSize * 3 : 40
+    const plot = Plot.plot(plotOptions);
+
+    // Fix the width and let CSS handle the height
+    const svg = plot.querySelector('svg[viewBox]');
+    if (svg){
+        svg.setAttribute('width', '100%');
+        svg.removeAttribute('height'); // Let CSS handle the height
+    }
     figure.appendChild(plot);
+}
+
+function drawPieChart(figure, chart, options) {
+    // Placeholder for pie chart implementation
+    const uniqueLabels = [...d3.union(chart.data.map(d => d.label))];
+    const color = d3.scaleOrdinal().domain(uniqueLabels).range(options.scheme);
+    const outerRadius = Math.min(options.width, options.height) / 2;
+    const innerRadius = (chart.kind === 'donut') ? outerRadius / 2 : 0;
+
+    // Add legend to the top first
+    const legend = d3.select(figure)
+        .append("div")
+        .attr("class", `legend plot-${options.uid}-swatches`)
+        .style("min-height", "33px")
+        .style("display", "flex")
+        .style("flex-direction", "row")
+        .style("flex-wrap", "wrap")
+        .style("align-items", "center")
+        .style("justify-content", "center");
+
+    // Add chart
+    const svg = d3.select(figure)
+        .append("svg")
+        .attr("viewBox", `0 0 ${options.width} ${options.height}`)
+        .attr("width", "100%")
+        .append("g")
+        .attr("transform", `translate(${options.width / 2}, ${options.height / 2})`);
+
+    const pie = d3.pie()
+        .value(d => d.value);
+    let dataReady = pie(chart.data);
+    let arcGenerator = d3.arc()
+        .innerRadius(innerRadius)
+        .outerRadius(outerRadius);
+
+    svg.selectAll("pieSlices")
+        .data(dataReady)
+        .enter()
+        .append("path")
+            .attr("d", arcGenerator)
+            .attr("fill", d => color(d.data.label))
+            .attr("stroke", "var(--bs-body-bg)")
+            .style("stroke-width", "2px")
+            .style("opacity", 1);
+
+    legend.selectAll("legendItem")
+        .data(uniqueLabels)
+        .enter()
+        .append("span")
+            .attr("class", "legend-item")
+            .style("display", "inline-flex")
+            .style("align-items", "center")
+            .style("font-size", "10px")
+            .style("margin-right", "10px")
+            .style("margin-bottom", "5px")
+            .html(d => `<svg width="15" height="15" style="margin-right: 0.5em;" fill="${color(d)}"><rect width="100%" height="100%"></rect></svg>${d}`);
+
 }
