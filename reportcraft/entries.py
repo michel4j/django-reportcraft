@@ -141,6 +141,8 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
         sort=sort_by, sort_desc=sort_desc, default=0,
     )
 
+    print(entry, raw_data)
+
     info = {
         'title': entry.title,
         'description': entry.description,
@@ -170,6 +172,7 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
 
     if limit:
         data = data[limit:] if limit < 0 else data[:limit]
+
     info['data'] = data
     return info
 

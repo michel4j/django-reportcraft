@@ -1,0 +1,24 @@
+{% extends "reportcraft/base.html" %}
+{% load static %}
+
+{% load reportcraft %}
+{% block extra_css %}
+    <link href="{% static "reportcraft/reportcraft.min.css" %}" rel="stylesheet">
+{% endblock %}
+
+{% block page-pretitle %}Report{% endblock %}
+{% block page-title %}{{ report.title }}{% endblock %}
+{% block page-content %}
+    <div id="report-entry"></div>
+{% endblock %}
+
+{% block page-scripts %}
+    <script type="module">
+        import { showReport, figureTypes } from '{% static "reportcraft/reports.min.js" %}';
+        $(document).ready(function(){
+            $.getJSON("{{ data_url }}{{ query }}", function(data) {
+                showReport("#report-entry", data)
+            });
+        });
+    </script>
+{% endblock %}

@@ -2,33 +2,13 @@
   <library name="Generated files" type="javaScript">
     <properties>
       <sourceFilesUrls>
-        <item url="file://$PROJECT_DIR$/docs/build/html/_static/_sphinx_javascript_frameworks_compat.min.js" />
-        <item url="file://$PROJECT_DIR$/docs/build/html/_static/doctools.min.js" />
-        <item url="file://$PROJECT_DIR$/docs/build/html/_static/documentation_options.min.js" />
-        <item url="file://$PROJECT_DIR$/docs/build/html/_static/jquery.min.js" />
-        <item url="file://$PROJECT_DIR$/docs/build/html/_static/js/badge_only.min.js" />
-        <item url="file://$PROJECT_DIR$/docs/build/html/_static/js/theme.min.js" />
-        <item url="file://$PROJECT_DIR$/docs/build/html/_static/js/versions.min.js" />
-        <item url="file://$PROJECT_DIR$/docs/build/html/_static/language_data.min.js" />
-        <item url="file://$PROJECT_DIR$/docs/build/html/_static/searchtools.min.js" />
-        <item url="file://$PROJECT_DIR$/docs/build/html/_static/sphinx_highlight.min.js" />
-        <item url="file://$PROJECT_DIR$/docs/build/html/searchindex.min.js" />
         <item url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/reportcraft.min.js" />
+        <item url="file://$PROJECT_DIR$/reportcraft/static/reports.min.js" />
       </sourceFilesUrls>
     </properties>
     <CLASSES>
-      <root url="file://$PROJECT_DIR$/docs/build/html/_static/_sphinx_javascript_frameworks_compat.min.js" />
-      <root url="file://$PROJECT_DIR$/docs/build/html/_static/doctools.min.js" />
-      <root url="file://$PROJECT_DIR$/docs/build/html/_static/documentation_options.min.js" />
-      <root url="file://$PROJECT_DIR$/docs/build/html/_static/jquery.min.js" />
-      <root url="file://$PROJECT_DIR$/docs/build/html/_static/js/badge_only.min.js" />
-      <root url="file://$PROJECT_DIR$/docs/build/html/_static/js/theme.min.js" />
-      <root url="file://$PROJECT_DIR$/docs/build/html/_static/js/versions.min.js" />
-      <root url="file://$PROJECT_DIR$/docs/build/html/_static/language_data.min.js" />
-      <root url="file://$PROJECT_DIR$/docs/build/html/_static/searchtools.min.js" />
-      <root url="file://$PROJECT_DIR$/docs/build/html/_static/sphinx_highlight.min.js" />
-      <root url="file://$PROJECT_DIR$/docs/build/html/searchindex.min.js" />
       <root url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/reportcraft.min.js" />
+      <root url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/reports.min.js" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

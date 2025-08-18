@@ -1,0 +1,316 @@
+import * as Plot from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
+import _, { map } from "https://cdn.jsdelivr.net/npm/underscore@1.13.7/+esm";
+import showdown from "https://cdn.jsdelivr.net/npm/showdown@1.9.1/+esm";
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+export const figureTypes = [
+    "histogram",
+    "line",
+    "bars",
+    "scatter",
+    "pie",
+    "gauge",
+    "timeline",
+    "columns",
+    "plot",
+    "xyplot",
+    "histo",
+    'geochart',
+    'donut',
+    'area',
+];
+
+const ColorSchemes = {
+    Accent: ['#7fc97f', '#beaed4', '#fdc086', '#ffff99', '#386cb0', '#f0027f', '#bf5b17', '#666666'],
+    Category10: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'],
+    Dark2: ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02', '#a6761d', '#666666'],
+    Live16: ['#67aec1', '#c45a81', '#cdc339', '#ae8e6b', '#6dc758', '#a084b6', '#667ccd', '#cd4f55', '#805cd6', '#cf622d', '#a69e4c', '#9b9795', '#6db586', '#c255b6', '#073b4c', '#ffd166'],
+    Live4: ['#8f9f9a', '#c56052', '#9f6dbf', '#a0b552'],
+    Live8: ['#073b4c', '#06d6a0', '#ffd166', '#ef476f', '#118ab2', '#7f7eff', '#afc765', '#78c5e7'],
+    Observable10: ['#4269d0', '#efb118', '#ff725c', '#6cc5b0', '#3ca951', '#ff8ab7', '#a463f2', '#97bbf5', '#9c6b4e', '#9498a0'],
+    Paired: ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928'],
+    Pastel1: ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4', '#fed9a6', '#ffffcc', '#e5d8bd', '#fddaec', '#f2f2f2'],
+    Pastel2: ['#b3e2cd', '#fdcdac', '#cbd5e8', '#f4cae4', '#e6f5c9', '#fff2ae', '#f1e2cc', '#cccccc'],
+    Set1: ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999'],
+    Set2: ['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854', '#ffd92f', '#e5c494', '#b3b3b3'],
+    Set3: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5', '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f'],
+    Tableau10: ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'],
+
+    // https://observablehq.com/@d3/color-schemes
+    // Sequential colors
+    Blues: d3.schemeBlues[9],
+    Greens: d3.schemeGreens[9],
+    Greys: d3.schemeGreys[9],
+    Oranges: d3.schemeOranges[9],
+    Purples: d3.schemePurples[9],
+    Reds: d3.schemeReds[9],
+    BuGn: d3.schemeBuGn[9],
+    BuPu: d3.schemeBuPu[9],
+    GnBu: d3.schemeGnBu[9],
+    OrRd: d3.schemeOrRd[9],
+    PuBu: d3.schemePuBu[9],
+    PuRd: d3.schemePuRd[9],
+    RdPu: d3.schemeRdPu[9],
+    YlGn: d3.schemeYlGn[9],
+    YlGnBu: d3.schemeYlGnBu[9],
+    YlOrBr: d3.schemeYlOrBr[9],
+    YlOrRd: d3.schemeYlOrRd[9],
+    PuBuGn: d3.schemePuBuGn[9],
+};
+
+const styleTemplate = _.template('<%= selector %> { <%= rules %> }');
+const contentTemplate = _.template(
+    '<div id="entry-<%= id %>" <% let style = entry.style || ""; %> class="section-entry <%= entry.kind %>-entry <%= style %>" >' +
+    '   <% if ((entry.title) && ((!entry.kind) || (entry.kind === "richtext")))  { %>' +
+    '       <h4><%= entry.title %></h4>' +
+    '   <% } %>' +
+    '   <% if (entry.description) { %>' +
+    '       <div class="description"><%= renderMarkdown(entry.description) %></div>' +
+    '   <% } %>' +
+    '   <% if (entry.text) { %>' +
+    '       <div class="rich-text"><%= renderMarkdown(entry.text) %></div>' +
+    '   <% } %>' +
+    '   <% if ((entry.kind === "table") && (entry.data)) { %>' +
+    '       <%= tableTemplate({id: id, entry: entry}) %>' +
+    '   <% } else if (figureTypes.includes(entry.kind)) { %>' +
+    '       <figure id="figure-<%= entry.id || id %>" data-type="<%= entry.kind %>" data-chart="<%= encodeObj(entry) %>" >' +
+    '       </figure>' +
+    '   <% }%>' +
+    '   <% if (entry.notes) { %>' +
+    '       <div class="notes"><%= renderMarkdown(entry.notes) %></div>' +
+    '   <% } %>' +
+    '</div>'
+);
+const sectionTemplate = _.template(
+    '<section id="section-<%= id %>" <% let style = section.style || "row"; %>' +
+    '       class="<%= style %>">' +
+    '       <%  if (section.title)  {%>' +
+    '       <h3 class="section-title col-12"><%= section.title %></h3>' +
+    '       <% } %>' +
+    '       <%  if (section.description)  {%>' +
+    '       <div class="description col-12"><%= renderMarkdown(section.description) %></div>' +
+    '       <% } %>' +
+    '     <% _.each(section.content, function(entry, j){ %><%= renderContent({id: id+"-"+j, entry: entry}) %><% }); %>' +
+    '</section>'
+);
+
+const tableTemplate = _.template(
+    '<table id="table-<%= id %>" class="table table-sm table-hover">' +
+    '<% if (entry.title) { %>' +
+    '   <caption class="text-center"><%= entry.title %></caption>' +
+    '<% } %>' +
+    '<% if (entry.header.includes("row")) { %>' +
+    '   <thead><tr>' +
+    '       <% _.each(entry.data[0], function(cell, i){ %>' +
+    '       <th><%= cell %></th>' +
+    '       <% }); %>' +
+    '   </tr></thead>' +
+    '<% } %>' +
+    '<tbody>' +
+    '<% _.each(entry.data, function(row, j){ %>' +
+    '   <% if ((!entry.header.includes("row")) || (j>0)) { %>' +
+    '       <tr>' +
+    '       <% _.each(row, function(cell, i){ %>' +
+    '           <% if (entry.header.includes("column") && (i==0)) { %>' +
+    '               <th><%= cell %></th>' +
+    '           <% } else { %>' +
+    '               <td><%= cell %></td>' +
+    '           <% } %>' +
+    '       <% }); %>' +
+    '       </tr>' +
+    '   <% } %>' +
+    '<% }); %>' +
+    '</tbody>' +
+    '</table>'
+);
+
+
+
+function renderMarkdown(text) {
+    let markdown = new showdown.Converter();
+    return markdown.makeHtml(text);
+}
+
+
+function renderContent(options) {
+    return contentTemplate({
+        id: options.id,
+        entry: options.entry,
+        renderMarkdown: renderMarkdown,
+        tableTemplate: tableTemplate,
+        figureTypes: figureTypes,
+        encodeObj: encodeObj,
+        decodeObj: decodeObj
+    });
+}
+
+
+function renderSection(options) {
+    return sectionTemplate({
+        id: options.id,
+        section: options.section,
+        renderContent: renderContent,
+        figureTypes: options.figureTypes,
+        renderMarkdown: renderMarkdown,
+    });
+}
+
+
+function getPrecision(row, steps) {
+    steps = steps || 8;
+    let diff = (row[row.length - 1] - row[0]) / steps;
+    return Math.abs(Math.floor(Math.log10(diff.toPrecision(1)) || 2))
+}
+
+
+function encodeObj(obj) {
+    // encode object as base64 string
+    const utf8Bytes = encodeURIComponent(JSON.stringify(obj)).replace(/%([0-9A-F]{2})/g,
+        function toSolidBytes(match, p1) {
+            return String.fromCharCode(`0x${p1}`);
+        });
+    return btoa(utf8Bytes);
+}
+
+
+function decodeObj(base64Str) {
+    // decode base64 string to object
+    const binaryString = atob(base64Str);
+    const percentEncodedStr = binaryString.split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join('');
+    return JSON.parse(decodeURIComponent(percentEncodedStr));
+}
+
+
+export function showReport(selector, report) {
+    const target = document.querySelector(selector);
+    if (!target) {
+        console.error("Container Not found");
+        return;
+    }
+    target.classList.add('report-viewer');          // add main class to the container
+
+    // add sections to the container, we'll fill the content in a second pass
+    report.details.forEach(function(section, i) {
+        const sectionHTML = renderSection({
+            id: i,
+            section: section,
+        });
+        target.insertAdjacentHTML('beforeend', sectionHTML);
+    });
+    
+    // now fill the content of each section
+    target.querySelectorAll('figure').forEach(function (figure) {
+        let chart = decodeObj(figure.getAttribute('data-chart'));
+        let aspect_ratio = chart['aspect-ratio'] || 16 / 9;
+        let chart_colors = chart.colors;
+        if (typeof chart.data === 'object') {
+            aspect_ratio = chart.data['aspect-ratio'] || aspect_ratio;
+            chart_colors = chart.data.colors || chart_colors;
+        }
+        let options = {
+            width: figure.offsetWidth,
+            height: figure.offsetWidth / aspect_ratio,
+            colors: {}
+        };
+
+        if (Array.isArray(chart_colors)) {
+            options.scheme = chart_colors;
+        } else if (typeof chart_colors === 'object') {
+            options.scheme = ColorSchemes.Tableau10;
+            options.colors = chart_colors;
+        } else {
+            options.scheme = ColorSchemes[chart_colors] || ColorSchemes.Tableau10;
+        }
+        console.log(chart);
+        switch (figure.dataset.type) {
+            case 'bars':
+                drawBarChart(figure, chart, options);
+                break;
+            case 'columns':
+                drawColumnChart(figure, chart, options);
+                break;
+        }
+
+        // Remove raw data from dom
+        figure.removeAttribute('data-chart');
+
+        // caption
+        if (chart.title) {
+            figure.insertAdjacentHTML('afterend', `<figcaption class="text-center">${chart.title}</figcaption>`);
+        } else {
+            figure.insertAdjacentHTML('afterend', `<figcaption class="text-center"></figcaption>`);
+        }
+    });
+}
+
+function drawBarChart(figure, chart, options) {
+    let marks = [];
+    Object.entries(chart.types).forEach(([key, type]) => {
+        if (type === 'bar') {
+            marks.push(Plot.barX(chart.data, {
+                y: chart.x || chart["x-label"],
+                x: key,
+                fill: options.scheme[type % options.scheme.length],
+                sort: { y: "x", reverse: true },
+            }));
+        } else if (key === 'line') {
+            marks.push(Plot.lineX(chart.data, {
+                y: chart.x || chart["x-label"],
+                x: key,
+                stroke: options.scheme[type % options.scheme.length],
+            }));
+        } else if (key === 'area') {
+            marks.push(Plot.areaX(chart.data, {
+                y: chart.x || chart["x-label"],
+                x: key,
+                fill: options.scheme[type % options.scheme.length],
+            }));
+        }
+    });
+
+    // Create the bar chart
+    const plot = Plot.plot({
+        x: {
+            axis: "top",
+            grid: true,
+        },
+        marks: marks,
+    });
+    figure.appendChild(plot);
+}
+
+function drawColumnChart(figure, chart, options) {
+    let marks = [];
+    Object.entries(chart.types).forEach(([key, type]) => {
+        if (type === 'bar') {
+            marks.push(Plot.barY(chart.data, {
+                x: chart.x || chart["x-label"],
+                y: key,
+                fill: options.scheme[type % options.scheme.length],
+            }));
+        } else if (key === 'line') {
+            marks.push(Plot.lineY(chart.data, {
+                x: chart.x || chart["x-label"],
+                y: key,
+                stroke: options.scheme[type % options.scheme.length],
+            }));
+        } else if (key === 'area') {
+            marks.push(Plot.areaX(chart.data, {
+                x: chart.x || chart["x-label"],
+                y: key,
+                fill: options.scheme[type % options.scheme.length],
+            }));
+        }
+    });
+
+    // Create the bar chart
+    const plot = Plot.plot({
+        x: {
+            grid: true,
+        },
+        marks: marks,
+    });
+    figure.appendChild(plot);
+}
