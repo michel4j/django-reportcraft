@@ -1,6 +1,7 @@
 from collections import defaultdict
 from typing import Any, Literal
-from .utils import regroup_data, MinMax, epoch, map_colors, get_histogram_points, split_data, debug_value, merge_data
+from .utils import regroup_data, MinMax, epoch, map_colors, get_histogram_points, split_data, debug_value, merge_data, \
+    prepare_data
 
 
 def generate_table(entry, *args, **kwargs) -> dict:
@@ -145,20 +146,22 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
         'notes': entry.notes,
         'data': data,
     }
+    if data and isinstance(data[0].get(category_name), (int, float)):
+        info["ticks-interval"] = 1
 
     return info
 
 
+def generate_columns(entry, *args, **kwargs):
+    return generate_bars(entry, *args, kind='columns', **kwargs)
+
+
 def generate_area(entry, *args, **kwargs):
-    return generate_bars(entry, *args, kind='area', **kwargs)
+    return generate_plot(entry, *args, **kwargs)
 
 
 def generate_line(entry, *args, **kwargs):
-    return generate_bars(entry, *args, kind='line', **kwargs)
-
-
-def generate_columns(entry, *args, **kwargs):
-    return generate_bars(entry, *args, kind='columns', **kwargs)
+    return generate_plot(entry, *args, **kwargs)
 
 
 def generate_list(entry, *args, **kwargs):
@@ -206,111 +209,40 @@ def generate_plot(entry, *args, **kwargs):
     """
     Generate an XY plot from the data source
     :param entry: The report entry containing the configuration for the table
+    :param kind: The type of plot to generate ('scatter', 'area', 'line')
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
-    labels = entry.source.get_labels()
 
+    labels = entry.source.get_labels()
     groups = entry.attrs.get('groups', [])
     x_label = entry.attrs.get('x_label', '')
     y_label = entry.attrs.get('y_label', '')
     x_value = entry.attrs.get('x_value', '')
     group_by = entry.attrs.get('group_by', None)
-    colors = entry.attrs.get('colors', 'Live16')
+    scheme = entry.attrs.get('scheme', 'Live8')
     precision = entry.attrs.get('precision', 0)
 
-    valid_groups = [
+    raw_data = entry.source.get_data(*args, **kwargs)
+    data = prepare_data(raw_data, labels=labels, sort=x_value, sort_desc=False)
+    types = [
         {
-            'x': x_value,       # All groups share the same x-value
-            **group
+            'type': group.pop('type', 'points'),
+            'x': labels.get(x_value, x_value),                                      # All plots share the same x-value
+            **{key: labels.get(field, field) for key, field in group.items()},      # Add y-values, z
+            **{'colors': labels.get(group_by, group_by) for i in [1] if group_by},  # Add color channel
         }
         for group in groups if 'y' in group
     ]
-
-    if not valid_groups:
-        return {}
-
-    y_fields = [group['y'] for group in valid_groups]
-    z_fields = [group.get('z') for group in valid_groups if 'z' in group]
-
-    raw_data = entry.source.get_data(*args, **kwargs)
-
-    if len(valid_groups) == 1 and group_by:
-        internal_groups = True
-        data = regroup_data(raw_data, x_axis=x_value, y_axis=y_fields, others=[group_by] + z_fields)
-        grouped_data = split_data(data, group_by)
-        internal_groups = list(grouped_data.keys())
-    else:
-        internal_groups = False
-        grouped_data = {}
-        data = regroup_data(raw_data, x_axis=x_value, y_axis=y_fields, others=z_fields)
-
-    # sort data
-    types = {group.get('type') for group in valid_groups}
-    sort_keys = [x_value]
-    reverse_sort = False
-    if z_fields and types == {'scatter'}:
-        sort_keys = z_fields
-        reverse_sort = True
-
-    data.sort(key=lambda x: tuple(x.get(f) for f in sort_keys), reverse=reverse_sort)
-
-    # get data groups
-    group_info = []
-    report_data = {}
-    if internal_groups:
-        group = valid_groups[0]
-        for group_name, group_data in grouped_data.items():
-            x_name = f'{group_name}_{group["x"]}'
-            z_name = f'{group_name}_{group.get("z", "")}' if "z" in group else ''
-            y_name = group_name.title()
-            new_group = {
-                'x': x_name,
-                'y': y_name,
-                'z': z_name,
-                'type': group.get('type', ''),
-            }
-            # sort to show bigger bubbles first
-            if group.get('type') == 'scatter' and group.get('z'):
-                group_data.sort(key=lambda x: x.get(group['z'], 0), reverse=True)
-
-            group_info.append({k: v for k, v in new_group.items() if v})
-            sub_data = {
-                x_name: [item[group['x']] for item in group_data if group['x'] in item],
-                y_name: [item[group['y']] for item in group_data if group['y'] in item],
-            }
-            if 'z' in group:
-                sub_data[z_name] = [item[group['z']] for item in group_data if group['z'] in item]
-            report_data.update(sub_data)
-    else:
-        for group in valid_groups:
-            x_name = labels.get(group['x'], group['x'].title())
-            y_name = labels.get(group['y'], group['y'].title())
-            z_name = labels.get(group.get('z', ''), group.get('z', '').title())
-            new_group = {
-                'x': x_name,
-                'y': y_name,
-                'z': z_name,
-                'type': group.get('type', ''),
-            }
-            group_info.append({k: v for k, v in new_group.items() if v})
-
-        report_data.update({
-            labels.get(field_name, field_name.title()): [item[field_name] for item in data if field_name in item]
-            for field_name in [x_value] + y_fields + z_fields
-        })
-
     return {
         'title': entry.title,
         'description': entry.description,
         'kind': 'xyplot',
         'style': entry.style,
-        'colors': colors,
-        'max-radius': 20,
-        'groups': group_info,
+        'scheme': scheme,
         'x-label': x_label,
         'y-label': y_label,
-        'x-tick-precision': precision,
-        'data': report_data,
+        'types': types,
+        'data': data,
         'notes': entry.notes
     }
 

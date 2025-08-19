@@ -318,12 +318,10 @@ class Report(models.Model):
 
 class Entry(models.Model):
     class Types(models.TextChoices):
-        AREA = 'area', _('Area Chart')
         BARS = 'bars', _('Bar Chart')
         COLUMNS = 'columns', _('Column Chart')
         DONUT = 'donut', _('Donut Chart')
         HISTOGRAM = 'histogram', _('Histogram')
-        LINE = 'line', _('Line Chart')
         LIST = 'list', _('List')
         MAP = 'map', _('Map Chart')
         PIE = 'pie', _('Pie Chart')
@@ -370,8 +368,6 @@ class Entry(models.Model):
         Types.TIMELINE: entries.generate_timeline,
         Types.TEXT: entries.generate_text,
         Types.MAP: entries.generate_geochart,
-        Types.LINE: entries.generate_line,
-        Types.AREA: entries.generate_area,
         Types.COLUMNS: entries.generate_columns,
     }
 

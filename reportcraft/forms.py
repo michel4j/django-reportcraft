@@ -455,14 +455,14 @@ class BarsForm(ModalModelForm):
 
 
 PLOT_SERIES = 4
-XY_MARKERS = [('scatter', 'Points'), ('line', 'Lines'), ('', 'Lines & Points')]
+PLOT_TYPES = [('points', 'Points'), ('line', 'Line'), ('line-points', 'Line & Points'), ('area', 'Area')]
 
 
 class PlotForm(ModalModelForm):
     x_label = forms.CharField(label='X Label', required=False)
     y_label = forms.CharField(label='Y Label', required=False)
     x_value = forms.ModelChoiceField(label='X-Value', required=True, queryset=models.DataField.objects.none())
-    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
+    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
     group_by = forms.ModelChoiceField(label='Group By', required=False, queryset=models.DataField.objects.none())
     precision = forms.IntegerField(label="Precision", required=False)
 
@@ -485,7 +485,7 @@ class PlotForm(ModalModelForm):
             self.fields[f'z__{i}'] = forms.ModelChoiceField(
                 label=f'Z-Value', required=False, queryset=models.DataField.objects.none()
             )
-            self.fields[f'type__{i}'] = forms.ChoiceField(label="Type", required=False, choices=XY_MARKERS)
+            self.fields[f'type__{i}'] = forms.ChoiceField(label="Type", required=False, choices=PLOT_TYPES)
 
         self.update_initial()
         self.body.append(
@@ -497,7 +497,7 @@ class PlotForm(ModalModelForm):
             ),
             Row(
                 ThirdWidth('group_by'),
-                ThirdWidth('colors'),
+                ThirdWidth('scheme'),
                 ThirdWidth('precision'),
                 style='g-3'
             ),
@@ -535,7 +535,7 @@ class PlotForm(ModalModelForm):
                     self.fields[f'{f}__{i}'].initial = field_queryset.filter(name=group[f]).first()
             self.fields[f'type__{i}'].initial = group.get('type', '')
 
-        for field in ['x_label', 'y_label', 'precision', 'colors']:
+        for field in ['x_label', 'y_label', 'precision', 'scheme']:
             if field in attrs:
                 self.fields[field].initial = attrs[field]
 
@@ -560,7 +560,7 @@ class PlotForm(ModalModelForm):
             if field in cleaned_data and cleaned_data[field] is not None:
                 new_attrs[field] = cleaned_data[field].name
 
-        for field in ['x_label', 'y_label', 'precision', 'colors']:
+        for field in ['x_label', 'y_label', 'precision', 'scheme']:
             if field in cleaned_data:
                 new_attrs[field] = cleaned_data[field]
 

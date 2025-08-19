@@ -19,11 +19,12 @@ from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
 from django.db import models
-from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q, Case, When, CharField
+from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q, Case, When, CharField, TextField
 from django.db.models.functions import (
     Greatest, Least, Concat, Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan,
     ATan2, Mod, Sign, Trunc, Radians, Degrees, Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
-    ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek
+    ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek,
+    JSONArray,
 )
 from django.http import HttpResponse
 from django.utils import timezone
@@ -72,18 +73,24 @@ class ChoiceName(Case):
     Queries display names for a Django choices field
     """
 
-    def __init__(self, model_name: str, field_ref: str | F, condition=None, then=None, **lookups):
+    def __init__(self, model_name: str, field_ref: str | F, **extra):
         if isinstance(field_ref, F):
             field_ref = field_ref.name
 
-        model = apps.get_model(model_name)
+        app_label, model_class = model_name.split('.')
+        model = apps.get_model(app_label, model_class)
+
         field_name = field_ref.split('__')[-1]
-        choices = dict(model._meta.get_field(field_name).flatchoices)
+        field = model._meta.get_field(field_name)
+
+        # the next piece must be exactly like this to work on SQLite also, for some reason
+        # directly referencing the name like V(name) does not work
         whens = [
-            When(**{field_ref: k, 'then': V(v)})
-            for k, v in choices.items()
+            When(**{f"{field_ref}__exact": value, 'then': V(f"{name}")})
+            for value, name in field.get_choices(include_blank=False)
         ]
-        super().__init__(*whens, output_field=CharField(), default=V(''), condition=condition, then=then, **lookups)
+
+        super().__init__(*whens, output_field=TextField(), default=V(''), **extra)
 
 
 class Hours(models.Func):
@@ -189,6 +196,85 @@ class ShiftEnd(models.Func):
         )
 
 
+class Interval(Case):
+    """
+    A Django database function to categorize a numeric field's value into
+    dynamically generated intervals.
+
+    This function generates a series of SQL CASE WHEN statements to label
+    a value based on where it falls within a defined range.
+
+    Args:
+        expression (str): The name of the field to evaluate.
+        lo (int or float): The lower bound of the main interval range.
+        hi (int or float): The upper bound of the main interval range.
+        size (int): The total number of categories to create. This includes
+                    the outer bounds ('<lo' and '>hi'), so it must be at
+                    least 3 to have one middle interval.
+
+    Usage Example:
+        from django.contrib.auth.models import User
+        from .db_functions import Interval
+
+        # Annotate users with an age group based on a 'age' field.
+        # This will create 4 categories: '<18', '18-40', '40-65', '>65'
+        annotated_users = User.objects.annotate(
+            age_group=Interval('age', lo=18, hi=65, size=4)
+        )
+
+        for user in annotated_users:
+            print(f"{user.username}: {user.age_group}")
+    """
+
+    def __init__(self, field, *, lo, hi, size=3, floats=False, **extra):
+        lo = lo if not isinstance(lo, V) else lo.value
+        hi = hi if not isinstance(hi, V) else hi.value
+        size = size if not isinstance(size, V) else size.value
+
+        # --- Input Validation ---
+        if isinstance(field, F):
+            field = field.name
+        elif not isinstance(field, str):
+            raise TypeError("First argument must be a field name string.")
+
+        if not isinstance(size, int):
+            raise ValueError("The 'size' argument must be an integer of at least 3.")
+        if not isinstance(lo, (int, float)):
+            raise TypeError("The 'lo' argument must be an integer or float.")
+        if not isinstance(hi, (int, float)):
+            raise TypeError("The 'hi' argument must be an integer or float.")
+        if not lo < hi:
+            raise ValueError("The 'lo' argument must be less than 'hi'.")
+
+        num_intervals = max(size - 2, 1)
+
+        # --- Condition 1: Lower Bound ---
+        whens = [
+            When(**{f'{field}__lt': lo}, then=V(f'<{lo:g}')),
+            When(**{f'{field}__gte': hi}, then=V(f'>{hi:g}')),
+        ]
+        if num_intervals == 1:
+            whens.append(
+                When(**{f'{field}__gte': lo, f'{field}__lte': hi},  then=V(f'{lo:g}-{hi:g}'))
+            )
+        else:
+            # split by step size.
+            step = (hi - lo) / num_intervals if floats else (hi - lo) // num_intervals
+            for i in range(num_intervals):
+                start = lo + i * step
+                if i == num_intervals - 1:
+                    whens.append(
+                        When(**{f'{field}__gte': start, f'{field}__lte': hi}, then=V(f'{start:g}-{hi:g}'))
+                    )
+                else:
+                    end = lo + (i + 1) * step
+                    whens.append(
+                        When(**{f'{field}__gte': start, f'{field}__lt': end},then=V(f'{start:g}-{end:g}'))
+                    )
+
+        super().__init__(*whens, output_field=CharField(), default=V(""), **extra)
+
+
 OPERATOR_FUNCTIONS = {
     '+': 'ADD()',
     '-': 'SUB()',
@@ -200,7 +286,7 @@ ALLOWED_FUNCTIONS = {
     Sum, Avg, Count, Max, Min, Concat, Greatest, Least,
     Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan, ATan2, Mod, Sign, Trunc,
     ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek,
-    Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
+    Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim, Interval, JSONArray,
     Radians, Degrees, Hours, Minutes, ShiftStart, ShiftEnd, Q, DisplayName
 }
 
@@ -661,16 +747,28 @@ def merge_data(
 
     # get the unique list of dictionaries
     data_list = list(raw_data.values())
+    return prepare_data(data_list, labels=labels, sort=sort, sort_desc=sort_desc)
+
+
+def prepare_data(data: list[dict], labels: dict = None, sort: str = '', sort_desc: bool = False) -> list[dict]:
+    """
+    Prepare a dataset for plotting, label data according to the labels dictionary, if provided, and sort it by a field if specified.
+
+    :param data: list of dictionaries
+    :param labels: Field labels dictionary
+    :param sort: Name of field to sort by or empty string to disable sorting
+    :param sort_desc: Sort in descending order
+    """
+    labels = labels or {}
     # sort the data if a sort field is provided
     if sort:
         sort_key = sort
-        data_list.sort(key=lambda item: item.get(sort_key, 0), reverse=sort_desc)
+        data.sort(key=lambda item: item.get(sort_key, 0), reverse=sort_desc)
 
     # translate the keys to labels if labels are provided
     if labels:
-        data_list = [{labels.get(k, k): v for k, v in item.items()} for item in data_list]
-
-    return data_list
+        data = [{labels.get(k, k): v for k, v in item.items()} for item in data]
+    return data
 
 
 def split_data(

@@ -106,26 +106,40 @@ section {
   }
 
   .table {
+    --bs-border-color: var(--bs-border-color-translucent);
     counter-increment: tables;
 
     tbody {
       td {
         text-align: right;
       }
-
-      border-bottom: 1px solid var(--bs-border-color-translucent);
-      border-top: 1px solid var(--bs-border-color-translucent);
     }
 
     thead {
       th {
         text-align: right;
-
+        border-bottom: 2px solid var(--bs-border-color-translucent);
+        vertical-align: bottom;
+        border-top: 1px solid var(--bs-border-color-translucent);
         &:first-child {
           text-align: left;
         }
       }
+      td {
+        border-top: 1px solid var(--bs-border-color-translucent);
+      }
     }
+
+    > tr {
+      > td {
+        border-top: 1px solid var(--bs-border-color-translucent);
+      }
+
+      > th {
+        border-top: 1px solid var(--bs-border-color-translucent);
+      }
+    }
+
   }
 
   .notes {
@@ -500,4 +514,10 @@ ul.nav-tabs.nav-tabs-sm {
     stroke: var(--bs-body-color);
     //opacity: 1 !important;
   }
+}
+
+figure > div {  // legend fix
+    display: flex;
+    justify-content: center;
+    gap: 1em;
 }

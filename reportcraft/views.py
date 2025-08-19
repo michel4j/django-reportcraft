@@ -402,8 +402,6 @@ class ConfigureEntry(*EDIT_MIXINS, ModalUpdateView):
         model.Types.HISTOGRAM: forms.HistogramForm,
         model.Types.MAP: forms.GeoCharForm,
         model.Types.DONUT: forms.PieForm,
-        model.Types.AREA: forms.BarsForm,
-        model.Types.LINE: forms.BarsForm,
     }
 
     def get_form_class(self):

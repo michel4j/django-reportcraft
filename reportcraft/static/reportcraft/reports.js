@@ -203,7 +203,7 @@ export function showReport(selector, report) {
     // now fill the content of each section
     target.querySelectorAll('figure').forEach(function (figure, index) {
         const chart = decodeObj(figure.getAttribute('data-chart'));
-        const aspectRatio = chart.data['aspect-ratio'] || 16/9;
+        let aspectRatio = chart.data['aspect-ratio'] || 16/9;
         const options = {
             uid: (index + Date.now()).toString(36),
             width: figure.offsetWidth,
@@ -211,6 +211,7 @@ export function showReport(selector, report) {
             scheme: ColorSchemes[chart.scheme] || ColorSchemes.Tableau10,
             aspectRatio: aspectRatio,
         };
+
         console.log(chart);
 
         switch (figure.dataset.type) {
@@ -244,58 +245,39 @@ function getFontSize() {
     return parseFloat(rootStyles.fontSize);
 }
 
-
-function drawXYPlot(figure, chart, options) {
-    let marks = [];
-    const markTypes = chart.types || [];
-    const plotOptions = {
-        aspectRatio: options.aspectRatio,
-        width: options.width || 800,
-        height: options.height || 400,
-        marginLeft: 20,
-        marginRight: 20,
-        marginTop: 20,
-        marginBottom: 40,
-        color: {
-            legend: true,
-        },
-        marks: marks
-    };
-
-    markTypes.forEach(function(mark, index){
-        const markOptions = {x: mark.x,  y: mark.y};
-        if (mark.r) {
-            markOptions.r = mark.r;
+function formatTick(value, i, ticksEvery = 1, ticksInterval = undefined) {
+    if (!(ticksInterval) && (i % ticksEvery)) {
+        return null; // Skip this tick
+    } else if (typeof(value) === 'string') {
+        return value; // Return string as it is
+    } else if (typeof(value) === 'number') {
+        if (Number.isInteger(value)) {
+            // Format integers with commas if they are larger than 10,000. This avoids
+            // messing up years which are < 1e4
+            return Math.abs(value) >= 1e4 ? value.toLocaleString() : value.toString();
         } else {
-            // If no colors are specified, use the default color scheme
-            markOptions.fill = options.scheme[0];
+            return ""
         }
-        if (mark.colors) {
-            plotOptions.color["range"] = options.scheme;
-            plotOptions.color["domain"] = [...d3.union(chart.data.map(d => d[mark.colors]))];
-        }
+    }
+}
 
-        if (chart.kind === 'line') {
-            marks.push(new Plot.line(chart.data, markOptions));
-        } else if (chart.kind === 'scatter') {
-            marks.push(new Plot.dot(chart.data, markOptions));
-        }
-        else if (chart.kind === 'area') {
-            marks.push(new Plot.areaX(chart.data, markOptions));
-        } else if (chart.kind === 'histo') {
-            marks.push(new Plot.binX(chart.data, markOptions));
-        } else {
-            console.warn(`Unknown chart kind: ${chart.kind}`);
-        }
-    });
-    // Create chart
-    const plot = Plot.plot(plotOptions);
-    const svg = plot.querySelector('svg[viewBox]'); // Fix the width and let CSS handle the height
+function addFigurePlot(figure, plot) {
+    // Fix the width and let CSS handle the height
+    const svg = plot.querySelector('svg[viewBox]');
     if (svg){
         svg.setAttribute('width', '100%');
         svg.removeAttribute('height'); // Let CSS handle the height
     }
-    figure.appendChild(plot);
+    if (plot.tagName === "FIGURE") {
+        // If the plot is a figure, we transfer its contents into the existing figure
+        // Add last first to place legend at the bottom
+        while (plot.lastChild) {
+            figure.appendChild(plot.lastChild);
+        }
+    } else {
+        // If the plot is not a figure, we add it to the figure
+        figure.appendChild(plot);
+    }
 }
 
 function drawBarChart(figure, chart, options) {
@@ -304,7 +286,9 @@ function drawBarChart(figure, chart, options) {
     const valueAxis = (chart.kind === 'bars') ? 'x' : 'y';
     const categoryAxis = (chart.kind === 'bars') ? 'y' : 'x';
     const ticksEvery = chart["ticks-every"] || 1; // Default to every tick
+    const ticksInterval = chart["ticks-interval"] || undefined; // Default to 1 for bar charts
     let maxLabelLength = 10;
+
     const plotOptions = {
         width: options.width || 800,
         height: options.height || 400,
@@ -317,7 +301,9 @@ function drawBarChart(figure, chart, options) {
             legend: true,
         },
         [categoryAxis]: {
-            tickFormat: (d, i) => i % ticksEvery ? null : (typeof(d) === 'number' ? `${d}` : d)
+            tickFormat: (d, i) => formatTick(d, i, ticksEvery, ticksInterval),
+            interval: ticksInterval,
+            label: null
         },
         [valueAxis]: {
             grid: true,
@@ -326,7 +312,7 @@ function drawBarChart(figure, chart, options) {
     };
 
     markTypes.forEach(function(mark, index){
-        const markOptions = {x: mark.x,  y: mark.y, sort: null};
+        const markOptions = {x: mark.x,  y: mark.y, sort: null, tip: categoryAxis};
 
         maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[mark[categoryAxis]]}`.length || 0));
         if (mark.colors) {
@@ -351,10 +337,10 @@ function drawBarChart(figure, chart, options) {
 
         if (chart.kind === 'bars') {
             marks.push(new Plot.ruleX([0]));
-            marks.push(new Plot.rectX(chart.data, markOptions));
+            marks.push(new Plot.barX(chart.data, markOptions));
         } else {
             marks.push(new Plot.ruleY([0]));
-            marks.push(new Plot.rectY(chart.data, markOptions));
+            marks.push(new Plot.barY(chart.data, markOptions));
         }
     });
 
@@ -364,32 +350,73 @@ function drawBarChart(figure, chart, options) {
     plotOptions.marginBottom = (chart.kind === 'columns') ? fontSize * 3 : 40
     const plot = Plot.plot(plotOptions);
 
-    // Fix the width and let CSS handle the height
-    const svg = plot.querySelector('svg[viewBox]');
-    if (svg){
-        svg.setAttribute('width', '100%');
-        svg.removeAttribute('height'); // Let CSS handle the height
-    }
-    figure.appendChild(plot);
+    addFigurePlot(figure, plot);
+}
+
+function drawXYPlot(figure, chart, options) {
+    let marks = [];
+    const markTypes = chart.types || [];
+    const plotOptions = {
+        aspectRatio: options.aspectRatio,
+        width: options.width || 800,
+        height: options.height || 400,
+        marginLeft: 20,
+        marginRight: 20,
+        marginTop: 20,
+        marginBottom: 40,
+        color: {
+            legend: true,
+        },
+        x: {
+            grid: true,
+            label: chart["x-label"] || undefined,
+        },
+        y: {
+            grid: true,
+            label: chart["y-label"] || undefined,
+        },
+        r: {
+            transform: (r) => Math.pow(r, 3), // Square the radius for better visibility
+        },
+        marks: marks
+    };
+
+    plotOptions.color["range"] = options.scheme;
+
+    markTypes.forEach(function(mark, index){
+        const markOptions = {x: mark.x,  y: mark.y};
+        if (mark.type === 'line') {
+            markOptions.z = mark.z || undefined;
+            markOptions.stroke = mark.colors || mark.z || options.scheme[index % options.scheme.length];
+            marks.push(new Plot.lineY(chart.data, markOptions));
+        } else if (mark.type === 'line-points') {
+            markOptions.z = mark.z || undefined;
+            markOptions.stroke = mark.colors || mark.z || options.scheme[index % options.scheme.length];
+            markOptions.marker = true;
+            marks.push(new Plot.lineY(chart.data, markOptions));
+        } else if (mark.type === 'points') {
+            markOptions.fill = mark.colors || options.scheme[index % options.scheme.length];
+            markOptions.r = mark.z || undefined; // Default radius for points
+            marks.push(new Plot.dot(chart.data, markOptions));
+        } else if (mark.type === 'area') {
+            markOptions.z = mark.z || undefined;
+            markOptions.fill = mark.colors || mark.z || options.scheme[index % options.scheme.length];
+            marks.push(new Plot.areaY(chart.data, markOptions));
+        } else {
+            console.warn(`Unknown XY Plot: ${mark.type}`);
+        }
+    });
+    // Create chart
+    const plot = Plot.plot(plotOptions);
+    addFigurePlot(figure, plot);
 }
 
 function drawPieChart(figure, chart, options) {
     // Placeholder for pie chart implementation
     const uniqueLabels = [...d3.union(chart.data.map(d => d.label))];
     const color = d3.scaleOrdinal().domain(uniqueLabels).range(options.scheme);
-    const outerRadius = Math.min(options.width, options.height) / 2;
+    const outerRadius = Math.min(options.width, options.height) / 2 - 15;
     const innerRadius = (chart.kind === 'donut') ? outerRadius / 2 : 0;
-
-    // Add legend to the top first
-    const legend = d3.select(figure)
-        .append("div")
-        .attr("class", `legend plot-${options.uid}-swatches`)
-        .style("min-height", "33px")
-        .style("display", "flex")
-        .style("flex-direction", "row")
-        .style("flex-wrap", "wrap")
-        .style("align-items", "center")
-        .style("justify-content", "center");
 
     // Add chart
     const svg = d3.select(figure)
@@ -413,8 +440,19 @@ function drawPieChart(figure, chart, options) {
             .attr("d", arcGenerator)
             .attr("fill", d => color(d.data.label))
             .attr("stroke", "var(--bs-body-bg)")
-            .style("stroke-width", "2px")
+            .style("stroke-width", "1px")
             .style("opacity", 1);
+
+    // Add legend
+    const legend = d3.select(figure)
+        .append("div")
+        .attr("class", `legend plot-${options.uid}-swatches`)
+        .style("min-height", "33px")
+        .style("display", "flex")
+        .style("flex-direction", "row")
+        .style("flex-wrap", "wrap")
+        .style("align-items", "center")
+        .style("justify-content", "center");
 
     legend.selectAll("legendItem")
         .data(uniqueLabels)
@@ -426,6 +464,8 @@ function drawPieChart(figure, chart, options) {
             .style("font-size", "10px")
             .style("margin-right", "10px")
             .style("margin-bottom", "5px")
-            .html(d => `<svg width="15" height="15" style="margin-right: 0.5em;" fill="${color(d)}"><rect width="100%" height="100%"></rect></svg>${d}`);
+            .html(d => `<svg width="15" height="15" style="margin-right: 0.5em;" fill="${color(d)}">
+                        <rect width="100%" height="100%"></rect>
+                        </svg>${d}`);
 
 }
