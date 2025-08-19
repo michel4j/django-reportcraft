@@ -93782,29 +93782,40 @@
   pk: 5
   fields:
     created: 2025-03-18 05:00:44.532008+00:00
-    modified: 2025-03-18 05:14:26.821697+00:00
+    modified: 2025-08-19 14:43:11.318202+00:00
     name: Top 10 Countries
     description: ''
     group_by:
     - country_name
-    filters: '{}'
+    filters: ''
     limit: null
 - model: reportcraft.datasource
   pk: 6
   fields:
     created: 2025-03-21 00:25:11.519557+00:00
-    modified: 2025-07-25 19:24:30.347789+00:00
+    modified: 2025-08-19 17:59:29.118311+00:00
     name: Age Distribution
     description: ''
     group_by:
-    - age
-    filters: Nice + 1
+    - age_group
+    filters: ''
+    limit: null
+- model: reportcraft.datasource
+  pk: 7
+  fields:
+    created: 2025-08-19 21:24:38.572865+00:00
+    modified: 2025-08-19 21:25:18.143306+00:00
+    name: Global Distribution of Instutions
+    description: ''
+    group_by:
+    - country
+    filters: ''
     limit: null
 - model: reportcraft.datamodel
   pk: 1
   fields:
     created: 2025-03-17 15:45:01.809447+00:00
-    modified: 2025-03-20 04:44:16.795785+00:00
+    modified: 2025-08-19 19:51:23.435017+00:00
     model:
     - example
     - person
@@ -93854,17 +93865,27 @@
   pk: 8
   fields:
     created: 2025-03-21 00:25:35.858243+00:00
-    modified: 2025-07-24 19:03:04.574765+00:00
+    modified: 2025-08-19 19:49:28.984161+00:00
     model:
     - example
     - person
     name: example.Person
     source: 6
+- model: reportcraft.datamodel
+  pk: 11
+  fields:
+    created: 2025-08-19 21:25:06.605688+00:00
+    modified: 2025-08-19 21:25:55.165627+00:00
+    model:
+    - example
+    - institution
+    name: example.Institution
+    source: 7
 - model: reportcraft.datafield
   pk: 1
   fields:
     created: 2025-03-17 15:45:01.846165+00:00
-    modified: 2025-03-20 04:44:16.719693+00:00
+    modified: 2025-08-19 19:51:23.378797+00:00
     name: year
     model: 1
     label: Year
@@ -93878,12 +93899,12 @@
   pk: 2
   fields:
     created: 2025-03-17 16:21:49.801218+00:00
-    modified: 2025-03-17 16:21:49.801233+00:00
+    modified: 2025-08-19 21:05:37.034164+00:00
     name: users
     model: 1
     label: Users
     default: 0
-    expression: Count(this)
+    expression: Count(this, distinct=True)
     precision: null
     position: 1
     ordering: null
@@ -93934,12 +93955,12 @@
   pk: 7
   fields:
     created: 2025-03-17 18:16:22.652267+00:00
-    modified: 2025-03-17 18:16:22.652282+00:00
+    modified: 2025-08-19 21:05:17.659630+00:00
     name: oldest
     model: 1
     label: Oldest
     default: 0
-    expression: Max(age)
+    expression: Max(Age)
     precision: 0
     position: 6
     ordering: null
@@ -93962,12 +93983,12 @@
   pk: 10
   fields:
     created: 2025-03-17 19:13:00.705941+00:00
-    modified: 2025-03-18 04:23:40.210127+00:00
+    modified: 2025-08-19 19:50:16.477285+00:00
     name: category
     model: 3
     label: Category
     default: null
-    expression: Type
+    expression: DisplayName(Type)
     precision: null
     position: 0
     ordering: null
@@ -94060,12 +94081,12 @@
   pk: 21
   fields:
     created: 2025-03-20 04:44:16.752971+00:00
-    modified: 2025-03-20 04:44:16.776420+00:00
+    modified: 2025-08-19 19:51:23.415528+00:00
     name: category
     model: 1
     label: Category
     default: null
-    expression: Upper(Type)
+    expression: DisplayName(Type)
     precision: null
     position: 1
     ordering: null
@@ -94074,30 +94095,16 @@
   pk: 23
   fields:
     created: 2025-03-20 05:21:33.508365+00:00
-    modified: 2025-08-13 18:09:27.771024+00:00
+    modified: 2025-08-19 14:49:35.459410+00:00
     name: num_institutions
     model: 7
     label: Institutions
     default: 0
-    expression: Count(this)
+    expression: Count(this, distinct=True)
     precision: null
     position: 2
     ordering: null
     source: 5
-- model: reportcraft.datafield
-  pk: 24
-  fields:
-    created: 2025-03-21 00:25:35.891288+00:00
-    modified: 2025-07-24 19:03:04.556086+00:00
-    name: age
-    model: 8
-    label: Age
-    default: null
-    expression: Age
-    precision: null
-    position: 0
-    ordering: null
-    source: 6
 - model: reportcraft.datafield
   pk: 25
   fields:
@@ -94155,48 +94162,6 @@
     ordering: null
     source: 4
 - model: reportcraft.datafield
-  pk: 29
-  fields:
-    created: 2025-03-25 05:42:16.131953+00:00
-    modified: 2025-03-25 05:45:08.111753+00:00
-    name: longitude
-    model: 7
-    label: Longitude
-    default: 0
-    expression: ''
-    precision: 3
-    position: 3
-    ordering: null
-    source: 5
-- model: reportcraft.datafield
-  pk: 30
-  fields:
-    created: 2025-03-25 05:42:51.732921+00:00
-    modified: 2025-03-25 05:45:12.817695+00:00
-    name: latitude
-    model: 7
-    label: Latitude
-    default: 0
-    expression: ''
-    precision: 3
-    position: 4
-    ordering: null
-    source: 5
-- model: reportcraft.datafield
-  pk: 31
-  fields:
-    created: 2025-03-25 05:48:06.599532+00:00
-    modified: 2025-03-25 05:48:06.599588+00:00
-    name: name
-    model: 7
-    label: Institution
-    default: null
-    expression: ''
-    precision: null
-    position: 5
-    ordering: null
-    source: 5
-- model: reportcraft.datafield
   pk: 36
   fields:
     created: 2025-08-13 19:18:01.049588+00:00
@@ -94228,16 +94193,86 @@
   pk: 38
   fields:
     created: 2025-08-13 19:21:56.769664+00:00
-    modified: 2025-08-13 20:51:17.631548+00:00
+    modified: 2025-08-19 18:52:49.516703+00:00
     name: category
     model: 8
     label: Category
     default: null
-    expression: Upper(Type)
+    expression: DisplayName(Type)
     precision: null
     position: 4
     ordering: null
     source: 6
+- model: reportcraft.datafield
+  pk: 39
+  fields:
+    created: 2025-08-19 18:00:15.082405+00:00
+    modified: 2025-08-19 19:49:28.948154+00:00
+    name: age_group
+    model: 8
+    label: Age_Group
+    default: null
+    expression: Interval(Age, lo=18, hi=65, size=6)
+    precision: null
+    position: 0
+    ordering: null
+    source: 6
+- model: reportcraft.datafield
+  pk: 41
+  fields:
+    created: 2025-08-19 21:25:28.492238+00:00
+    modified: 2025-08-19 21:25:55.141967+00:00
+    name: country
+    model: 11
+    label: Country
+    default: null
+    expression: Country
+    precision: null
+    position: 0
+    ordering: null
+    source: 7
+- model: reportcraft.datafield
+  pk: 42
+  fields:
+    created: 2025-08-19 21:27:30.487290+00:00
+    modified: 2025-08-19 21:27:30.487308+00:00
+    name: num_institutions
+    model: 11
+    label: Institutions
+    default: null
+    expression: Count(this, distinct=True)
+    precision: null
+    position: 1
+    ordering: null
+    source: 7
+- model: reportcraft.datafield
+  pk: 43
+  fields:
+    created: 2025-08-19 21:28:10.420912+00:00
+    modified: 2025-08-19 21:28:10.420926+00:00
+    name: lat
+    model: 11
+    label: Latitude
+    default: 0
+    expression: Avg(Latitude)
+    precision: 2
+    position: 2
+    ordering: null
+    source: 7
+- model: reportcraft.datafield
+  pk: 44
+  fields:
+    created: 2025-08-19 21:28:34.957279+00:00
+    modified: 2025-08-19 21:28:34.957292+00:00
+    name: lon
+    model: 11
+    label: Longitude
+    default: 0
+    expression: Avg(Longitude)
+    precision: 2
+    position: 3
+    ordering: null
+    source: 7
 - model: reportcraft.report
   pk: 1
   fields:
@@ -94286,7 +94321,7 @@
   pk: 1
   fields:
     created: 2025-03-17 16:23:04.929205+00:00
-    modified: 2025-08-18 19:03:23.897757+00:00
+    modified: 2025-08-19 14:33:27.524636+00:00
     title: Users Per Year
     description: ''
     notes: ''
@@ -94300,9 +94335,10 @@
       color_by: category
       values:
       - users
-      stack: true
+      stack: false
       sort_desc: false
       scheme: Live8
+      ticks_every: 2
 - model: reportcraft.entry
   pk: 2
   fields:
@@ -94462,8 +94498,8 @@
   pk: 9
   fields:
     created: 2025-03-20 05:23:37.054538+00:00
-    modified: 2025-08-18 17:56:01.549252+00:00
-    title: Top 10 Countries by Number of Institutions
+    modified: 2025-08-19 21:08:40.905598+00:00
+    title: Top 20 Countries by Number of People
     description: ''
     notes: Calculated from the Institutions data model.
     style: col-md-6
@@ -94478,13 +94514,14 @@
       - num_people
       stack: false
       sort_desc: true
-      limit: 10
-      scheme: Live16
+      limit: 20
+      scheme: Live8
+      ticks_every: 1
 - model: reportcraft.entry
   pk: 10
   fields:
     created: 2025-03-21 00:56:27.632266+00:00
-    modified: 2025-08-15 22:36:34.288437+00:00
+    modified: 2025-08-19 19:53:00.428846+00:00
     title: Number of Persons per age group
     description: ''
     notes: ''
@@ -94495,19 +94532,19 @@
     position: 3
     attrs:
       groups:
-      - y: longitude
+      - y: total
         z: total
-        type: scatter
-      x_value: latitude
-      group_by: category
+        type: points
+      x_value: longitude
+      group_by: age_group
       x_label: Position
       precision: 0
-      colors: Live8
+      scheme: Live8
 - model: reportcraft.entry
   pk: 11
   fields:
     created: 2025-03-21 23:53:40.671951+00:00
-    modified: 2025-03-25 14:36:10.512854+00:00
+    modified: 2025-08-19 21:30:41.336119+00:00
     title: Global Distribution
     description: ''
     notes: "연소자의 근로는 특별한 보호를 받는다. 신체장애자 및 질병·노령 기타의 사유로 생활능력이 없는 국민은 법률이 정하는 바에 의하여
@@ -94517,16 +94554,16 @@
       한다. 사면·감형 및 복권에 관한 사항은 법률로 정한다."
     style: col-md-12
     kind: map
-    source: 5
+    source: 7
     report: 2
     position: 0
     attrs:
-      value: num_people
-      name: name
-      latitude: latitude
-      longitude: longitude
+      value: num_institutions
+      name: country
+      latitude: lat
+      longitude: lon
       colors: Oranges
-      region: '013'
+      region: world
       resolution: countries
       mode: markers
 - model: reportcraft.entry
@@ -94550,25 +94587,67 @@
   pk: 17
   fields:
     created: 2025-08-11 18:56:46.086450+00:00
-    modified: 2025-08-11 22:45:16.988723+00:00
+    modified: 2025-08-19 20:59:21.765721+00:00
     title: ''
     description: ''
     notes: ''
     style: col-md-12
-    kind: area
+    kind: plot
     source: 1
     report: 4
     position: 1
     attrs:
-      x_axis: year
-      y_axis:
-      - users
-      - institutions
-      bars:
-      - institutions
-      stack:
-      - - users
-      wrap_x_labels: false
-      vertical: false
-      sort_desc: false
-      colors: Live8
+      groups:
+      - y: institutions
+        z: users
+        type: points
+      x_value: year
+      group_by: category
+      scheme: Live8
+- model: reportcraft.entry
+  pk: 18
+  fields:
+    created: 2025-08-19 19:54:36.586671+00:00
+    modified: 2025-08-19 21:06:05.817397+00:00
+    title: Statistics Plots
+    description: ''
+    notes: ''
+    style: col-md-6
+    kind: plot
+    source: 1
+    report: 1
+    position: 2
+    attrs:
+      groups:
+      - y: users
+        type: area
+      - y: institutions
+        type: line
+      - y: avg_age
+        type: points
+      x_value: year
+      group_by: category
+      scheme: Live8
+- model: reportcraft.entry
+  pk: 19
+  fields:
+    created: 2025-08-19 21:06:41.050243+00:00
+    modified: 2025-08-19 21:08:26.577335+00:00
+    title: Top 20 Countries by Number of Institutions
+    description: ''
+    notes: ''
+    style: col-md-6
+    kind: bars
+    source: 5
+    report: 1
+    position: 4
+    attrs:
+      categories: country_name
+      sort_by: num_institutions
+      values:
+      - num_institutions
+      stack: false
+      sort_desc: true
+      limit: 20
+      scheme: Live8
+      ticks_every: 1
