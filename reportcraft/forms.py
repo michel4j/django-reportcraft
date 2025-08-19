@@ -360,7 +360,13 @@ class BarsForm(ModalModelForm):
         label='Stack', required=False, initial=False, widget=forms.Select(choices=((True, 'Yes'), (False, 'No')))
     )
     scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
-    sort_desc = forms.BooleanField(label="Sort Descending", required=False)
+    ticks_every = forms.IntegerField(
+        label='Ticks Every', required=False, help_text=_("Ticks to show"), initial=1
+    )
+    sort_desc = forms.BooleanField(
+        label="Sort Order", required=False, widget=forms.Select(choices=((True, 'Descending'), (False, 'Ascending'))),
+        initial=False
+    )
     limit = forms.IntegerField(label="Limit", required=False)
 
     class Meta:
@@ -378,19 +384,22 @@ class BarsForm(ModalModelForm):
         self.update_initial()
         self.body.append(
             Row(
-                ThirdWidth('categories'),
-                ThirdWidth('values'),
-                ThirdWidth('color_by'),
+                QuarterWidth('categories'),
+                ThreeQuarterWidth('values'),
             ),
             Row(
-                ThirdWidth('scheme'),
+                HalfWidth('color_by'),
+                HalfWidth('scheme'),
+            ),
+            Row(
                 ThirdWidth('group_by'),
                 ThirdWidth('stack'),
+                ThirdWidth('sort_by'),
             ),
             Row(
-                ThirdWidth('sort_by'),
-                ThirdWidth('sort_desc'),
+                ThirdWidth('ticks_every'),
                 ThirdWidth('limit'),
+                ThirdWidth('sort_desc'),
             ),
             Div(
                 Field('attrs'),
@@ -418,7 +427,7 @@ class BarsForm(ModalModelForm):
         # other fields
         self.fields[f'stack'].initial = attrs.get('stack', False)
 
-        for field in ['stack', 'sort_desc', 'limit', 'scheme']:
+        for field in ['stack', 'sort_desc', 'limit', 'scheme', 'ticks_every']:
             if field in attrs:
                 self.fields[field].initial = attrs[field]
 
@@ -437,7 +446,7 @@ class BarsForm(ModalModelForm):
                 new_attrs[field] = [y.name for y in cleaned_data[field].order_by('position')]
 
         # other fields
-        for field in ['stack', 'sort_desc', 'limit', 'scheme']:
+        for field in ['stack', 'sort_desc', 'limit', 'scheme', 'ticks_every']:
             if field in cleaned_data and cleaned_data[field] is not None:
                 new_attrs[field] = cleaned_data[field]
 

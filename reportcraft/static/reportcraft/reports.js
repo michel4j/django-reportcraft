@@ -303,6 +303,7 @@ function drawBarChart(figure, chart, options) {
     const markTypes = chart.types || [];
     const valueAxis = (chart.kind === 'bars') ? 'x' : 'y';
     const categoryAxis = (chart.kind === 'bars') ? 'y' : 'x';
+    const ticksEvery = chart["ticks-every"] || 1; // Default to every tick
     let maxLabelLength = 10;
     const plotOptions = {
         width: options.width || 800,
@@ -316,7 +317,7 @@ function drawBarChart(figure, chart, options) {
             legend: true,
         },
         [categoryAxis]: {
-            tickFormat: d => typeof(d) === 'number' ? `${d}` : d,
+            tickFormat: (d, i) => i % ticksEvery ? null : (typeof(d) === 'number' ? `${d}` : d)
         },
         [valueAxis]: {
             grid: true,
@@ -337,7 +338,12 @@ function drawBarChart(figure, chart, options) {
             markOptions.fill = options.scheme[0];
         }
         if (mark.groups) {
-            markOptions.fx = () => mark.groups;
+            plotOptions[categoryAxis].axis = null;
+            if (chart.kind === 'bars') {
+                markOptions.fy = mark.groups;
+            } else {
+                markOptions.fx = mark.groups;
+            }
         }
         if (mark.sort) {
             markOptions.sort = mark.sort.startsWith('-') ? {[categoryAxis]: `-${valueAxis}`}: {[categoryAxis]: valueAxis};

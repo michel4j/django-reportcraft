@@ -21,10 +21,6 @@ def refactor_bar_entries(apps, schema_editor):
             entry.attrs['stack'] = True
         if old_attrs.get('colors'):
             entry.attrs['scheme'] = old_attrs['colors']
-        if old_attrs.get('sort_by'):
-            entry.attrs['sort_by'] = old_attrs['sort_by']
-        if old_attrs.get('sort_desc'):
-            entry.attrs['sort_desc'] = old_attrs['sort_desc']
         if old_attrs.get('y_axis'):
             entry.attrs['group_by'] = old_attrs['y_axis'][0],
 

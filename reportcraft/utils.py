@@ -664,7 +664,6 @@ def merge_data(
     # sort the data if a sort field is provided
     if sort:
         sort_key = sort
-        print(sort_key)
         data_list.sort(key=lambda item: item.get(sort_key, 0), reverse=sort_desc)
 
     # translate the keys to labels if labels are provided
