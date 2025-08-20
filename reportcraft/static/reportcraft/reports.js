@@ -200,7 +200,7 @@ export function showReport(selector, report) {
         target.insertAdjacentHTML('beforeend', sectionHTML);
     });
     
-    // now fill the content of each section
+    // now fill the content with each section
     target.querySelectorAll('figure').forEach(function (figure, index) {
         const chart = decodeObj(figure.getAttribute('data-chart'));
         let aspectRatio = chart.data['aspect-ratio'] || 16/9;
@@ -212,7 +212,6 @@ export function showReport(selector, report) {
             aspectRatio: aspectRatio,
         };
 
-        console.log(chart);
 
         switch (figure.dataset.type) {
             case 'bars':
@@ -263,8 +262,11 @@ function formatTick(value, i, ticksEvery = 1, ticksInterval = undefined) {
 
 function addFigurePlot(figure, plot) {
     // Fix the width and let CSS handle the height
-    const svg = plot.querySelector('svg[viewBox]');
-    if (svg){
+    let svg = plot.querySelector('.rc-chart');
+    if (plot.tagName === 'svg') {
+        svg = plot;
+    }
+    if (svg) {
         svg.setAttribute('width', '100%');
         svg.removeAttribute('height'); // Let CSS handle the height
     }
@@ -290,9 +292,8 @@ function drawBarChart(figure, chart, options) {
     let maxLabelLength = 10;
 
     const plotOptions = {
+        className: "rc-chart",
         width: options.width || 800,
-        height: options.height || 400,
-        aspectRatio: options.aspectRatio,
         marginLeft: 20,
         marginRight: 20,
         marginTop: 20,
@@ -339,6 +340,7 @@ function drawBarChart(figure, chart, options) {
             marks.push(new Plot.ruleX([0]));
             marks.push(new Plot.barX(chart.data, markOptions));
         } else {
+            plotOptions.height = options.height || 400;
             marks.push(new Plot.ruleY([0]));
             marks.push(new Plot.barY(chart.data, markOptions));
         }
@@ -357,9 +359,9 @@ function drawXYPlot(figure, chart, options) {
     let marks = [];
     const markTypes = chart.types || [];
     const plotOptions = {
-        aspectRatio: options.aspectRatio,
+        className: "rc-chart",
         width: options.width || 800,
-        height: options.height || 400,
+        height: options.height || 600,
         marginLeft: 20,
         marginRight: 20,
         marginTop: 20,
@@ -384,7 +386,7 @@ function drawXYPlot(figure, chart, options) {
     plotOptions.color["range"] = options.scheme;
 
     markTypes.forEach(function(mark, index){
-        const markOptions = {x: mark.x,  y: mark.y};
+        const markOptions = {x: mark.x,  y: mark.y, tip: true};
         if (mark.type === 'line') {
             markOptions.z = mark.z || undefined;
             markOptions.stroke = mark.colors || mark.z || options.scheme[index % options.scheme.length];
@@ -405,6 +407,9 @@ function drawXYPlot(figure, chart, options) {
         } else {
             console.warn(`Unknown XY Plot: ${mark.type}`);
         }
+        if (chart['cross-hair']) {
+            marks.push(new Plot.crosshair(chart.data, {'x': mark.x, 'y': mark.y}));
+        }
     });
     // Create chart
     const plot = Plot.plot(plotOptions);
@@ -422,6 +427,7 @@ function drawPieChart(figure, chart, options) {
     const svg = d3.select(figure)
         .append("svg")
         .attr("viewBox", `0 0 ${options.width} ${options.height}`)
+        .attr("class", "rc-chart")
         .attr("width", "100%")
         .append("g")
         .attr("transform", `translate(${options.width / 2}, ${options.height / 2})`);
@@ -446,7 +452,7 @@ function drawPieChart(figure, chart, options) {
     // Add legend
     const legend = d3.select(figure)
         .append("div")
-        .attr("class", `legend plot-${options.uid}-swatches`)
+        .attr("class", `legend rc-chart-swatches`)
         .style("min-height", "33px")
         .style("display", "flex")
         .style("flex-direction", "row")
