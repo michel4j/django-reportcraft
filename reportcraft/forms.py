@@ -354,15 +354,13 @@ class BarsForm(ModalModelForm):
     categories = forms.ModelChoiceField(label='Categories', required=True, queryset=models.DataField.objects.none())
     values = forms.ModelMultipleChoiceField(label='Values', required=True, queryset=models.DataField.objects.none())
     color_by = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
-    group_by = forms.ModelChoiceField(label='Group By', required=False, queryset=models.DataField.objects.none())
+    grouped = forms.BooleanField(
+        label='Type', required=False, initial=False,
+        widget=forms.Select(choices=((True, 'Grouped'), (False, 'Stacked'))),
+    )
     sort_by = forms.ModelChoiceField(label='Sort By', required=False, queryset=models.DataField.objects.none())
-    stack = forms.BooleanField(
-        label='Stack', required=False, initial=False, widget=forms.Select(choices=((True, 'Yes'), (False, 'No')))
-    )
     scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
-    ticks_every = forms.IntegerField(
-        label='Ticks Every', required=False, help_text=_("Ticks to show"), initial=1
-    )
+    ticks_every = forms.IntegerField(label='Ticks Every', required=False, initial=1)
     sort_desc = forms.BooleanField(
         label="Sort Order", required=False, widget=forms.Select(choices=((True, 'Descending'), (False, 'Ascending'))),
         initial=False
@@ -388,18 +386,15 @@ class BarsForm(ModalModelForm):
                 ThreeQuarterWidth('values'),
             ),
             Row(
-                HalfWidth('color_by'),
-                HalfWidth('scheme'),
+                ThirdWidth('grouped'),
+                ThirdWidth('color_by'),
+                ThirdWidth('scheme'),
             ),
             Row(
-                ThirdWidth('group_by'),
-                ThirdWidth('stack'),
-                ThirdWidth('sort_by'),
-            ),
-            Row(
-                ThirdWidth('ticks_every'),
-                ThirdWidth('limit'),
-                ThirdWidth('sort_desc'),
+                QuarterWidth('ticks_every'),
+                QuarterWidth('sort_by'),
+                QuarterWidth('sort_desc'),
+                QuarterWidth('limit'),
             ),
             Div(
                 Field('attrs'),
@@ -411,11 +406,11 @@ class BarsForm(ModalModelForm):
         field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
         field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
 
-        for field in ['categories', 'values', 'color_by', 'group_by', 'sort_by']:
+        for field in ['categories', 'values', 'color_by', 'sort_by']:
             self.fields[field].queryset = field_queryset
 
         # single select
-        for field in ['categories', 'color_by', 'group_by', 'sort_by']:
+        for field in ['categories', 'color_by', 'sort_by']:
             if field in attrs:
                 self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
 
@@ -424,10 +419,7 @@ class BarsForm(ModalModelForm):
             if field in attrs:
                 self.fields[field].initial = field_queryset.filter(name__in=attrs[field])
 
-        # other fields
-        self.fields[f'stack'].initial = attrs.get('stack', False)
-
-        for field in ['stack', 'sort_desc', 'limit', 'scheme', 'ticks_every']:
+        for field in ['grouped', 'sort_desc', 'scheme', 'limit', 'ticks_every']:
             if field in attrs:
                 self.fields[field].initial = attrs[field]
 
@@ -436,7 +428,7 @@ class BarsForm(ModalModelForm):
         new_attrs = {}
 
         # single select fields
-        for field in ['categories', 'color_by', 'group_by', 'sort_by']:
+        for field in ['categories', 'color_by', 'sort_by']:
             if field in cleaned_data and cleaned_data[field] is not None:
                 new_attrs[field] = cleaned_data[field].name
 
@@ -446,7 +438,7 @@ class BarsForm(ModalModelForm):
                 new_attrs[field] = [y.name for y in cleaned_data[field].order_by('position')]
 
         # other fields
-        for field in ['stack', 'sort_desc', 'limit', 'scheme', 'ticks_every']:
+        for field in ['grouped', 'sort_desc', 'scheme', 'limit', 'ticks_every']:
             if field in cleaned_data and cleaned_data[field] is not None:
                 new_attrs[field] = cleaned_data[field]
 

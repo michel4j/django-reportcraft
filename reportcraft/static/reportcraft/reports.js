@@ -314,6 +314,7 @@ function drawBarChart(figure, chart, options) {
 
     markTypes.forEach(function(mark, index){
         const markOptions = {x: mark.x,  y: mark.y, sort: null, tip: categoryAxis};
+        console.log(mark);
 
         maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[mark[categoryAxis]]}`.length || 0));
         if (mark.colors) {
@@ -338,11 +339,20 @@ function drawBarChart(figure, chart, options) {
 
         if (chart.kind === 'bars') {
             marks.push(new Plot.ruleX([0]));
-            marks.push(new Plot.barX(chart.data, markOptions));
+            if (mark.stacked) {
+                marks.push(new Plot.barX(chart.data, markOptions));
+            } else {
+                marks.push(new Plot.barX(chart.data, markOptions));
+            }
         } else {
             plotOptions.height = options.height || 400;
             marks.push(new Plot.ruleY([0]));
-            marks.push(new Plot.barY(chart.data, markOptions));
+            if (mark.stacked) {
+                marks.push(new Plot.barY(chart.data, markOptions));
+            } else {
+                marks.push(new Plot.barY(chart.data, markOptions));
+            }
+
         }
     });
 
@@ -386,23 +396,26 @@ function drawXYPlot(figure, chart, options) {
     plotOptions.color["range"] = options.scheme;
 
     markTypes.forEach(function(mark, index){
-        const markOptions = {x: mark.x,  y: mark.y, tip: true};
+        const markOptions = {
+            x: mark.x,
+            y: mark.y,
+            r: mark.z || undefined,
+            curve: mark.curve || "linear",
+            tip: true,
+        };
         if (mark.type === 'line') {
-            markOptions.z = mark.z || undefined;
-            markOptions.stroke = mark.colors || mark.z || options.scheme[index % options.scheme.length];
+            markOptions.stroke = mark.colors || options.scheme[index % options.scheme.length];
             marks.push(new Plot.lineY(chart.data, markOptions));
         } else if (mark.type === 'line-points') {
-            markOptions.z = mark.z || undefined;
-            markOptions.stroke = mark.colors || mark.z || options.scheme[index % options.scheme.length];
-            markOptions.marker = true;
+            markOptions.stroke = mark.colors || options.scheme[index % options.scheme.length];
+            markOptions.marker = mark.marker || 'circle-stroke';
             marks.push(new Plot.lineY(chart.data, markOptions));
         } else if (mark.type === 'points') {
             markOptions.fill = mark.colors || options.scheme[index % options.scheme.length];
-            markOptions.r = mark.z || undefined; // Default radius for points
+            markOptions.stroke = "var(--bs-body-color)";
             marks.push(new Plot.dot(chart.data, markOptions));
         } else if (mark.type === 'area') {
-            markOptions.z = mark.z || undefined;
-            markOptions.fill = mark.colors || mark.z || options.scheme[index % options.scheme.length];
+            markOptions.fill = mark.colors || options.scheme[index % options.scheme.length];
             marks.push(new Plot.areaY(chart.data, markOptions));
         } else {
             console.warn(`Unknown XY Plot: ${mark.type}`);

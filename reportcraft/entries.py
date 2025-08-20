@@ -1,7 +1,9 @@
 from collections import defaultdict
 from typing import Any, Literal
-from .utils import regroup_data, MinMax, epoch, map_colors, get_histogram_points, split_data, debug_value, merge_data, \
+from .utils import (
+    regroup_data, MinMax, epoch, get_histogram_points, split_data, debug_value, merge_data,
     prepare_data
+)
 
 
 def generate_table(entry, *args, **kwargs) -> dict:
@@ -86,12 +88,11 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
     categories = entry.attrs.get('categories', '')
     values = entry.attrs.get('values', [])
     color_by = entry.attrs.get('color_by', None)
-    group_by = entry.attrs.get('group_by', None)
-    limit = entry.attrs.get('limit', None)
+    grouped = entry.attrs.get('grouped', False)
     sort_by = entry.attrs.get('sort_by', None)
     sort_desc = entry.attrs.get('sort_desc', False)
-    stacked = entry.attrs.get('stack', False)
     ticks_every = entry.attrs.get('ticks_every', 1)
+    limit = entry.attrs.get('limit', None)
     vertical = (kind == "columns")
 
     if not categories or not values:
@@ -99,25 +100,28 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
 
     types = []
     category_name = labels.get(categories, categories)
+    color_name = labels.get(color_by, color_by) if color_by else None
+    group_name = None
+    if grouped and color_name:
+        category_name, group_name = color_name, category_name
+
     category_axis = 'x' if vertical else 'y'
     value_axis = 'y' if vertical else 'x'
-    unique = [categories]
+    data_fields = [categories] + values
     for value in values:
         mark = {
             category_axis: category_name,
             value_axis: labels.get(value, value),
             'type': kind,
-            'stacked': stacked
         }
         # Add color channel
-        if color_by:
-            mark['colors'] = labels.get(color_by, color_by)
-            unique.append(color_by)
+        if color_name:
+            mark['colors'] = color_name
+            data_fields.append(color_by)
 
         # Add facet channel
-        if group_by:
-            mark['groups'] = labels.get(group_by, group_by)
-            unique.append(group_by)
+        if group_name:
+            mark['groups'] = group_name
 
         # Add sort channel
         if sort_by:
@@ -126,14 +130,10 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
 
         types.append(mark)
 
-    extra_fields = values + ([color_by] if color_by else []) + ([group_by] if group_by else [])
-
     raw_data = entry.source.get_data(*args, **kwargs)
-    data = merge_data(raw_data, unique=unique, fields=extra_fields, labels=labels, sort=sort_by, sort_desc=sort_desc)
-
-    # limit data if specified
+    data = prepare_data(raw_data, select=data_fields, labels=labels, sort=sort_by, sort_desc=sort_desc)
     if limit:
-        data = data[limit:] if limit < 0 else data[:limit]
+        data = data[:limit]
 
     info = {
         'title': entry.title,
@@ -223,7 +223,6 @@ def generate_plot(entry, *args, **kwargs):
     precision = entry.attrs.get('precision', 0)
 
     raw_data = entry.source.get_data(*args, **kwargs)
-    data = prepare_data(raw_data, labels=labels, sort=x_value, sort_desc=False)
     types = [
         {
             'type': group.pop('type', 'points'),
@@ -233,6 +232,11 @@ def generate_plot(entry, *args, **kwargs):
         }
         for group in groups if 'y' in group
     ]
+
+    select_fields = {x_value} | ({group_by} if group_by else set())
+    select_fields |= {group[k] for group in groups for k in ['y', 'z'] if k in group}
+    data = prepare_data(raw_data, select=select_fields, labels=labels, sort=x_value, sort_desc=False)
+
     return {
         'title': entry.title,
         'description': entry.description,

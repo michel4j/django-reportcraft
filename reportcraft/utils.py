@@ -7,11 +7,12 @@ import json
 import re
 import threading
 from datetime import datetime, timedelta
+from enum import Enum
 from functools import wraps, reduce
 from importlib import import_module
 from inspect import getframeinfo, stack
 from operator import or_
-from typing import Any, Sequence
+from typing import Any, Sequence, Iterable
 
 import pyparsing as pp
 import yaml
@@ -709,57 +710,67 @@ def regroup_data(
 def merge_data(
         data: list[dict],
         unique: list[str],
-        fields: list[str] = None,
+) -> list[dict]:
+    """
+    Combine data from multiple models into neat key-value pairs .if multiple entries exist for the same unique set,
+    they are merged into a single entry with later duplicated values taking precedence.
+
+    :param data: list of dictionaries
+    :param unique: Names of unique axes
+    """
+
+    # make a dictionary mapping unique values to unique entries, these will be populated later
+    unique_keys = sorted({tuple(item[f] for f in unique) for item in data})
+    raw_data = {key: {} for key in unique_keys}
+
+    # first pass to populate raw_data
+    for item in data:
+        key = tuple([item[f] for f in unique])
+        raw_data[key].update(item)
+
+    return list(raw_data.values())
+
+
+class ValueType(Enum):
+    """
+    Enum to represent a value that should be ignored in the data processing.
+    This is used to indicate that a field is not applicable or should not be included in the output.
+    """
+    IGNORE = 'ignore'
+
+
+def prepare_data(
+        data: list[dict],
+        select: Iterable[str] = None,
+        default: Any = ValueType.IGNORE,
         labels: dict = None,
-        default: Any = None,
         sort: str = '',
         sort_desc: bool = False
 ) -> list[dict]:
     """
-    Combine data from multiple models into neat key-value pairs translating keys to labels according to labels
-    dictionary. if multiple entries exist for the same x-axis value, they are merged into a single entry with
-    later duplicated key values taking precedence.
-
-    :param data: list of dictionaries
-    :param unique: Names of unique axes
-    :param fields: List of other field names to include in the output in addition to the x_axis. Include all if None.
-    :param labels: Field labels
-    :param default: Default value for missing fields
-    :param sort: Name of field to sort by or empty string to disable sorting
-    :param sort_desc: Sort in descending order
-    """
-    labels = labels or {}
-
-    # make a dictionary mapping x_axis values to unique entries, these will be populated later
-    unique_values = list(
-        dict.fromkeys(filter(None, [tuple(item[f] for f in unique) for item in data]))
-    )
-
-    raw_data = {value: {} for value in unique_values}
-
-    # first pass to populate raw_data
-    for item in data:
-        key = tuple(item[f] for f in unique)
-        if not fields:
-            raw_data[key].update(item)
-        else:
-            raw_data[key].update({field: item.get(field, default) for field in fields + unique})
-
-    # get the unique list of dictionaries
-    data_list = list(raw_data.values())
-    return prepare_data(data_list, labels=labels, sort=sort, sort_desc=sort_desc)
-
-
-def prepare_data(data: list[dict], labels: dict = None, sort: str = '', sort_desc: bool = False) -> list[dict]:
-    """
     Prepare a dataset for plotting, label data according to the labels dictionary, if provided, and sort it by a field if specified.
 
     :param data: list of dictionaries
+    :param select: an iterable of field names to select from the data, selects all fields if None
+    :param default: Default value for missing fields, missing fields are ignored by default
     :param labels: Field labels dictionary
     :param sort: Name of field to sort by or empty string to disable sorting
     :param sort_desc: Sort in descending order
     """
-    labels = labels or {}
+
+    if select is None:
+        # if no fields are selected, select all fields from the data
+        select = {key for item in data for key in item.keys()}
+
+    data = [
+        {
+            k: item.get(k, default)
+            for k in select
+            if (k in select or default != ValueType.IGNORE)     # if default is not ValueType.IGNORE, include it
+        }
+        for item in data
+    ]
+
     # sort the data if a sort field is provided
     if sort:
         sort_key = sort
@@ -767,7 +778,14 @@ def prepare_data(data: list[dict], labels: dict = None, sort: str = '', sort_des
 
     # translate the keys to labels if labels are provided
     if labels:
-        data = [{labels.get(k, k): v for k, v in item.items()} for item in data]
+        data = [
+            {
+                labels.get(k, k): v
+                for k, v in item.items()
+            }
+            for item in data
+        ]
+
     return data
 
 

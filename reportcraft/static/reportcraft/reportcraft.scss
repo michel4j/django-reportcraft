@@ -165,30 +165,30 @@ section {
   }
 }
 
-g.tick {
-  text {
-    font-size: 0.9rem;
-  }
+//g.tick {
+//  text {
+//    font-size: 0.9rem;
+//  }
+//
+//  line {
+//    fill: none !important;
+//    stroke: var(--bs-secondary);
+//  }
+//}
 
-  line {
-    fill: none !important;
-    stroke: var(--bs-secondary);
-  }
-}
-
-path {
-  &.domain {
-    fill: none !important;
-    stroke: var(--bs-secondary);
-  }
-
-  &.line {
-  }
-}
-
-g.axis {
-  font-size: 0.95rem;
-}
+//path {
+//  &.domain {
+//    fill: none !important;
+//    stroke: var(--bs-secondary);
+//  }
+//
+//  &.line {
+//  }
+//}
+//
+//g.axis {
+//  font-size: 0.95rem;
+//}
 
 .table-heading {
   text-align: center;
@@ -438,9 +438,9 @@ div.google-visualization-tooltip > ul > li > span {
   //}
 }
 
-svg circle {
-  opacity: 0.75;
-}
+//svg circle {
+//  opacity: 0.75;
+//}
 
 $list-columns: (1, 2, 3, 4, 6);
 $grid-breakpoints: (
@@ -511,9 +511,13 @@ ul.nav-tabs.nav-tabs-sm {
 
 .section-entry.xyplot-entry {
   svg circle {
-    stroke: var(--bs-body-color);
-    //opacity: 1 !important;
+    stroke: var(--bs-border-transluscent);
+    stroke-width: 0.75px;
   }
+}
+
+g {
+  --plot-background: var(--bs-body-bg, #fff) !important;
 }
 
 figure > div {  // legend fix

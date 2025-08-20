@@ -225,6 +225,31 @@ ICONS = {
         '<path d="M15 11h6" /><path d="M21 7h-6" /><path d="M9 9h1a1 1 0 1 1 -1 1v-2.5a2 2 0 0 1 2 -2" />'
         '<path d="M3 9h1a1 1 0 1 1 -1 1v-2.5a2 2 0 0 1 2 -2" />'
     ),
+    'datetime': (
+        '<path stroke="none" d="M0 0h24v24H0z" fill="none"/>'
+        '<path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />'
+        '<path d="M18 18m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M15 3v4" /><path d="M7 3v4" />'
+        '<path d="M3 11h16" /><path d="M18 16.496v1.504l1 1" />'
+    ),
+    'date': (
+        '<path stroke="none" d="M0 0h24v24H0z" fill="none"/>'
+        '<path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" />'
+        '<path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /><path d="M11 15h1" /><path d="M12 15v3" />'
+    ),
+    'integer': (
+        '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v-10l7 10v-10" /><path d="M15 17h5" />'
+        '<path d="M17.5 10m-2.5 0a2.5 3 0 1 0 5 0a2.5 3 0 1 0 -5 0" />'
+    ),
+    'char': (
+        '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 16v-6a2 2 0 1 1 4 0v6" />'
+        '<path d="M3 13h4" /><path d="M10 8v6a2 2 0 1 0 4 0v-1a2 2 0 1 0 -4 0v1" />'
+        '<path d="M20.732 12a2 2 0 0 0 -3.732 1v1a2 2 0 0 0 3.726 1.01" />'
+    ),
+    'float': (
+        '<path stroke="none" d="M0 0h24v24H0z" fill="none"/>'
+        '<path d="M17 8a2 2 0 0 1 2 2v4a2 2 0 1 1 -4 0v-4a2 2 0 0 1 2 -2z" />'
+        '<path d="M10 8a2 2 0 0 1 2 2v4a2 2 0 1 1 -4 0v-4a2 2 0 0 1 2 -2z" /><path d="M5 16h.01" />'
+    ),
     'map': (
         '<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 18.5l-3 -1.5l-6 3v-13l6 -3l6 3l6 -3v7.5" />'
         '<path d="M9 4v13" /><path d="M15 7v5.5" />'

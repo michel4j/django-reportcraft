@@ -66,12 +66,12 @@
                             <td>{{ src_model.name }}</td>
                             {% for field_name, group_field in src_model.get_group_fields.items %}
                                 {% if group_field %}
-                                    <td class="font-monospace"><a href="#0"
-                                                                  data-modal-url="{% url 'edit-source-field' source=source.pk pk=group_field.pk %}">{{ group_field.expression }}</a>
+                                    <td class="font-monospace">
+                                        <a href="#0" data-modal-url="{% url 'edit-source-field' source=source.pk pk=group_field.pk %}">{{ group_field.expression }}</a>
                                     </td>
                                 {% else %}
-                                    <td class="text-danger"><a href="#0"
-                                                               data-modal-url="{% url 'add-group-field' source=source.pk group=field_name %}">Undefined</a>
+                                    <td class="text-danger">
+                                        <a href="#0" data-modal-url="{% url 'add-group-field' source=source.pk group=field_name %}">Undefined</a>
                                     </td>
                                 {% endif %}
                             {% endfor %}
@@ -169,25 +169,31 @@
                     {% for report in source.reports %}
                         <li class="list-group-item bg-transparent">
                             <a href="{% url 'report-editor' pk=report.pk %}">
-                                <small>{{ report }}</small>
+                                {% svg_icon 'report' size='sm' %}&nbsp;<small>{{ report }}</small>
                             </a>
                         </li>
                     {% endfor %}
                 </ul>
             </div>
-            <div class="card mb-3 flex-grow-1" >
+            <div class="card mb-3" >
                 <div class="card-header py-2">
-                    <h5 class="my-0"><span class="text-muted">DB Records</span></h5>
+                    <h5 class="my-0"><span class="text-muted">Records</span></h5>
                 </div>
                 <div style="min-height: 0;">
-                <ul class="list-group-flush list-group small">
+                <ul class="list-group-flush list-group text-condensed">
                     {% for model in source.models.all %}
                         <li class="fs-6 list-group-item bg-body-secondary">
                         {{ model }}
                         </li>
                         {% for name, type in model.get_model_specs %}
-                        <li class="list-group-item  bg-transparent overflow ellipsis" data-bs-toggle="tooltip" title="{{ name }} [{{ type }}]">
-                            <code class="font-monospace text-nowrap" >{{ name }}</code>
+                        <li class="list-group-item bg-transparent"
+                            data-bs-toggle="tooltip"
+                            data-bs-title="{{ type }}"
+                            data-bs-placement="left"
+                        >
+                            <div class="text-nowrap" style="overflow: hidden;">
+                                <span class="text-warning-emphasis">{% svg_icon type|lower size='sm' %}</span>&nbsp;<small>{{ name }}</small>
+                            </div>
                         </li>
                         {% endfor %}
                     {% endfor %}

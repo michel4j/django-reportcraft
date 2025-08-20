@@ -12,7 +12,7 @@ from django.db.models.functions import Round, Abs, Sign
 from django.utils.text import slugify, gettext_lazy as _
 
 from . import utils, entries
-
+from .utils import debug_value
 
 VALUE_TYPES = {
     'STRING': str,
@@ -148,8 +148,7 @@ class DataSource(models.Model):
 
         return queryset
 
-    @utils.cached_model_method(duration=1)
-    def get_data(self, filters=None, order_by=None) -> list[dict]:
+    def get_source_data(self, filters=None, order_by=None) -> list[dict]:
         """
         Generate data for this data source
         :param filters: dynamic filters
@@ -164,7 +163,19 @@ class DataSource(models.Model):
             field_names = [field.name for field in self.fields.filter(model__name=model_name).all()]
             data.extend(list(queryset.values(*field_names)))
 
+        if self.group_by:
+            data = utils.merge_data(data, unique=self.group_by)
+
         return data
+
+    @utils.cached_model_method(duration=1)
+    def get_data(self, filters=None, order_by=None) -> list[dict]:
+        """
+        Cached wrapper of get_source_data.
+        :param filters: dynamic filters
+        :param order_by: order by fields
+        """
+        return self.get_source_data(filters=filters, order_by=order_by)
 
     def get_precision(self, field_name: str) -> int:
         """
@@ -186,7 +197,7 @@ class DataSource(models.Model):
 
         """
         try:
-            result = self.get_data(filters=filters, order_by=order_by)[:size]
+            result = self.get_source_data(filters=filters, order_by=order_by)[:size]
         except Exception as e:
             result = DATA_ERROR_TEMPLATE.format(error=str(e), error_type=type(e).__name__)
         return result
