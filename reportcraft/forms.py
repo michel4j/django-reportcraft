@@ -1,8 +1,7 @@
 import re
 
-from datetime import datetime
-from crispy_forms.bootstrap import Tab, TabHolder
-from crispy_forms.layout import Div, Field, Layout, HTML
+
+from crispy_forms.layout import Div, Field
 from django import forms
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -272,14 +271,93 @@ class EntryForm(ModalModelForm):
         return cleaned_data
 
 
-class TableForm(ModalModelForm):
+class EntryConfigForm(ModalModelForm):
+    SINGLE_FIELDS = ()
+    MULTI_FIELDS = ()
+    OTHER_FIELDS = ()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._single_fields = [*self.SINGLE_FIELDS]
+        self._multi_fields = [*self.MULTI_FIELDS]
+        self._other_fields = [*self.OTHER_FIELDS]
+        self.add_fields()
+        self.update_initial()
+        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
+
+    def add_fields(self):
+        """
+        Dynamically Add fields to the form.
+        """
+        pass
+
+    def update_initial(self):
+        """
+        Update the initial values of the form fields based on the instance's attributes.
+        This method should be overridden in subclasses to set specific field initial values.
+        """
+        attrs = self.instance.attrs
+        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
+        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
+
+        for field in self._multi_fields:
+            self.fields[field].queryset = field_queryset
+            if field in attrs:
+                self.fields[field].initial = field_queryset.filter(name__in=attrs[field])
+
+        for field in self._single_fields:
+            self.fields[field].queryset = field_queryset
+            if field in attrs:
+                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
+
+        for field in self._other_fields:
+            if field in attrs:
+                self.fields[field].initial = attrs[field]
+
+        return attrs, field_queryset
+
+    def clean(self):
+        """
+        Clean the form data and prepare the attributes for saving.
+        This method should be overridden in subclasses to handle specific field logic.
+        """
+        cleaned_data = super().clean()
+        new_attrs = {}
+
+        for field in self._multi_fields:
+            if field in cleaned_data and cleaned_data[field].exists():
+                new_attrs[field] = [y.name for y in cleaned_data[field].order_by('position')]
+
+        for field in self._single_fields:
+            if field in cleaned_data and cleaned_data[field] is not None:
+                new_attrs[field] = cleaned_data[field].name
+
+        for field in self._other_fields:
+            if field in cleaned_data and cleaned_data[field] is not None:
+                new_attrs[field] = cleaned_data[field]
+
+        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, '', [], {}]}
+        return cleaned_data
+
+
+class TableForm(EntryConfigForm):
     columns = forms.ModelChoiceField(label='Columns', required=True, queryset=models.DataField.objects.none())
     rows = forms.ModelMultipleChoiceField(label='Rows', required=True, queryset=models.DataField.objects.none())
     values = forms.ModelChoiceField(label='Values', required=False, queryset=models.DataField.objects.none())
     total_column = forms.BooleanField(label="Row Totals", required=False)
     total_row = forms.BooleanField(label="Column Totals", required=False)
     force_strings = forms.BooleanField(label="Force Strings", required=False)
+    flip_headers = forms.BooleanField(label="Flip Headers", required=False)
+    wrap_headers = forms.BooleanField(label="Wrap Headers", required=False)
     transpose = forms.BooleanField(label="Transpose", required=False)
+    max_cols = forms.IntegerField(label="Max Columns", required=False)
+
+    SINGLE_FIELDS = ['columns', 'values']
+    MULTI_FIELDS = ['rows']
+    OTHER_FIELDS = [
+        'total_row', 'total_column', 'force_strings', 'transpose', 'flip_headers',
+        'wrap_headers', 'max_cols'
+    ]
 
     class Meta:
         model = models.Entry
@@ -292,73 +370,36 @@ class TableForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
-        self.update_initial()
         self.body.append(
-            Div(
-                Div(Field('rows', css_class='select'), css_class='col-12'),
-                Div(Field('columns', css_class='select'), css_class='col-6'),
-                Div(Field('values', css_class='select'), css_class='col-6'),
-                css_class='row'
+            Row(
+                FullWidth('rows'),
+                ThirdWidth('columns'),
+                ThirdWidth('values'),
+                ThirdWidth('max_cols'),
             ),
-            Div(
-                Div('total_row', css_class='col-6'),
-                Div('total_column', css_class='col-6'),
-                Div('force_strings', css_class='col-6'),
-                Div('transpose', css_class='col-6'),
-                css_class='row'
+            Row(
+                ThirdWidth('total_row'),
+                ThirdWidth('total_column'),
+                ThirdWidth('force_strings'),
+                ThirdWidth('flip_headers'),
+                ThirdWidth('wrap_headers'),
+                ThirdWidth('transpose'),
             ),
-            Div(
-
+            Row(
                 Field('attrs'),
-                css_class='row'
             ),
         )
 
-    def update_initial(self):
-        attrs = self.instance.attrs
-        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
-        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
-        for field in ['columns', 'values', 'rows']:
-            self.fields[field].queryset = field_queryset
 
-        for field in ['columns', 'values']:
-            if field in attrs:
-                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
-        if 'rows' in attrs:
-            self.fields['rows'].initial = field_queryset.filter(name__in=attrs['rows'])
-
-        for field in ['total_row', 'total_column', 'force_strings', 'transpose']:
-            if field in attrs:
-                self.fields[field].initial = attrs[field]
-
-    def clean(self):
-        cleaned_data = super().clean()
-        new_attrs = {}
-        for field in ['columns', 'values']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = cleaned_data[field].name
-
-        if 'rows' in cleaned_data:
-            new_attrs['rows'] = [y.name for y in cleaned_data['rows'].order_by('position')]
-
-        for field in ['total_row', 'total_column', 'force_strings', 'transpose']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = cleaned_data[field]
-
-        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, []]}
-        return cleaned_data
-
-
-class BarsForm(ModalModelForm):
+class BarsForm(EntryConfigForm):
     categories = forms.ModelChoiceField(label='Categories', required=True, queryset=models.DataField.objects.none())
     values = forms.ModelMultipleChoiceField(label='Values', required=True, queryset=models.DataField.objects.none())
     color_by = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
+    sort_by = forms.ModelChoiceField(label='Sort By', required=False, queryset=models.DataField.objects.none())
     grouped = forms.BooleanField(
         label='Type', required=False, initial=False,
         widget=forms.Select(choices=((True, 'Grouped'), (False, 'Stacked'))),
     )
-    sort_by = forms.ModelChoiceField(label='Sort By', required=False, queryset=models.DataField.objects.none())
     scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
     ticks_every = forms.IntegerField(label='Ticks Every', required=False, initial=1)
     sort_desc = forms.BooleanField(
@@ -367,6 +408,12 @@ class BarsForm(ModalModelForm):
     )
     limit = forms.IntegerField(label="Limit", required=False)
 
+    SINGLE_FIELDS = ['categories', 'color_by', 'sort_by']
+    MULTI_FIELDS = ['values']
+    OTHER_FIELDS = [
+        'grouped', 'scheme', 'ticks_every', 'sort_desc', 'limit',
+    ]
+
     class Meta:
         model = models.Entry
         fields = (
@@ -378,8 +425,6 @@ class BarsForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
-        self.update_initial()
         self.body.append(
             Row(
                 QuarterWidth('categories'),
@@ -401,62 +446,21 @@ class BarsForm(ModalModelForm):
             ),
         )
 
-    def update_initial(self):
-        attrs = self.instance.attrs
-        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
-        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
-
-        for field in ['categories', 'values', 'color_by', 'sort_by']:
-            self.fields[field].queryset = field_queryset
-
-        # single select
-        for field in ['categories', 'color_by', 'sort_by']:
-            if field in attrs:
-                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
-
-        # multiple select
-        for field in ['values']:
-            if field in attrs:
-                self.fields[field].initial = field_queryset.filter(name__in=attrs[field])
-
-        for field in ['grouped', 'sort_desc', 'scheme', 'limit', 'ticks_every']:
-            if field in attrs:
-                self.fields[field].initial = attrs[field]
-
-    def clean(self):
-        cleaned_data = super().clean()
-        new_attrs = {}
-
-        # single select fields
-        for field in ['categories', 'color_by', 'sort_by']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = cleaned_data[field].name
-
-        # multiple select fields
-        for field in ['values']:
-            if field in cleaned_data and cleaned_data[field].exists():
-                new_attrs[field] = [y.name for y in cleaned_data[field].order_by('position')]
-
-        # other fields
-        for field in ['grouped', 'sort_desc', 'scheme', 'limit', 'ticks_every']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = cleaned_data[field]
-
-        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, []]}
-        return cleaned_data
-
 
 PLOT_SERIES = 4
 PLOT_TYPES = [('points', 'Points'), ('line', 'Line'), ('line-points', 'Line & Points'), ('area', 'Area')]
 
 
-class PlotForm(ModalModelForm):
+class PlotForm(EntryConfigForm):
     x_label = forms.CharField(label='X Label', required=False)
     y_label = forms.CharField(label='Y Label', required=False)
     x_value = forms.ModelChoiceField(label='X-Value', required=True, queryset=models.DataField.objects.none())
     scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
     group_by = forms.ModelChoiceField(label='Group By', required=False, queryset=models.DataField.objects.none())
     precision = forms.IntegerField(label="Precision", required=False)
+
+    SINGLE_FIELDS = ['group_by', 'x_value']
+    OTHER_FIELDS = ['x_label', 'y_label', 'scheme', 'precision']
 
     class Meta:
         model = models.Entry
@@ -469,17 +473,6 @@ class PlotForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
-        for i in range(PLOT_SERIES):
-            self.fields[f'y__{i}'] = forms.ModelChoiceField(
-                label=f'Y-Value', required=False, queryset=models.DataField.objects.none()
-            )
-            self.fields[f'z__{i}'] = forms.ModelChoiceField(
-                label=f'Z-Value', required=False, queryset=models.DataField.objects.none()
-            )
-            self.fields[f'type__{i}'] = forms.ChoiceField(label="Type", required=False, choices=PLOT_TYPES)
-
-        self.update_initial()
         self.body.append(
             Row(
                 ThirdWidth('x_value'),
@@ -497,74 +490,74 @@ class PlotForm(ModalModelForm):
         for i in range(PLOT_SERIES):
             self.body.append(
                 Row(
-                    ThirdWidth(f'y__{i}'),
-                    ThirdWidth(f'z__{i}'),
-                    ThirdWidth(f'type__{i}'),
+                    ThirdWidth(f'groups__{i}__y'),
+                    ThirdWidth(f'groups__{i}__z'),
+                    ThirdWidth(f'groups__{i}__type'),
                     style='g-3'
                 ),
             )
 
+    def add_fields(self):
+        for i in range(PLOT_SERIES):
+            self.fields[f'groups__{i}__y'] = forms.ModelChoiceField(
+                label=f'Y-Value', required=False, queryset=models.DataField.objects.none()
+            )
+            self.fields[f'groups__{i}__z'] = forms.ModelChoiceField(
+                label=f'Z-Value', required=False, queryset=models.DataField.objects.none()
+            )
+            self.fields[f'groups__{i}__type'] = forms.ChoiceField(label="Type", required=False, choices=PLOT_TYPES)
+
+
     def update_initial(self):
-        attrs = self.instance.attrs
-        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
-        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
+        attrs, queryset = super().update_initial()
 
-        for field in ['x_value', 'group_by']:
-            self.fields[field].queryset = field_queryset
-
+        group_fields = ['y', 'z']
         for i in range(PLOT_SERIES):
             for f in ['y', 'z']:
-                self.fields[f'{f}__{i}'].queryset = field_queryset
+                self.fields[f'groups__{i}__{f}'].queryset = queryset
+        flat_groups = {
+            f'groups__{i}__{k}': (k, v)
+            for i, g in enumerate(attrs.get('groups', []))
+            for k, v in g.items()
+        }
+        for field, (key, value) in flat_groups.items():
+            if key in group_fields:
+                self.fields[field].initial = queryset.filter(name=value).first()
+            else:
+                self.fields[field].initial = value
 
-        for field in ['x_value', 'group_by']:
-            self.fields[field].queryset = field_queryset
-            if field in attrs:
-                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
-
-        for i, group in enumerate(attrs.get('groups', [])):
-            for f in ['y', 'z']:
-                if f in group:
-                    self.fields[f'{f}__{i}'].initial = field_queryset.filter(name=group[f]).first()
-            self.fields[f'type__{i}'].initial = group.get('type', '')
-
-        for field in ['x_label', 'y_label', 'precision', 'scheme']:
-            if field in attrs:
-                self.fields[field].initial = attrs[field]
+        return attrs, queryset
 
     def clean(self):
         cleaned_data = super().clean()
-        new_attrs = {
-            'groups': []
-        }
+        groups = []
+        group_fields = ['y', 'z']
+        for field, value in cleaned_data.items():
+            match = re.match(r'groups__(\d+)__(\w+)', field)
+            if match:
+                index = int(match.group(1))
+                key = match.group(2)
+                if key in group_fields:
+                    while len(groups) <= index:
+                        groups.append({})
+                    if key in group_fields and value:
+                        groups[index][key] = cleaned_data[field].name
+                    elif value:
+                        groups[index][key] = value
 
-        for i in range(PLOT_SERIES):
-            group = {}
-            for f in ['y', 'z']:
-                if f'{f}__{i}' in cleaned_data and cleaned_data[f'{f}__{i}']:
-                    group[f] = cleaned_data[f'{f}__{i}'].name
-
-            if f'type__{i}' in cleaned_data and cleaned_data[f'type__{i}']:
-                group['type'] = cleaned_data[f'type__{i}']
-            if 'y' in group.keys():
-                new_attrs['groups'].append(group)
-
-        for field in ['x_value', 'group_by']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = cleaned_data[field].name
-
-        for field in ['x_label', 'y_label', 'precision', 'scheme']:
-            if field in cleaned_data:
-                new_attrs[field] = cleaned_data[field]
-
-        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, '', [], {}]}
+        cleaned_data['attrs']['groups'] = [g for g in groups if g]  # Remove empty groups
         return cleaned_data
 
 
-class ListForm(ModalModelForm):
+class ListForm(EntryConfigForm):
     columns = forms.ModelMultipleChoiceField(label='Columns', required=True, queryset=models.DataField.objects.none())
     order_by = forms.ModelChoiceField(label='Order By', required=False, queryset=models.DataField.objects.none())
     order_desc = forms.BooleanField(label='Descending Order', required=False)
     limit = forms.IntegerField(label='Limit', required=False)
+
+    SINGLE_FIELDS = ['order_by']
+    MULTI_FIELDS = ['columns']
+    OTHER_FIELDS = ['order_desc', 'limit']
 
     class Meta:
         model = models.Entry
@@ -577,8 +570,6 @@ class ListForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
-        self.update_initial()
         self.body.append(
             Row(
                 FullWidth(Field('columns', css_class='select')),
@@ -590,43 +581,6 @@ class ListForm(ModalModelForm):
                 ThirdWidth('order_desc'), Field('attrs'),
             ),
         )
-
-    def update_initial(self):
-        attrs = self.instance.attrs
-        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
-        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
-        for field in ['columns', 'order_by']:
-            self.fields[field].queryset = field_queryset
-
-        if 'columns' in attrs:
-            self.fields['columns'].initial = field_queryset.filter(name__in=attrs['columns'])
-
-        if 'order_by' in attrs:
-            order_by, order_desc = (attrs['order_by'][1:], True) if attrs['order_by'][0] == '-' else (attrs['order_by'], False)
-            self.fields['order_by'].initial = field_queryset.filter(name=order_by).first()
-            self.fields['order_desc'].initial = order_desc
-
-        if 'limit' in attrs:
-            self.fields['limit'].initial = attrs['limit']
-
-    def clean(self):
-        cleaned_data = super().clean()
-        new_attrs = {}
-
-        if 'columns' in cleaned_data and cleaned_data['columns'].exists():
-            new_attrs['columns'] = [
-                y.name for y in cleaned_data['columns'].order_by('position')
-            ]
-        if 'order_by' in cleaned_data and cleaned_data['order_by'] is not None:
-            prefix = '-' if cleaned_data.get('order_desc') else ''
-            new_attrs['order_by'] = f"{prefix}{cleaned_data['order_by'].name}"
-
-        for field in ['limit']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = cleaned_data[field]
-
-        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, []]}
-        return cleaned_data
 
 
 class PieForm(ModalModelForm):
@@ -685,7 +639,7 @@ class PieForm(ModalModelForm):
         return cleaned_data
 
 
-class TimelineForm(ModalModelForm):
+class TimelineForm(EntryConfigForm):
     min_time = forms.DateTimeField(label='Start Time', required=False)
     max_time = forms.DateTimeField(label='End Time', required=False)
     start_field = forms.ModelChoiceField(label='Event Start', required=True, queryset=models.DataField.objects.none())
@@ -693,6 +647,9 @@ class TimelineForm(ModalModelForm):
     label_field = forms.ModelChoiceField(label='Event Label', required=False, queryset=models.DataField.objects.none())
     type_field = forms.ModelChoiceField(label='Event Type', required=False, queryset=models.DataField.objects.none())
     colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
+
+    SINGLE_FIELDS = ['start_field', 'end_field', 'label_field', 'type_field', 'colors']
+    OTHER_FIELDS = ['min_time', 'max_time']
 
     class Meta:
         model = models.Entry
@@ -707,8 +664,6 @@ class TimelineForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
-        self.update_initial()
         self.body.append(
             Row(
                 QuarterWidth(Field('start_field', css_class='select')),
@@ -723,48 +678,14 @@ class TimelineForm(ModalModelForm):
             ),
         )
 
-    def update_initial(self):
-        attrs = self.instance.attrs
-        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
-        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
-        for field in ['start_field', 'end_field', 'label_field', 'type_field']:
-            self.fields[field].queryset = field_queryset
 
-        for field in ['start_field', 'end_field', 'label_field', 'type_field']:
-            if field in attrs:
-                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
-        for field in ['colors']:
-            if field in attrs:
-                self.fields[field].initial = attrs[field]
-        for field in ['min_time', 'max_time']:
-            if field in attrs:
-                self.fields[field].initial = datetime.fromtimestamp(attrs[field]/1000)
-
-    def clean(self):
-        cleaned_data = super().clean()
-        new_attrs = {}
-
-        for field in ['start_field', 'end_field', 'label_field', 'type_field']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = cleaned_data[field].name
-
-        for field in ['min_time', 'max_time']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = int(cleaned_data[field].timestamp()*1000)
-
-        for field in ['colors']:
-            if field in cleaned_data:
-                new_attrs[field] = cleaned_data[field]
-
-        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, []]}
-        return cleaned_data
-
-
-class RichTextForm(ModalModelForm):
+class RichTextForm(EntryConfigForm):
     rich_text = forms.CharField(
         label='Rich Text', required=True, widget=forms.Textarea(attrs={'rows': 15}),
         help_text=_("Use markdown syntax to format the text")
     )
+
+    OTHER_FIELDS = ['rich_text']
 
     class Meta:
         model = models.Entry
@@ -777,36 +698,20 @@ class RichTextForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
-        self.update_initial()
         self.body.append(
             Row(
                 FullWidth('rich_text'),
             ),
         )
 
-    def update_initial(self):
-        attrs = self.instance.attrs
-        for field in ['rich_text']:
-            if field in attrs:
-                self.fields[field].initial = attrs[field]
 
-    def clean(self):
-        cleaned_data = super().clean()
-        new_attrs = {}
-
-        for field in ['rich_text']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = cleaned_data[field]
-
-        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, []]}
-        return cleaned_data
-
-
-class HistogramForm(ModalModelForm):
+class HistogramForm(EntryConfigForm):
     values = forms.ModelChoiceField(label='Values', required=True, queryset=models.DataField.objects.none())
     bins = forms.IntegerField(label='Bins', required=False)
     colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
+
+    SINGLE_FIELDS = ['values']
+    OTHER_FIELDS = ['bins', 'colors']
 
     class Meta:
         model = models.Entry
@@ -819,8 +724,6 @@ class HistogramForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
-        self.update_initial()
         self.body.append(
             Row(
                 ThirdWidth(Field('values', css_class='select')),
@@ -832,34 +735,6 @@ class HistogramForm(ModalModelForm):
                 Field('attrs'),
             ),
         )
-
-    def update_initial(self):
-        attrs = self.instance.attrs
-        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
-        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
-        for field in ['values']:
-            self.fields[field].queryset = field_queryset
-            if field in attrs:
-                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
-
-        for field in ['bins', 'colors']:
-            if field in attrs:
-                self.fields[field].initial = attrs[field]
-
-    def clean(self):
-        cleaned_data = super().clean()
-        new_attrs = {}
-
-        for field in ['values']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = cleaned_data[field].name
-
-        for field in ['bins', 'colors']:
-            if field in cleaned_data:
-                new_attrs[field] = cleaned_data[field]
-
-        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, []]}
-        return cleaned_data
 
 
 MODE_CHOICES = (
@@ -874,7 +749,7 @@ RESOLUTION_CHOICES = (
 )
 
 
-class GeoCharForm(ModalModelForm):
+class GeoCharForm(EntryConfigForm):
     latitude = forms.ModelChoiceField(label='Latitude', required=False, queryset=models.DataField.objects.none())
     longitude = forms.ModelChoiceField(label='Longitude', required=False, queryset=models.DataField.objects.none())
     name = forms.ModelChoiceField(label='Name', required=False, queryset=models.DataField.objects.none())
@@ -884,6 +759,9 @@ class GeoCharForm(ModalModelForm):
     resolution = forms.ChoiceField(label='Resolution', choices=RESOLUTION_CHOICES, required=True, initial='countries')
     mode = forms.ChoiceField(label='Mode', choices=MODE_CHOICES, required=True)
     colors = forms.ChoiceField(label='Color Scheme', required=False, choices=SEQUENTIAL_COLORS, initial='Blues')
+
+    SINGLE_FIELDS = ['latitude', 'longitude', 'name', 'location', 'value']
+    OTHER_FIELDS = ['region', 'resolution', 'mode', 'colors']
 
     class Meta:
         model = models.Entry
@@ -896,8 +774,6 @@ class GeoCharForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
-        self.update_initial()
         self.body.append(
             Row(
                 ThirdWidth('latitude'),
@@ -917,46 +793,23 @@ class GeoCharForm(ModalModelForm):
             Field('attrs'),
         )
 
-    def update_initial(self):
-        attrs = self.instance.attrs
-        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
-        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
-        for field in ['location', 'value', 'name', 'latitude', 'longitude']:
-            self.fields[field].queryset = field_queryset
-
-            if field in attrs:
-                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
-
-        for field in ['colors', 'region', 'resolution', 'mode']:
-            if field in attrs:
-                self.fields[field].initial = attrs[field]
-
     def clean(self):
         cleaned_data = super().clean()
-        new_attrs = {}
+        attrs = cleaned_data['attrs']
 
-        mode = cleaned_data.get('mode')
+        mode = attrs.get('mode')
         invalid_markers = (
             mode == 'markers' and not
-            all(cleaned_data.get(field) for field in ['latitude', 'longitude', 'name', 'value'])
+            all(attrs.get(field) for field in ['latitude', 'longitude', 'name', 'value'])
         )
         invalid_regions = (
             mode == 'regions' and not
-            all(cleaned_data.get(field) for field in ['location', 'value'])
+            all(attrs.get(field) for field in ['location', 'value'])
         )
         if invalid_markers:
             raise forms.ValidationError(_("Latitude, Longitude, Name, and Value fields are required for Markers mode"))
         elif invalid_regions:
             raise forms.ValidationError(_("Location and Value fields are required for Area mode"))
 
-        for field in ['location', 'value', 'name', 'latitude', 'longitude']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = cleaned_data[field].name
-
-        for field in ['colors', 'region', 'resolution', 'mode']:
-            if field in cleaned_data:
-                new_attrs[field] = cleaned_data[field]
-
-        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, []]}
         return cleaned_data
 

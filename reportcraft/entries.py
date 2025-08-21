@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Any, Literal
 from .utils import (
-    regroup_data, MinMax, epoch, get_histogram_points, split_data, debug_value, merge_data,
+    regroup_data, MinMax, epoch, get_histogram_points, wrap_table,
     prepare_data
 )
 
@@ -19,7 +19,10 @@ def generate_table(entry, *args, **kwargs) -> dict:
     total_column = entry.attrs.get('total_column', False)
     total_row = entry.attrs.get('total_row', False)
     force_strings = entry.attrs.get('force_strings', False)
+    flip_headers = entry.attrs.get('flip_headers', False)
+    wrap_headers = entry.attrs.get('wrap_headers', False)
     transpose = entry.attrs.get('transpose', False)
+    max_cols = entry.attrs.get('max_cols', None)
     labels = entry.source.get_labels()
 
     if not columns or not rows:
@@ -65,11 +68,21 @@ def generate_table(entry, *args, **kwargs) -> dict:
     if transpose:
         table_data = list(map(list, zip(*table_data)))
 
+    if max_cols and len(table_data[0]) > max_cols:
+        # Split the table into multiple parts if it exceeds max_cols
+        data_parts = wrap_table(table_data, max_cols=max_cols)
+    else:
+        data_parts = [table_data]
+
+    styles = entry.style or ""
+    styles += " table-flip-headers" if flip_headers else ""
+    styles += " table-nowrap-headers" if not wrap_headers else ""
+
     return {
         'title': entry.title,
         'kind': 'table',
-        'data': table_data,
-        'style': entry.style,
+        'data': data_parts,
+        'style': styles,
         'header': "column row",
         'description': entry.description,
         'notes': entry.notes
@@ -172,6 +185,7 @@ def generate_list(entry, *args, **kwargs):
     """
     columns = entry.attrs.get('columns', [])
     order_by = entry.attrs.get('order_by', None)
+    order_desc = entry.attrs.get('order_desc', False)
     limit = entry.attrs.get('limit', None)
 
     if not columns:
@@ -181,7 +195,7 @@ def generate_list(entry, *args, **kwargs):
     labels = entry.source.get_labels()
 
     if order_by:
-        sort_key, reverse = (order_by[1:], True) if order_by.startswith('-') else (order_by, False)
+        sort_key, reverse = (order_by[1:], True) if order_by.startswith('-') else (order_by, order_desc)
         data = list(sorted(data, key=lambda x: x.get(sort_key, 0), reverse=reverse))
 
     if limit:
@@ -197,7 +211,7 @@ def generate_list(entry, *args, **kwargs):
     return {
         'title': entry.title,
         'kind': 'table',
-        'data': table_data,
+        'data': [table_data],
         'style': f"{entry.style} first-col-left",
         'header': "row",
         'description': entry.description,

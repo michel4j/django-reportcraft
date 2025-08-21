@@ -58,7 +58,6 @@ const ColorSchemes = {
     PuBuGn: d3.schemePuBuGn[9],
 };
 
-const styleTemplate = _.template('<%= selector %> { <%= rules %> }');
 const contentTemplate = _.template(
     '<div id="entry-<%= id %>" <% let style = entry.style || ""; %> class="section-entry <%= entry.kind %>-entry <%= style %>" >' +
     '   <% if ((entry.title) && ((!entry.kind) || (entry.kind === "richtext")))  { %>' +
@@ -71,7 +70,9 @@ const contentTemplate = _.template(
     '       <div class="rich-text"><%= renderMarkdown(entry.text) %></div>' +
     '   <% } %>' +
     '   <% if ((entry.kind === "table") && (entry.data)) { %>' +
-    '       <%= tableTemplate({id: id, entry: entry}) %>' +
+    '       <% _.each(entry.data, function(table, t){ %>' +
+    '       <%= tableTemplate({id: id, entry: entry, table: table, showCaption: (t == entry.data.length -1)}) %>' +
+    '       <% }); %>' +
     '   <% } else if (figureTypes.includes(entry.kind)) { %>' +
     '       <figure id="figure-<%= entry.id || id %>" data-type="<%= entry.kind %>" data-chart="<%= encodeObj(entry) %>" >' +
     '       </figure>' +
@@ -96,18 +97,18 @@ const sectionTemplate = _.template(
 
 const tableTemplate = _.template(
     '<table id="table-<%= id %>" class="table table-sm table-hover">' +
-    '<% if (entry.title) { %>' +
+    '<% if ((entry.title) && (showCaption))  { %>' +
     '   <caption class="text-center"><%= entry.title %></caption>' +
     '<% } %>' +
     '<% if (entry.header.includes("row")) { %>' +
     '   <thead><tr>' +
-    '       <% _.each(entry.data[0], function(cell, i){ %>' +
-    '       <th><%= cell %></th>' +
+    '       <% _.each(table[0], function(cell, i){ %>' +
+    '       <th><span><%= cell %></span></th>' +
     '       <% }); %>' +
     '   </tr></thead>' +
     '<% } %>' +
     '<tbody>' +
-    '<% _.each(entry.data, function(row, j){ %>' +
+    '<% _.each(table, function(row, j){ %>' +
     '   <% if ((!entry.header.includes("row")) || (j>0)) { %>' +
     '       <tr>' +
     '       <% _.each(row, function(cell, i){ %>' +
@@ -153,13 +154,6 @@ function renderSection(options) {
         figureTypes: options.figureTypes,
         renderMarkdown: renderMarkdown,
     });
-}
-
-
-function getPrecision(row, steps) {
-    steps = steps || 8;
-    let diff = (row[row.length - 1] - row[0]) / steps;
-    return Math.abs(Math.floor(Math.log10(diff.toPrecision(1)) || 2))
 }
 
 
@@ -289,15 +283,12 @@ function drawBarChart(figure, chart, options) {
     const categoryAxis = (chart.kind === 'bars') ? 'y' : 'x';
     const ticksEvery = chart["ticks-every"] || 1; // Default to every tick
     const ticksInterval = chart["ticks-interval"] || undefined; // Default to 1 for bar charts
+    const fontSize = 10; //getFontSize();
     let maxLabelLength = 10;
 
     const plotOptions = {
         className: "rc-chart",
         width: options.width || 800,
-        marginLeft: 20,
-        marginRight: 20,
-        marginTop: 20,
-        marginBottom: 40,
         color: {
             legend: true,
         },
@@ -314,7 +305,6 @@ function drawBarChart(figure, chart, options) {
 
     markTypes.forEach(function(mark, index){
         const markOptions = {x: mark.x,  y: mark.y, sort: null, tip: categoryAxis};
-        console.log(mark);
 
         maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[mark[categoryAxis]]}`.length || 0));
         if (mark.colors) {
@@ -338,30 +328,20 @@ function drawBarChart(figure, chart, options) {
         }
 
         if (chart.kind === 'bars') {
+            plotOptions.marginLeft = Math.max(40, maxLabelLength * fontSize * 0.8);
             marks.push(new Plot.ruleX([0]));
-            if (mark.stacked) {
-                marks.push(new Plot.barX(chart.data, markOptions));
-            } else {
-                marks.push(new Plot.barX(chart.data, markOptions));
-            }
-        } else {
+            marks.push(new Plot.barX(chart.data, markOptions));
+        } else {    // columns
             plotOptions.height = options.height || 400;
+            plotOptions.marginBottom = fontSize * 3;
             marks.push(new Plot.ruleY([0]));
-            if (mark.stacked) {
-                marks.push(new Plot.barY(chart.data, markOptions));
-            } else {
-                marks.push(new Plot.barY(chart.data, markOptions));
-            }
+            marks.push(new Plot.barY(chart.data, markOptions));
 
         }
     });
 
     // Create the bar chart
-    const fontSize = 10; //getFontSize();
-    plotOptions.marginLeft = (chart.kind === 'bars') ? maxLabelLength * fontSize * 0.8 : fontSize * 3;
-    plotOptions.marginBottom = (chart.kind === 'columns') ? fontSize * 3 : 40
     const plot = Plot.plot(plotOptions);
-
     addFigurePlot(figure, plot);
 }
 
@@ -372,9 +352,9 @@ function drawXYPlot(figure, chart, options) {
         className: "rc-chart",
         width: options.width || 800,
         height: options.height || 600,
-        marginLeft: 20,
-        marginRight: 20,
-        marginTop: 20,
+        marginLeft: 40,
+        marginRight: 40,
+        marginTop: 40,
         marginBottom: 40,
         color: {
             legend: true,

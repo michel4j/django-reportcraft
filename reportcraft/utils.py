@@ -1418,3 +1418,31 @@ def debug_value(value, name=None):
     print(yaml.dump(value))
     print('=' * 80)
     print('\n')
+
+
+def wrap_table(table: list[list], max_cols: int) -> list[list[list]]:
+    """
+    Splits a table into multiple tables based on a maximum number of columns.
+
+    The first column of the original table (row headers) is repeated in each new table.
+    :param table: The original table, where each inner list is a row.
+    :param max_cols: The maximum number of columns each new table can have.
+                        This value must be 2 or greater to include the header and at least one data column
+    :return: A list of new tables. Returns an empty list if the input table is
+    """
+
+    if max_cols < 2:
+        return [table]
+
+    if not table or not table[0]:
+        return []
+
+    num_cols = len(table[0])
+    cols_per_table = max_cols - 1
+
+    # repeat the row header for each new table
+    return [
+        [[row[0]] + row[start:start + cols_per_table] for row in table]
+        for start in range(1, num_cols, cols_per_table)
+    ]
+

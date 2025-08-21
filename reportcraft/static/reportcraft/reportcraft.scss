@@ -42,7 +42,7 @@ $max_font: 16px;
 
 body, .tooltip, .popover {
   font-family: var(--bs-font-sans-serif), sans-serif !important;
-  font-weight: 400;
+  font-weight: 300;
 }
 
 pre, code, kbd, samp {
@@ -107,7 +107,9 @@ section {
 
   .table {
     --bs-border-color: var(--bs-border-color-translucent);
-    counter-increment: tables;
+    caption {
+        counter-increment: tables;
+    }
 
     tbody {
       td {
@@ -162,6 +164,22 @@ section {
       background-color: inherit;
     }
 
+  }
+}
+
+.table-nowrap-headers {
+  table th {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+}
+.table-flip-headers {
+  table > thead th:not(:first-child) {
+    writing-mode: sideways-lr;
+    white-space: nowrap;
+    padding-top: var(--bs-table-cell-padding-y, 0.5em);
+    padding-bottom: var(--bs-table-cell-padding-y, 0.5em);
   }
 }
 
