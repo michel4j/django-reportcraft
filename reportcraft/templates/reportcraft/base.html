@@ -7,12 +7,33 @@
     <div class="offcanvas offcanvas-start {% if show_sidebar %}show{% endif %}" tabindex="-1" id="rc-off-canvas" aria-labelledby="oc-list-title">
     {% block report-off-canvas %}{% endblock %}
     </div>
+    <script src="{% static "reportcraft/sortable.min.js" %}"></script>
     <script>
         $(document).ready(function () {
             const target = $('#rc-off-canvas');
             $(document).on('click', `[data-oc-url]`, function () {
-                target.load($(this).data('oc-url'), function () {
-                    console.log("Off-canvas loaded: " + $(this).data('oc-url'));
+                target.load($(this).data('oc-url'));
+            });
+
+            // allow sorting entries
+            sortable({drag: '.entry', dropTo: '.entry-container'}, function(){
+                const csrfToken = "{{ csrf_token }}";
+                const order = Array.from(document.querySelectorAll('.entry-container .entry'))
+                    .map(entry => parseInt(entry.dataset.entryId));
+                $.ajax({
+                    url: "{% url 'reorder-report-entries' report.pk %}",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(order),
+                    dataType: "json",
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    success: function (response) {
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error saving order:', error);
+                    }
                 });
             });
         });

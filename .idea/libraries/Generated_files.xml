@@ -10,6 +10,7 @@
         <item url="file://$PROJECT_DIR$/docs/build/html/searchindex.min.js" />
         <item url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/reportcraft.min.js" />
         <item url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/reports.min.js" />
+        <item url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/sortable.min.js" />
       </sourceFilesUrls>
     </properties>
     <CLASSES>
@@ -21,6 +22,7 @@
       <root url="file://$PROJECT_DIR$/docs/build/html/searchindex.min.js" />
       <root url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/reportcraft.min.js" />
       <root url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/reports.min.js" />
+      <root url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/sortable.min.js" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

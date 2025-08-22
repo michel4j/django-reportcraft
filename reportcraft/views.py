@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 
 from django.conf import settings
@@ -80,17 +81,20 @@ class DataView(View):
             raise Http404('Report not found')
 
         filters = dict(self.request.GET.items())
-        return {
-            'report-title': report.title,
-            'description': report.description,
+        section = {
             'style': f"row {report.style}",
             'content': [block.generate(filters=filters) for block in report.entries.all()],
             'notes': report.notes
         }
+        return {
+            'title': report.title,
+            'description': report.description,
+            'sections': [section],
+        }
 
     def get(self, request, *args, **kwargs):
         info = self.get_report(*args, **kwargs)
-        return JsonResponse({'details': [info]}, safe=False)
+        return JsonResponse(info, safe=False)
 
 
 class MainReportView(*VIEW_MIXINS, ReportView):
@@ -220,6 +224,25 @@ class ReportEditor(*EDIT_MIXINS, DetailView):
         context['sources'] = models.DataSource.objects.all()
         context['used_sources'] = models.DataSource.objects.filter(entries__report=self.object).distinct()
         return context
+
+
+class ReorderEntries(*EDIT_MIXINS, View):
+    model = models.Report
+
+    def post(self, request, *args, **kwargs):
+        order = json.loads(request.body)
+        report = models.Report.objects.filter(pk=self.kwargs['report']).first()
+        if not report:
+            return JsonResponse({'status': 'error', 'message': 'Report not found'}, status=404)
+
+        positions = {pk: i for i, pk in enumerate(order)}
+        to_update = report.entries.filter(pk__in=order)
+        for entry in to_update:
+            entry.position = positions[entry.pk]
+            entry.modified = timezone.now()
+        report.entries.bulk_update(to_update, ['position', 'modified'])
+
+        return JsonResponse({'status': 'ok'})
 
 
 class EditReport(*EDIT_MIXINS, ModalUpdateView):

@@ -12,6 +12,7 @@ from crisp_modals.forms import (
 )
 
 from . import models, utils
+from .models import DataSource
 from .utils import CATEGORICAL_COLORS, SEQUENTIAL_COLORS, REGION_CHOICES, AXIS_CHOICES
 
 disabled_widget = forms.HiddenInput(attrs={'readonly': True})
@@ -297,8 +298,10 @@ class EntryConfigForm(ModalModelForm):
         This method should be overridden in subclasses to set specific field initial values.
         """
         attrs = self.instance.attrs
-        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
-        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
+        if self.instance.source:
+            field_queryset = self.instance.source.fields.all()
+        else:
+            field_queryset = DataSource.objects.none()
 
         for field in self._multi_fields:
             self.fields[field].queryset = field_queryset

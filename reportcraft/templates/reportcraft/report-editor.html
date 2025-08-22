@@ -51,12 +51,15 @@
             </div>
         </div>
         <div class="col-md-12">
-            <div class="row">
+            <div class="row entry-container">
             {% for entry in entries %}
-            <div class="entry pb-3 {{ entry.style|default:'col-12' }}">
+            <div class="entry mb-3 {{ entry.style|default:'col-12' }}"
+                 id="entry-{{ entry.pk }}"
+                 data-entry-id="{{ entry.pk }}">
                 <div class="card">
-                    <div class="card-header py-2 d-flex align-items-center">
-                        <span class="text-muted">{% svg_icon entry.kind stroke=1 size='lg' %}</span>&emsp;
+                    <div class="card-header ps-1 py-2 d-flex align-items-center">
+                        <div class="drag-handle text-body-secondary p-1">{% svg_icon 'grip' stroke=1 %}</div>&nbsp;&nbsp;
+                        <div>{% svg_icon entry.kind stroke=1 %}</div>&nbsp;
                         <div class="text-truncate">{{ entry.title }}</div>
                         <div class="toolbox ms-auto pr-0">
                             <a href="#!" data-modal-url="{% url 'configure-report-entry' report=report.pk pk=entry.pk %}" title="Configure">

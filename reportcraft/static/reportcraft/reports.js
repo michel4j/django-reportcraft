@@ -86,10 +86,7 @@ const sectionTemplate = _.template(
     '<section id="section-<%= id %>" <% let style = section.style || "row"; %>' +
     '       class="<%= style %>">' +
     '       <%  if (section.title)  {%>' +
-    '       <h3 class="section-title col-12"><%= section.title %></h3>' +
-    '       <% } %>' +
-    '       <%  if (section.description)  {%>' +
-    '       <div class="description col-12"><%= renderMarkdown(section.description) %></div>' +
+    '           <div class="section-title col-12"><h2><%= section.title %></h2></div>' +
     '       <% } %>' +
     '     <% _.each(section.content, function(entry, j){ %><%= renderContent({id: id+"-"+j, entry: entry}) %><% }); %>' +
     '</section>'
@@ -176,7 +173,7 @@ function decodeObj(base64Str) {
 }
 
 
-export function showReport(selector, report) {
+export function showReport(selector, sections) {
     const target = document.querySelector(selector);
     if (!target) {
         console.error("Container Not found");
@@ -185,7 +182,7 @@ export function showReport(selector, report) {
     target.classList.add('report-viewer');          // add main class to the container
 
     // add sections to the container, we'll fill the content in a second pass
-    report.details.forEach(function(section, i) {
+    sections.forEach(function(section, i) {
         const sectionHTML = renderSection({
             id: i,
             section: section,

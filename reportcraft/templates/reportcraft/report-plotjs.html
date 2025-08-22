@@ -7,7 +7,8 @@
 {% endblock %}
 
 {% block page-pretitle %}Report{% endblock %}
-{% block page-title %}{{ report.title }}{% endblock %}
+{% block page-title %}<span id="report-title">{{ report.title }}</span>{% endblock %}
+{% block page-subtitle %}<span id="report-subtitle">{{ report.description }}</span>{% endblock %}
 {% block page-content %}
     <div id="report-entry"></div>
 {% endblock %}
@@ -15,11 +16,18 @@
 {% block page-scripts %}
     <script type="module">
         import { showReport } from '{% static "reportcraft/reports.min.js" %}';
-        $(document).ready(function(){
-            $.getJSON("{{ data_url }}{{ query }}", function(data) {
-                console.log(data);
-                showReport("#report-entry", data)
-            });
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch("{{ data_url }}{{ query }}")
+                .then(response => response.json())
+                .then(data => {
+                    const sections = data["sections"] || [];
+                    const reportTitle = data["title"] || "A Report";
+                    const reportDescription = data["description"] || "";
+                    document.getElementById("report-title").innerText = reportTitle;
+                    document.getElementById("report-subtitle").innerText = reportDescription;
+                    showReport("#report-entry", sections);
+                })
+                .catch(error => console.error('Error fetching report data:', error));
         });
     </script>
 {% endblock %}

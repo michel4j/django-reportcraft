@@ -11,6 +11,18 @@ from reportcraft.utils import CATEGORICAL_SCHEMES
 register = template.Library()
 
 
+def str_presenter(dumper, data):
+    lines = data.splitlines()
+    if len(lines) > 1:  # check for multiline string
+        data = '\n'.join(lines)
+        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='>')
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+
+
+yaml.add_representer(str, str_presenter)
+yaml.representer.SafeRepresenter.add_representer(str, str_presenter)
+
+
 @register.filter
 def entry_html(entry):
     data = {
@@ -18,23 +30,17 @@ def entry_html(entry):
         'Data Source': f"{entry.source}",
         'Attributes': entry.attrs
     }
-    if entry.kind == entry.Types.TEXT:
-        flow_style = False
-        style = None
-    else:
-        flow_style = None
-        style = None
 
-    yaml_data = yaml.dump(data, default_style=style, default_flow_style=flow_style, sort_keys=False, allow_unicode=True)
-    formatter = HtmlFormatter(nobackground=True)
+    yaml_data = yaml.dump(data, sort_keys=False, allow_unicode=True, width=60)
+    formatter = HtmlFormatter(nobackground=True, full=True)
     highlighted_data = highlight(yaml_data, YamlLexer(), formatter)
     return mark_safe(highlighted_data)
 
 
 @register.filter
 def yaml_html(data):
-    yaml_data = yaml.dump(data, default_flow_style=False, sort_keys=True, allow_unicode=True, width=65)
-    formatter = HtmlFormatter(nobackground=True)
+    yaml_data = yaml.dump(data, sort_keys=True, allow_unicode=True, width=65)
+    formatter = HtmlFormatter(nobackground=True, full=True)
     highlighted_data = highlight(yaml_data, YamlLexer(), formatter)
     return mark_safe(highlighted_data)
 
@@ -190,6 +196,14 @@ ICONS = {
         '<path d="m15 15a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z"/>'
         '<path d="m19 9a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-14a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z"/>'
         '<path d="m4 4v14"/>'
+    ),
+    'grip': (
+        '<path d="M9 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />'
+        '<path d="M9 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />'
+        '<path d="M9 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />'
+        '<path d="M15 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />'
+        '<path d="M15 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />'
+        '<path d="M15 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />'
     ),
     'bubble': (
         '<path d="M6 16m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />'
