@@ -14,9 +14,10 @@
 
 {% block page-scripts %}
     <script type="module">
-        import { showReport, figureTypes } from '{% static "reportcraft/reports.min.js" %}';
+        import { showReport } from '{% static "reportcraft/reports.min.js" %}';
         $(document).ready(function(){
             $.getJSON("{{ data_url }}{{ query }}", function(data) {
+                console.log(data);
                 showReport("#report-entry", data)
             });
         });

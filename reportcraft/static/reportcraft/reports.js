@@ -126,7 +126,6 @@ const tableTemplate = _.template(
 );
 
 
-
 function renderMarkdown(text) {
     let markdown = new showdown.Converter();
     return markdown.makeHtml(text);

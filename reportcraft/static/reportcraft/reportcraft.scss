@@ -90,7 +90,9 @@ caption, figcaption {
 }
 
 section {
-  padding: 2em 0;
+  + section {
+    margin-top: 2em;
+  }
 }
 
 .report-viewer {
