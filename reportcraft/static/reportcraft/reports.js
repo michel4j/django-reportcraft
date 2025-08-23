@@ -4,20 +4,21 @@ import showdown from "https://cdn.jsdelivr.net/npm/showdown@1.9.1/+esm";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 export const figureTypes = [
+    "bars",
+    "columns",
+    "xyplot",
+    "pie",
+    "donut",
+
     "histogram",
     "line",
-    "bars",
-    "scatter",
-    "pie",
+
     "gauge",
     "timeline",
-    "columns",
     "plot",
-    "xyplot",
     "histo",
     'geochart',
-    'donut',
-    'area',
+
 ];
 
 const ColorSchemes = {
