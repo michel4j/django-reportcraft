@@ -17,42 +17,14 @@ export const figureTypes = [
 
 ];
 
+// Define custom color schemes
 const ColorSchemes = {
-    Accent: ['#7fc97f', '#beaed4', '#fdc086', '#ffff99', '#386cb0', '#f0027f', '#bf5b17', '#666666'],
-    Category10: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'],
-    Dark2: ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02', '#a6761d', '#666666'],
-    Live16: ['#67aec1', '#c45a81', '#cdc339', '#ae8e6b', '#6dc758', '#a084b6', '#667ccd', '#cd4f55', '#805cd6', '#cf622d', '#a69e4c', '#9b9795', '#6db586', '#c255b6', '#073b4c', '#ffd166'],
-    Live4: ['#8f9f9a', '#c56052', '#9f6dbf', '#a0b552'],
-    Live8: ['#073b4c', '#06d6a0', '#ffd166', '#ef476f', '#118ab2', '#7f7eff', '#afc765', '#78c5e7'],
-    Observable10: ['#4269d0', '#efb118', '#ff725c', '#6cc5b0', '#3ca951', '#ff8ab7', '#a463f2', '#97bbf5', '#9c6b4e', '#9498a0'],
-    Paired: ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928'],
-    Pastel1: ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4', '#fed9a6', '#ffffcc', '#e5d8bd', '#fddaec', '#f2f2f2'],
-    Pastel2: ['#b3e2cd', '#fdcdac', '#cbd5e8', '#f4cae4', '#e6f5c9', '#fff2ae', '#f1e2cc', '#cccccc'],
-    Set1: ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999'],
-    Set2: ['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854', '#ffd92f', '#e5c494', '#b3b3b3'],
-    Set3: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5', '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f'],
-    Tableau10: ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'],
-
-    // https://observablehq.com/@d3/color-schemes
-    // Sequential colors
-    Blues: d3.schemeBlues[9],
-    Greens: d3.schemeGreens[9],
-    Greys: d3.schemeGreys[9],
-    Oranges: d3.schemeOranges[9],
-    Purples: d3.schemePurples[9],
-    Reds: d3.schemeReds[9],
-    BuGn: d3.schemeBuGn[9],
-    BuPu: d3.schemeBuPu[9],
-    GnBu: d3.schemeGnBu[9],
-    OrRd: d3.schemeOrRd[9],
-    PuBu: d3.schemePuBu[9],
-    PuRd: d3.schemePuRd[9],
-    RdPu: d3.schemeRdPu[9],
-    YlGn: d3.schemeYlGn[9],
-    YlGnBu: d3.schemeYlGnBu[9],
-    YlOrBr: d3.schemeYlOrBr[9],
-    YlOrRd: d3.schemeYlOrRd[9],
-    PuBuGn: d3.schemePuBuGn[9],
+    "Live4": ['#8f9f9a', '#c56052', '#9f6dbf', '#a0b552'],
+    "Live8": ['#073b4c', '#06d6a0', '#ffd166', '#ef476f', '#118ab2', '#7f7eff', '#afc765', '#78c5e7'],
+    "Live16": [
+        '#67aec1', '#c45a81', '#cdc339', '#ae8e6b', '#6dc758', '#a084b6', '#667ccd', '#cd4f55',
+        '#805cd6', '#cf622d', '#a69e4c', '#9b9795', '#6db586', '#c255b6', '#073b4c', '#ffd166'
+    ],
 };
 
 const contentTemplate = _.template(
@@ -195,10 +167,9 @@ export function showReport(selector, sections) {
             uid: (index + Date.now()).toString(36),
             width: figure.offsetWidth,
             height: figure.offsetWidth / aspectRatio,
-            scheme: ColorSchemes[chart.scheme] || ColorSchemes.Tableau10,
+            scheme: (ColorSchemes[chart.scheme] || d3[`scheme${chart.scheme}`]) || d3.Observable10,
             aspectRatio: aspectRatio,
         };
-
 
         switch (figure.dataset.type) {
             case 'bars':
@@ -275,6 +246,7 @@ function drawBarChart(figure, chart, options) {
     const ticksEvery = chart["ticks-every"] || 1; // Default to every tick
     const ticksInterval = chart["ticks-interval"] || undefined; // Default to 1 for bar charts
     const fontSize = 10; //getFontSize();
+    const colorScale = d3.scaleOrdinal(options.scheme);
     let maxLabelLength = 10;
 
     const plotOptions = {
@@ -282,6 +254,7 @@ function drawBarChart(figure, chart, options) {
         width: options.width || 800,
         color: {
             legend: true,
+            range: options.scheme,
         },
         [categoryAxis]: {
             tickFormat: (d, i) => formatTick(d, i, ticksEvery, ticksInterval),
@@ -298,14 +271,7 @@ function drawBarChart(figure, chart, options) {
         const markOptions = {x: mark.x,  y: mark.y, sort: null, tip: categoryAxis};
 
         maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[mark[categoryAxis]]}`.length || 0));
-        if (mark.colors) {
-            markOptions.fill = mark.colors;
-            plotOptions.color["range"] = options.scheme;
-            plotOptions.color["domain"] = [...d3.union(chart.data.map(d => d[mark.colors]))];
-        } else {
-            // If no colors are specified, use the default color scheme
-            markOptions.fill = options.scheme[0];
-        }
+        markOptions.fill = mark.colors || colorScale(index);
         if (mark.groups) {
             plotOptions[categoryAxis].axis = null;
             if (chart.kind === 'bars') {
@@ -327,7 +293,6 @@ function drawBarChart(figure, chart, options) {
             plotOptions.marginBottom = fontSize * 3;
             marks.push(new Plot.ruleY([0]));
             marks.push(new Plot.barY(chart.data, markOptions));
-
         }
     });
 
@@ -339,6 +304,7 @@ function drawBarChart(figure, chart, options) {
 function drawXYPlot(figure, chart, options) {
     let marks = [];
     const markTypes = chart.types || [];
+    const colorScale = d3.scaleOrdinal(options.scheme);
     const plotOptions = {
         className: "rc-chart",
         width: options.width || 800,
@@ -360,7 +326,7 @@ function drawXYPlot(figure, chart, options) {
             label: chart["y-label"] || undefined,
         },
         r: {
-            transform: (r) => Math.pow(r, 3), // Square the radius for better visibility
+            transform: (r) => Math.pow(r, 2), // Square the radius so that area is proportional to value
         },
         marks: marks
     };
@@ -374,18 +340,22 @@ function drawXYPlot(figure, chart, options) {
             tip: true,
         };
         if (mark.type === 'line') {
-            markOptions.stroke = mark.colors || options.scheme[index % options.scheme.length];
+            markOptions.stroke = mark.colors || colorScale(index);
             marks.push(new Plot.lineY(chart.data, markOptions));
         } else if (mark.type === 'line-points') {
-            markOptions.stroke = mark.colors || options.scheme[index % options.scheme.length];
+            markOptions.stroke = mark.colors || colorScale(index);
             markOptions.marker = mark.marker || 'circle-stroke';
             marks.push(new Plot.lineY(chart.data, markOptions));
         } else if (mark.type === 'points') {
-            markOptions.fill = mark.colors || options.scheme[index % options.scheme.length];
-            markOptions.stroke = "var(--bs-body-color)";
+            markOptions.stroke = mark.colors || colorScale(index);
+            markOptions.strokeWidth = 1;
             marks.push(new Plot.dot(chart.data, markOptions));
+        }else if (mark.type === 'points-filled') {
+            markOptions.fill = mark.colors || colorScale(index);
+            markOptions.stroke = "var(--bs-body-color)";
+            markOptions.strokeWidth = 0.5;
         } else if (mark.type === 'area') {
-            markOptions.fill = mark.colors || options.scheme[index % options.scheme.length];
+            markOptions.fill = mark.colors || colorScale(index);
             marks.push(new Plot.areaY(chart.data, markOptions));
         } else {
             console.warn(`Unknown XY Plot: ${mark.type}`);
@@ -441,7 +411,7 @@ function drawHistogram(figure, chart, options) {
 function drawPieChart(figure, chart, options) {
     // Placeholder for pie chart implementation
     const uniqueLabels = [...d3.union(chart.data.map(d => d.label))];
-    const color = d3.scaleOrdinal().domain(uniqueLabels).range(options.scheme);
+    const color = d3.scaleOrdinal(options.scheme);
     const outerRadius = Math.min(options.width, options.height) / 2 - 15;
     const innerRadius = (chart.kind === 'donut') ? outerRadius / 2 : 0;
 

@@ -1,5 +1,5 @@
 import re
-
+from collections import defaultdict
 
 from crispy_forms.layout import Div, Field
 from django import forms
@@ -451,7 +451,13 @@ class BarsForm(EntryConfigForm):
 
 
 PLOT_SERIES = 4
-PLOT_TYPES = [('points', 'Points'), ('line', 'Line'), ('line-points', 'Line & Points'), ('area', 'Area')]
+PLOT_TYPES = [
+    ('points', 'Points'),
+    ('points-filled', 'Filled Points'),
+    ('line', 'Line'),
+    ('line-points', 'Line & Points'),
+    ('area', 'Area')
+]
 
 
 class PlotForm(EntryConfigForm):
@@ -510,7 +516,6 @@ class PlotForm(EntryConfigForm):
             )
             self.fields[f'groups__{i}__type'] = forms.ChoiceField(label="Type", required=False, choices=PLOT_TYPES)
 
-
     def update_initial(self):
         attrs, queryset = super().update_initial()
 
@@ -533,22 +538,19 @@ class PlotForm(EntryConfigForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        groups = []
-        group_fields = ['y', 'z']
+        groups = defaultdict(dict)
+
         for field, value in cleaned_data.items():
             match = re.match(r'groups__(\d+)__(\w+)', field)
             if match:
                 index = int(match.group(1))
                 key = match.group(2)
-                if key in group_fields:
-                    while len(groups) <= index:
-                        groups.append({})
-                    if key in group_fields and value:
-                        groups[index][key] = cleaned_data[field].name
-                    elif value:
-                        groups[index][key] = value
+                if isinstance(value, models.DataField):
+                    value = value.name
+                if value:
+                    groups[index][key] = value
 
-        cleaned_data['attrs']['groups'] = [g for g in groups if g]  # Remove empty groups
+        cleaned_data['attrs']['groups'] = [g for g in groups.values() if 'y' in g]  # Remove empty groups
         return cleaned_data
 
 

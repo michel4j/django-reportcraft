@@ -106,6 +106,7 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
     sort_desc = entry.attrs.get('sort_desc', False)
     ticks_every = entry.attrs.get('ticks_every', 1)
     limit = entry.attrs.get('limit', None)
+    scheme = entry.attrs.get('scheme', 'Live8')
     vertical = (kind == "columns")
 
     if not categories or not values:
@@ -155,7 +156,7 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
         'types': types,
         'style': entry.style,
         'ticks-every': ticks_every,
-        'scheme': entry.attrs.get('scheme', 'Live16'),
+        'scheme': scheme,
         'notes': entry.notes,
         'data': data,
     }

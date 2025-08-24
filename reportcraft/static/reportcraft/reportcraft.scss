@@ -142,6 +142,7 @@ section:not(:first-child) {
   }
 
   .notes {
+    font-size: 0.85em;
     background: var(--bs-tertiary-bg);
     padding: 1rem;
     color: var(--bs-body-color);
@@ -228,10 +229,6 @@ table {
   .c3-axis-y-label, .c3-axis-y2-label, .c3-axis-x-label {
     font-size: 1rem;
   }
-}
-
-.c3-line {
-  stroke-width: 1.5px;
 }
 
 .report-viewer table.table tbody td {
@@ -519,8 +516,8 @@ ul.nav-tabs.nav-tabs-sm {
 
 .section-entry.xyplot-entry {
   svg circle {
-    stroke: var(--bs-border-transluscent);
-    stroke-width: 0.75px;
+    //stroke: var(--bs-border-transluscent);
+    //stroke-width: 0.75px;
   }
 }
 
