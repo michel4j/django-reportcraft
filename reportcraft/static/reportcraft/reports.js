@@ -11,11 +11,8 @@ export const figureTypes = [
     "donut",
     "histogram",
 
-    "line",
     "gauge",
     "timeline",
-    "plot",
-    "histo",
     'geochart',
 
 ];
