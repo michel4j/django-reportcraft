@@ -710,11 +710,26 @@ class RichTextForm(EntryConfigForm):
 
 class HistogramForm(EntryConfigForm):
     values = forms.ModelChoiceField(label='Values', required=True, queryset=models.DataField.objects.none())
+    group_by = forms.ModelChoiceField(label='Group By', required=False, queryset=models.DataField.objects.none())
+    stack = forms.BooleanField(
+        label='Stack Groups', required=False, initial=True,
+        widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
+    )
+    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
     bins = forms.IntegerField(label='Bins', required=False)
-    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
+    binning = forms.ChoiceField(
+        label='Binning', required=False, initial='auto',
+        choices=(
+            ('auto', 'Auto'),
+            ('freedman-diaconis', 'Freedman-Diaconis'),
+            ('scott', 'Scott'),
+            ('sturges', 'Sturges'),
+            ('manual', 'Manual'),
+        ),
+    )
 
-    SINGLE_FIELDS = ['values']
-    OTHER_FIELDS = ['bins', 'colors']
+    SINGLE_FIELDS = ['values', 'group_by']
+    OTHER_FIELDS = ['bins', 'scheme', 'binning', 'stack']
 
     class Meta:
         model = models.Entry
@@ -729,15 +744,24 @@ class HistogramForm(EntryConfigForm):
         super().__init__(*args, **kwargs)
         self.body.append(
             Row(
-                ThirdWidth(Field('values', css_class='select')),
-                ThirdWidth('bins'),
-                ThirdWidth(Field('colors', css_class='select')),
+                FullWidth('values'),
+                ThirdWidth('group_by'), ThirdWidth('scheme'), ThirdWidth('stack'),
+                HalfWidth('binning'), HalfWidth('bins'),
             ),
             Row(
 
                 Field('attrs'),
             ),
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        attrs = cleaned_data['attrs']
+        bins = attrs.get('bins')
+        binning = attrs.get('binning')
+        if binning == 'manual' and not bins:
+            self.add_error('bins', _("Bins is required when Binning is set to Manual"))
+        return cleaned_data
 
 
 MODE_CHOICES = (

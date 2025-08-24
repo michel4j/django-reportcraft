@@ -9,10 +9,9 @@ export const figureTypes = [
     "xyplot",
     "pie",
     "donut",
-
     "histogram",
-    "line",
 
+    "line",
     "gauge",
     "timeline",
     "plot",
@@ -216,6 +215,9 @@ export function showReport(selector, sections) {
             case 'xyplot':
                 drawXYPlot(figure, chart, options);
                 break;
+            case 'histogram':
+                drawHistogram(figure, chart, options);
+                break;
         }
 
         // Remove raw data from dom
@@ -228,11 +230,6 @@ export function showReport(selector, sections) {
             figure.insertAdjacentHTML('afterend', `<figcaption class="text-center"></figcaption>`);
         }
     });
-}
-
-function getFontSize() {
-    const rootStyles = getComputedStyle(document.documentElement);
-    return parseFloat(rootStyles.fontSize);
 }
 
 function formatTick(value, i, ticksEvery = 1, ticksInterval = undefined) {
@@ -355,6 +352,7 @@ function drawXYPlot(figure, chart, options) {
         marginBottom: 40,
         color: {
             legend: true,
+            range: options.scheme,
         },
         x: {
             grid: true,
@@ -369,8 +367,6 @@ function drawXYPlot(figure, chart, options) {
         },
         marks: marks
     };
-
-    plotOptions.color["range"] = options.scheme;
 
     markTypes.forEach(function(mark, index){
         const markOptions = {
@@ -405,6 +401,45 @@ function drawXYPlot(figure, chart, options) {
     const plot = Plot.plot(plotOptions);
     addFigurePlot(figure, plot);
 }
+
+
+function drawHistogram(figure, chart, options) {
+    const binInput = {y: "count"};
+    const binOutput = {x: {value: chart.values, thresholds: chart.bins || 'auto' }};
+    const plotOptions = {
+        className: "rc-chart",
+        width: options.width || 800,
+        height: options.height || 600,
+        marginLeft: 40,
+        marginRight: 40,
+        marginTop: 40,
+        marginBottom: 40,
+        color: {
+            range: options.scheme,
+        },
+        y: { grid: true},
+        marks: []
+    };
+    if (chart["groups"]) {
+        plotOptions.color.legend = true;
+        binOutput.fill = chart["groups"];
+        if (!(chart.stack)) {
+            binOutput.nudge = 1; // Avoid bars overlapping
+            binInput.y = undefined;
+            binInput.y2 = "count";
+            binOutput.mixBlendMode = "multiply";
+        }
+    }
+    plotOptions.marks = [
+        Plot.rectY(chart.data, Plot.binX(binInput, binOutput)),
+        Plot.ruleY([0])
+    ];
+
+    // Create chart
+    const plot = Plot.plot(plotOptions);
+    addFigurePlot(figure, plot);
+}
+
 
 function drawPieChart(figure, chart, options) {
     // Placeholder for pie chart implementation

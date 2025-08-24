@@ -234,7 +234,6 @@ def generate_plot(entry, *args, **kwargs):
     x_value = entry.attrs.get('x_value', '')
     group_by = entry.attrs.get('group_by', None)
     scheme = entry.attrs.get('scheme', 'Live8')
-    precision = entry.attrs.get('precision', 0)
 
     raw_data = entry.source.get_data(*args, **kwargs)
     types = [
@@ -309,28 +308,37 @@ def generate_histogram(entry, *args, **kwargs):
     :param entry: The report entry containing the configuration for the table
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
+    labels = entry.source.get_labels()
     bins = entry.attrs.get('bins', None)
-    value_field = entry.attrs.get('values', '')
-    colors = entry.attrs.get('colors', None)
-    if not value_field:
+    values = entry.attrs.get('values', '')
+    scheme = entry.attrs.get('scheme', None)
+    group_by = entry.attrs.get('group_by', None)
+    binning = entry.attrs.get('binning', 'auto')
+    stack = entry.attrs.get('stack', True)
+
+    if not values:
         return {}
 
     raw_data = entry.source.get_data(*args, **kwargs)
-    labels = entry.source.get_labels()
-    values = [float(item.get(value_field)) for item in raw_data if item.get(value_field) is not None]
-    data = get_histogram_points(values, bins=bins)
-    x_culling = min(len(data), 15)
-    return {
+    select_fields = [values, group_by]
+    data = prepare_data(raw_data, select=select_fields, labels=labels)
+
+    info = {
         'title': entry.title,
         'description': entry.description,
         'kind': 'histogram',
         'style': entry.style,
-        'colors': colors,
-        'x-label': labels.get(value_field, value_field.title()),
-        'x-culling': x_culling,
+        'scheme': scheme,
+        'stack': stack,
+        'values': labels.get(values, values),
         'data': data,
         'notes': entry.notes
     }
+    if group_by:
+        info['groups'] = labels.get(group_by, group_by)
+
+    info['bins'] = bins if binning == 'manual' else binning
+    return info
 
 
 def generate_timeline(entry, *args, **kwargs):

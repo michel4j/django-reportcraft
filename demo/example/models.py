@@ -46,8 +46,13 @@ class Person(models.Model):
         USER = 'user', _('User')
         GUEST = 'guest', _('Guest')
 
+    class Gender(models.TextChoices):
+        MALE = 'male', _('Male')
+        FEMALE = 'female', _('Female')
+
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
+    gender = models.CharField(max_length=10, choices=Gender.choices)
     age = models.IntegerField()
     bio = models.TextField()
     created = models.DateTimeField(auto_now_add=True)

@@ -92,3 +92,36 @@
 {% block report-off-canvas %}
 {% if show_sidebar %}{% include "reportcraft/off-canvas-list.html" with items=reports %}{% endif %}
 {% endblock %}
+
+
+{% block page-scripts %}
+    {{ block.super }}
+    {% if report %}
+    <script src="{% static "reportcraft/sortable.min.js" %}"></script>
+    <script>
+        $(document).ready(function() {
+            // allow sorting entries
+            sortable({drag: '.entry', dropTo: '.entry-container'}, function () {
+                const csrfToken = "{{ csrf_token }}";
+                const order = Array.from(document.querySelectorAll('.entry-container .entry'))
+                    .map(entry => parseInt(entry.dataset.entryId));
+                $.ajax({
+                    url: "{% url 'reorder-report-entries' report.pk %}",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(order),
+                    dataType: "json",
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    success: function (response) {
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error saving order:', error);
+                    }
+                });
+            });
+        });
+    </script>
+    {% endif %}
+{% endblock %}
