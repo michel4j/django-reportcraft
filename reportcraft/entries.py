@@ -108,6 +108,7 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
     limit = entry.attrs.get('limit', None)
     scheme = entry.attrs.get('scheme', 'Live8')
     vertical = (kind == "columns")
+    scale = entry.attrs.get('scale', 'linear')
 
     if not categories or not values:
         return {}
@@ -157,6 +158,7 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
         'style': entry.style,
         'ticks-every': ticks_every,
         'scheme': scheme,
+        'scale': scale,
         'notes': entry.notes,
         'data': data,
     }
@@ -233,6 +235,8 @@ def generate_plot(entry, *args, **kwargs):
     x_label = entry.attrs.get('x_label', '')
     y_label = entry.attrs.get('y_label', '')
     x_value = entry.attrs.get('x_value', '')
+    x_scale = entry.attrs.get('x_scale', 'linear')
+    y_scale = entry.attrs.get('y_scale', 'linear')
     group_by = entry.attrs.get('group_by', None)
     scheme = entry.attrs.get('scheme', 'Live8')
 
@@ -257,6 +261,8 @@ def generate_plot(entry, *args, **kwargs):
         'kind': 'xyplot',
         'style': entry.style,
         'scheme': scheme,
+        'x-scale': x_scale,
+        'y-scale': y_scale,
         'x-label': x_label,
         'y-label': y_label,
         'types': types,
@@ -316,6 +322,7 @@ def generate_histogram(entry, *args, **kwargs):
     group_by = entry.attrs.get('group_by', None)
     binning = entry.attrs.get('binning', 'auto')
     stack = entry.attrs.get('stack', True)
+    scale = entry.attrs.get('scale', 'linear')
 
     if not values:
         return {}
@@ -330,6 +337,7 @@ def generate_histogram(entry, *args, **kwargs):
         'kind': 'histogram',
         'style': entry.style,
         'scheme': scheme,
+        'scale': scale,
         'stack': stack,
         'values': labels.get(values, values),
         'data': data,

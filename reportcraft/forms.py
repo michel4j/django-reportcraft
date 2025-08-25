@@ -272,6 +272,32 @@ class EntryForm(ModalModelForm):
         return cleaned_data
 
 
+PLOT_SERIES = 4
+PLOT_TYPES = [
+    ('points', 'Points'),
+    ('points-filled', 'Filled Points'),
+    ('line', 'Line'),
+    ('line-points', 'Line & Points'),
+    ('area', 'Area')
+]
+
+SCALE_CHOICES = [
+    ('linear', 'Linear'),
+    ('inverse', 'Reciprocal'),
+    ('log', 'Logarithmic'),
+    ('log2', 'Base-2 Logarithmic'),
+    ('symlog', 'Symmetric Logarithmic'),
+    ('square', 'Square'),
+    ('inv-square', 'Inverse Square'),
+    ('sqrt', 'Square Root'),
+    ('cube', 'Cube'),
+    ('inv-cube', 'Inverse Cube'),
+    ('cube-root', 'Cube Root'),
+    ('time', 'Time'),
+
+]
+
+
 class EntryConfigForm(ModalModelForm):
     SINGLE_FIELDS = ()
     MULTI_FIELDS = ()
@@ -409,12 +435,13 @@ class BarsForm(EntryConfigForm):
         label="Sort Order", required=False, widget=forms.Select(choices=((True, 'Descending'), (False, 'Ascending'))),
         initial=False
     )
+    scale = forms.ChoiceField(label='Value Scale', required=False, choices=SCALE_CHOICES, initial='linear')
     limit = forms.IntegerField(label="Limit", required=False)
 
     SINGLE_FIELDS = ['categories', 'color_by', 'sort_by']
     MULTI_FIELDS = ['values']
     OTHER_FIELDS = [
-        'grouped', 'scheme', 'ticks_every', 'sort_desc', 'limit',
+        'grouped', 'scheme', 'ticks_every', 'sort_desc', 'limit', 'scale'
     ]
 
     class Meta:
@@ -439,25 +466,16 @@ class BarsForm(EntryConfigForm):
                 ThirdWidth('scheme'),
             ),
             Row(
-                QuarterWidth('ticks_every'),
-                QuarterWidth('sort_by'),
-                QuarterWidth('sort_desc'),
-                QuarterWidth('limit'),
+                ThirdWidth('sort_by'),
+                ThirdWidth('sort_desc'),
+                ThirdWidth('limit'),
+                HalfWidth('scale'),
+                HalfWidth('ticks_every'),
             ),
             Div(
                 Field('attrs'),
             ),
         )
-
-
-PLOT_SERIES = 4
-PLOT_TYPES = [
-    ('points', 'Points'),
-    ('points-filled', 'Filled Points'),
-    ('line', 'Line'),
-    ('line-points', 'Line & Points'),
-    ('area', 'Area')
-]
 
 
 class PlotForm(EntryConfigForm):
@@ -467,9 +485,11 @@ class PlotForm(EntryConfigForm):
     scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
     group_by = forms.ModelChoiceField(label='Group By', required=False, queryset=models.DataField.objects.none())
     precision = forms.IntegerField(label="Precision", required=False)
+    x_scale = forms.ChoiceField(label='X Scale', required=False, choices=SCALE_CHOICES, initial='linear')
+    y_scale = forms.ChoiceField(label='Y Scale', required=False, choices=SCALE_CHOICES, initial='linear')
 
     SINGLE_FIELDS = ['group_by', 'x_value']
-    OTHER_FIELDS = ['x_label', 'y_label', 'scheme', 'precision']
+    OTHER_FIELDS = ['x_label', 'y_label', 'scheme', 'precision', 'x_scale', 'y_scale']
 
     class Meta:
         model = models.Entry
@@ -494,6 +514,11 @@ class PlotForm(EntryConfigForm):
                 ThirdWidth('scheme'),
                 ThirdWidth('precision'),
                 style='g-3'
+            ),
+            Row(
+                HalfWidth('x_scale'),
+                HalfWidth('y_scale'),
+                style='g-2'
             ),
         )
         for i in range(PLOT_SERIES):
@@ -719,6 +744,7 @@ class HistogramForm(EntryConfigForm):
     )
     scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
     bins = forms.IntegerField(label='Bins', required=False)
+    scale = forms.ChoiceField(label='Y-Scale', required=False, choices=SCALE_CHOICES, initial='linear')
     binning = forms.ChoiceField(
         label='Binning', required=False, initial='auto',
         choices=(
@@ -731,7 +757,7 @@ class HistogramForm(EntryConfigForm):
     )
 
     SINGLE_FIELDS = ['values', 'group_by']
-    OTHER_FIELDS = ['bins', 'scheme', 'binning', 'stack']
+    OTHER_FIELDS = ['bins', 'scheme', 'binning', 'stack', 'scale']
 
     class Meta:
         model = models.Entry
@@ -746,7 +772,7 @@ class HistogramForm(EntryConfigForm):
         super().__init__(*args, **kwargs)
         self.body.append(
             Row(
-                FullWidth('values'),
+                HalfWidth('values'),HalfWidth('scale'),
                 ThirdWidth('group_by'), ThirdWidth('scheme'), ThirdWidth('stack'),
                 HalfWidth('binning'), HalfWidth('bins'),
             ),

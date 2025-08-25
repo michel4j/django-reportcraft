@@ -241,6 +241,50 @@ function addFigurePlot(figure, plot) {
     }
 }
 
+function setAxisScale(axisOptions, scale) {
+    switch (scale){
+        case 'linear':
+            break;
+        case 'time':
+        case 'log':
+        case 'symlog':
+            axisOptions.type = scale;
+            break;
+        case 'log2':
+            axisOptions.type = "log";
+            axisOptions.base = 2;
+            break;
+        case 'inverse':
+            axisOptions.transform = d => 1/d;
+            break;
+        case 'square':
+            axisOptions.type = "pow";
+            axisOptions.exponent = 2;
+            break;
+        case 'sqrt':
+            axisOptions.type = "pow";
+            axisOptions.exponent = 0.5;
+            break;
+        case 'cube':
+            axisOptions.type = "pow";
+            axisOptions.exponent = 3;
+            break;
+        case 'inv-square':
+            axisOptions.type = "pow";
+            axisOptions.exponent = -2;
+            axisOptions.reverse = true;
+            break;
+        case 'inv-cube':
+            axisOptions.type = "pow";
+            axisOptions.exponent = -3;
+            break;
+        case 'cube-root':
+            axisOptions.type = "pow";
+            axisOptions.exponent = 1/3;
+            break;
+    }
+}
+
 function drawBarChart(figure, chart, options) {
     let marks = [];
     const markTypes = chart.types || [];
@@ -250,6 +294,7 @@ function drawBarChart(figure, chart, options) {
     const ticksInterval = chart["ticks-interval"] || undefined; // Default to 1 for bar charts
     const fontSize = 10; //getFontSize();
     const colorScale = d3.scaleOrdinal(options.scheme);
+    const valueScale = chart["scale"] || 'linear';
     let maxLabelLength = 10;
 
     const plotOptions = {
@@ -269,7 +314,7 @@ function drawBarChart(figure, chart, options) {
         },
         marks: marks
     };
-
+    setAxisScale(plotOptions[valueAxis], valueScale);
     markTypes.forEach(function(mark, index){
         const markOptions = {x: mark.x,  y: mark.y, sort: null, tip: categoryAxis};
 
@@ -308,6 +353,9 @@ function drawXYPlot(figure, chart, options) {
     let marks = [];
     const markTypes = chart.types || [];
     const colorScale = d3.scaleOrdinal(options.scheme);
+    const xScale = chart["x-scale"] || 'linear';
+    const yScale = chart["y-scale"] || 'linear';
+
     const plotOptions = {
         className: "rc-chart",
         width: options.width || 800,
@@ -333,6 +381,10 @@ function drawXYPlot(figure, chart, options) {
         },
         marks: marks
     };
+
+    // Set scales
+    setAxisScale(plotOptions.x, xScale);
+    setAxisScale(plotOptions.y, yScale);
 
     markTypes.forEach(function(mark, index){
         const markOptions = {
