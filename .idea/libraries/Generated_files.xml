@@ -9,8 +9,8 @@
     </properties>
     <CLASSES>
       <root url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/reportcraft.min.js" />
-      <root url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/reports.min.js" />
       <root url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/sortable.min.js" />
+      <root url="file://$PROJECT_DIR$/reportcraft/static/reportcraft/reportcraft.min.js" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

@@ -21,7 +21,7 @@ EDIT_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get
 
 
 class ReportView(DetailView):
-    template_name = 'reportcraft/report-plotjs.html'
+    template_name = 'reportcraft/report.html'
     model = models.Report
     data_url = 'report-data'
 
