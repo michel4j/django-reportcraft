@@ -10,9 +10,9 @@ export const figureTypes = [
     "pie",
     "donut",
     "histogram",
+    "timeline",
 
     "gauge",
-    "timeline",
     'geochart',
 
 ];
@@ -185,6 +185,9 @@ export function showReport(selector, sections) {
                 break;
             case 'histogram':
                 drawHistogram(figure, chart, options);
+                break;
+            case 'timeline':
+                drawTimeline(figure, chart, options);
                 break;
         }
 
@@ -466,4 +469,54 @@ function drawPieChart(figure, chart, options) {
                         <rect width="100%" height="100%"></rect>
                         </svg>${d}`);
 
+}
+
+
+function drawTimeline(figure, chart, options) {
+    console.log(chart);
+    const colorScale = d3.scaleOrdinal(options.scheme);
+    const plotOptions = {
+        className: "rc-chart",
+        width: options.width || 800,
+        height: options.height || 600,
+        marginLeft: 40,
+        marginRight: 40,
+        marginTop: 40,
+        marginBottom: 40,
+        color: {
+            range: options.scheme,
+        },
+        x: {
+            axis: "top",
+            grid: true,
+        },
+        y: {
+            axis: null,
+            label: null,
+        },
+    };
+
+    plotOptions.marks = [
+        Plot.barX(chart.data, {
+            x1: chart.start,
+            x2: chart.end,
+            y: chart.labels,
+            fill: chart.colors || colorScale(0),
+            sort: {y: "x1"}
+        }),
+        Plot.text(chart.data, {
+            x: chart.start,
+            y: chart.labels,
+            text: chart.labels,
+            textAnchor: "end",
+            dx: -3,
+        })
+    ]
+    if (chart.colors) {
+        plotOptions.color.legend = true;
+    }
+    plotOptions.marginLeft = 100;
+    // Create chart
+    const plot = Plot.plot(plotOptions);
+    addFigurePlot(figure, plot);
 }

@@ -647,14 +647,14 @@ class PieForm(ModalModelForm):
 class TimelineForm(EntryConfigForm):
     min_time = forms.DateTimeField(label='Start Time', required=False)
     max_time = forms.DateTimeField(label='End Time', required=False)
-    start_field = forms.ModelChoiceField(label='Event Start', required=True, queryset=models.DataField.objects.none())
-    end_field = forms.ModelChoiceField(label='Event End', required=True, queryset=models.DataField.objects.none())
-    label_field = forms.ModelChoiceField(label='Event Label', required=False, queryset=models.DataField.objects.none())
-    type_field = forms.ModelChoiceField(label='Event Type', required=False, queryset=models.DataField.objects.none())
-    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
+    start_value = forms.ModelChoiceField(label='Event Start', required=True, queryset=models.DataField.objects.none())
+    end_value = forms.ModelChoiceField(label='Event End', required=True, queryset=models.DataField.objects.none())
+    labels = forms.ModelChoiceField(label='Labels', required=False, queryset=models.DataField.objects.none())
+    color_by = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
+    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
 
-    SINGLE_FIELDS = ['start_field', 'end_field', 'label_field', 'type_field', 'colors']
-    OTHER_FIELDS = ['min_time', 'max_time']
+    SINGLE_FIELDS = ['start_value', 'end_value', 'labels', 'color_by',]
+    OTHER_FIELDS = ['min_time', 'max_time', 'scheme']
 
     class Meta:
         model = models.Entry
@@ -671,15 +671,15 @@ class TimelineForm(EntryConfigForm):
         super().__init__(*args, **kwargs)
         self.body.append(
             Row(
-                QuarterWidth(Field('start_field', css_class='select')),
-                QuarterWidth(Field('end_field', css_class='select')),
-                QuarterWidth(Field('label_field', css_class='select')),
-                QuarterWidth(Field('type_field', css_class='select')),
+                HalfWidth('start_value'),
+                HalfWidth('end_value'),
+                HalfWidth('labels'),
+                HalfWidth('color_by'),
             ),
             Row(
-                ThirdWidth(Field('min_time', css_class='datetime')),
-                ThirdWidth(Field('max_time', css_class='datetime')),
-                ThirdWidth(Field('colors', css_class='select')),
+                ThirdWidth('min_time'),
+                ThirdWidth('max_time'),
+                ThirdWidth('scheme'),
             ),
         )
 

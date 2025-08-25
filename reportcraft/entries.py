@@ -349,37 +349,30 @@ def generate_timeline(entry, *args, **kwargs):
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
 
-    type_field = entry.attrs.get('type_field', '')
-    start_field = entry.attrs.get('start_field', [])
-    end_field = entry.attrs.get('end_field', '')
-    label_field = entry.attrs.get('label_field', '')
-    colors = entry.attrs.get('colors', None)
+    labels = entry.source.get_labels()
+    start_value = entry.attrs.get('start_value', None)
+    end_value = entry.attrs.get('end_value', None)
+    label_value = entry.attrs.get('labels', None)
+    color_by = entry.attrs.get('color_by', None)
+    scheme = entry.attrs.get('scheme', 'Live8')
 
-    if not type_field or not start_field or not end_field:
+    if not start_value or not end_value:
         return {}
 
-    min_max = MinMax()
+    select_fields = [field for field in [start_value, end_value, label_value, color_by] if field]
     raw_data = entry.source.get_data(*args, **kwargs)
-    data = [
-        {
-            'type': item.get(type_field, ''),
-            'start': min_max.check(epoch(item[start_field])),
-            'end': min_max.check(epoch(item[end_field])),
-            'label': item.get(label_field, '')
-        } for item in raw_data if start_field in item and end_field in item
-    ]
-
-    min_time = entry.attrs.get('min_time', min_max.min)
-    max_time = entry.attrs.get('max_time', min_max.max)
+    data = prepare_data(raw_data, select=select_fields, labels=labels, sort=start_value, sort_desc=False)
 
     return {
         'title': entry.title,
         'description': entry.description,
         'kind': 'timeline',
-        'colors': colors,
-        'start': min_time,
-        'end': max_time,
+        'colors': labels.get(color_by, color_by),
+        'labels': labels.get(label_value, label_value),
+        'start': labels.get(start_value, start_value),
+        'end': labels.get(end_value, end_value),
         'style': entry.style,
+        'scheme': scheme,
         'notes': entry.notes,
         'data': data
     }
