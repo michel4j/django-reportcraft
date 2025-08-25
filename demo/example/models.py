@@ -65,3 +65,20 @@ class Person(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+
+class Country(models.Model):
+    name = models.CharField(max_length=100)
+    code = models.CharField(max_length=3, unique=True)
+    population = models.IntegerField(default=0)
+    area = models.FloatField(help_text="Area in square kilometers", default=0.0)
+    gdp = models.FloatField(help_text="Gross Domestic Product in USD", default=0.0)
+    capital = models.CharField(max_length=100, blank=True, null=True)
+    names = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ('name',)
+
+    def __str__(self):
+        return self.name
+

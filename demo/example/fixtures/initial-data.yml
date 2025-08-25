@@ -102678,1126 +102678,2483 @@
     modified: 2025-03-14 03:08:01.045373+00:00
     type: admin
     institution: 210
-- model: reportcraft.datasource
+- model: example.country
   pk: 1
   fields:
-    created: 2025-03-17 15:26:03.612617+00:00
-    modified: 2025-03-20 04:43:35.956391+00:00
-    name: User Summary
-    description: ''
-    group_by:
-    - year
-    - category
-    filters: '{}'
-    limit: null
-- model: reportcraft.datasource
+    name: Afghanistan
+    code: AFG
+    population: 37172386
+    area: 647500.0
+    gdp: 0.0
+    capital: null
+    names: 75759
+- model: example.country
   pk: 2
   fields:
-    created: 2025-03-17 19:07:59.042428+00:00
-    modified: 2025-03-17 19:12:32.221929+00:00
-    name: User Types
-    description: ''
-    group_by:
-    - category
-    filters: '{}'
-    limit: null
-- model: reportcraft.datasource
+    name: Albania
+    code: ALB
+    population: 2866376
+    area: 28748.0
+    gdp: 0.0
+    capital: null
+    names: 9410
+- model: example.country
   pk: 3
   fields:
-    created: 2025-03-18 04:48:26.885322+00:00
-    modified: 2025-03-18 04:54:34.287760+00:00
-    name: Top 10 People
-    description: ''
-    group_by: []
-    filters: '{}'
-    limit: null
-- model: reportcraft.datasource
+    name: Algeria
+    code: DZA
+    population: 42228429
+    area: 2381740.0
+    gdp: 0.0
+    capital: null
+    names: 55957
+- model: example.country
   pk: 4
   fields:
-    created: 2025-03-18 04:54:53.157611+00:00
-    modified: 2025-03-18 04:54:53.157647+00:00
-    name: Top 10 Institutions
-    description: ''
-    group_by: []
-    filters: '{}'
-    limit: null
-- model: reportcraft.datasource
+    name: American Samoa
+    code: ASM
+    population: 55465
+    area: 199.0
+    gdp: 0.0
+    capital: null
+    names: 996
+- model: example.country
   pk: 5
   fields:
-    created: 2025-03-18 05:00:44.532008+00:00
-    modified: 2025-08-19 14:43:11.318202+00:00
-    name: Top 10 Countries
-    description: ''
-    group_by:
-    - country_name
-    filters: ''
-    limit: null
-- model: reportcraft.datasource
+    name: Andorra
+    code: AND
+    population: 77006
+    area: 468.0
+    gdp: 0.0
+    capital: null
+    names: 3268
+- model: example.country
   pk: 6
   fields:
-    created: 2025-03-21 00:25:11.519557+00:00
-    modified: 2025-08-20 18:54:25.878601+00:00
-    name: Age Distribution
-    description: ''
-    group_by:
-    - age_group
-    - category
-    filters: ''
-    limit: null
-- model: reportcraft.datasource
+    name: Angola
+    code: AGO
+    population: 30809762
+    area: 1246700.0
+    gdp: 0.0
+    capital: null
+    names: 73767
+- model: example.country
   pk: 7
   fields:
-    created: 2025-08-19 21:24:38.572865+00:00
-    modified: 2025-08-19 21:25:18.143306+00:00
-    name: Global Distribution of Instutions
-    description: ''
-    group_by:
-    - country
-    filters: ''
-    limit: null
-- model: reportcraft.datasource
+    name: Anguilla
+    code: AIA
+    population: 13254
+    area: 102.0
+    gdp: 0.0
+    capital: null
+    names: 234
+- model: example.country
   pk: 8
   fields:
-    created: 2025-08-20 13:43:47.552378+00:00
-    modified: 2025-08-20 13:43:47.552390+00:00
-    name: Yearly Statistics
-    description: Various counts and averages per year since 2010
-    group_by:
-    - year
-    filters: ''
-    limit: null
-- model: reportcraft.datasource
+    name: Antarctica
+    code: ATA
+    population: 0
+    area: 14000000.0
+    gdp: 0.0
+    capital: null
+    names: 18532
+- model: example.country
   pk: 9
   fields:
-    created: 2025-08-23 20:27:05.479035+00:00
-    modified: 2025-08-23 20:27:05.479107+00:00
-    name: People
-    description: Ages of People
-    group_by: []
-    filters: ''
-    limit: null
-- model: reportcraft.datamodel
-  pk: 1
-  fields:
-    created: 2025-03-17 15:45:01.809447+00:00
-    modified: 2025-08-19 19:51:23.435017+00:00
-    model:
-    - example
-    - person
-    name: example.Person
-    source: 1
-- model: reportcraft.datamodel
-  pk: 3
-  fields:
-    created: 2025-03-17 19:08:31.193116+00:00
-    modified: 2025-03-18 04:23:40.228647+00:00
-    model:
-    - example
-    - person
-    name: example.person
-    source: 2
-- model: reportcraft.datamodel
-  pk: 5
-  fields:
-    created: 2025-03-18 04:48:47.614680+00:00
-    modified: 2025-03-18 04:48:47.614726+00:00
-    model:
-    - example
-    - person
-    name: example.person
-    source: 3
-- model: reportcraft.datamodel
-  pk: 6
-  fields:
-    created: 2025-03-18 04:55:06.501815+00:00
-    modified: 2025-03-18 04:55:06.501865+00:00
-    model:
-    - example
-    - institution
-    name: example.institution
-    source: 4
-- model: reportcraft.datamodel
-  pk: 7
-  fields:
-    created: 2025-03-18 05:01:06.783290+00:00
-    modified: 2025-03-18 05:13:24.435821+00:00
-    model:
-    - example
-    - institution
-    name: example.institution
-    source: 5
-- model: reportcraft.datamodel
-  pk: 8
-  fields:
-    created: 2025-03-21 00:25:35.858243+00:00
-    modified: 2025-08-19 19:49:28.984161+00:00
-    model:
-    - example
-    - person
-    name: example.Person
-    source: 6
-- model: reportcraft.datamodel
-  pk: 11
-  fields:
-    created: 2025-08-19 21:25:06.605688+00:00
-    modified: 2025-08-19 21:25:55.165627+00:00
-    model:
-    - example
-    - institution
-    name: example.Institution
-    source: 7
-- model: reportcraft.datamodel
-  pk: 12
-  fields:
-    created: 2025-08-20 13:44:57.001607+00:00
-    modified: 2025-08-20 13:44:57.001620+00:00
-    model:
-    - example
-    - institution
-    name: example.Institution
-    source: 8
-- model: reportcraft.datamodel
-  pk: 13
-  fields:
-    created: 2025-08-20 13:52:39.025388+00:00
-    modified: 2025-08-20 13:52:39.025402+00:00
-    model:
-    - example
-    - person
-    name: example.Person
-    source: 8
-- model: reportcraft.datamodel
-  pk: 14
-  fields:
-    created: 2025-08-23 20:31:02.658840+00:00
-    modified: 2025-08-23 20:31:02.658902+00:00
-    model:
-    - example
-    - person
-    name: example.Person
-    source: 9
-- model: reportcraft.datafield
-  pk: 1
-  fields:
-    created: 2025-03-17 15:45:01.846165+00:00
-    modified: 2025-08-19 19:51:23.378797+00:00
-    name: year
-    model: 1
-    label: Year
-    default: null
-    expression: Created.Year
-    precision: null
-    position: 0
-    ordering: null
-    source: 1
-- model: reportcraft.datafield
-  pk: 2
-  fields:
-    created: 2025-03-17 16:21:49.801218+00:00
-    modified: 2025-08-19 21:05:37.034164+00:00
-    name: users
-    model: 1
-    label: Users
-    default: 0
-    expression: Count(this, distinct=True)
-    precision: null
-    position: 1
-    ordering: null
-    source: 1
-- model: reportcraft.datafield
-  pk: 4
-  fields:
-    created: 2025-03-17 18:13:49.299593+00:00
-    modified: 2025-08-11 19:21:16.129186+00:00
-    name: institutions
-    model: 1
-    label: Institutions
-    default: 0
-    expression: Count(Institution, distinct=True)
-    precision: null
-    position: 3
-    ordering: null
-    source: 1
-- model: reportcraft.datafield
-  pk: 5
-  fields:
-    created: 2025-03-17 18:14:35.316087+00:00
-    modified: 2025-03-17 18:14:35.316102+00:00
-    name: avg_age
-    model: 1
-    label: Average Age
-    default: 0
-    expression: Avg(Age)
-    precision: 0
-    position: 4
-    ordering: null
-    source: 1
-- model: reportcraft.datafield
-  pk: 6
-  fields:
-    created: 2025-03-17 18:15:44.492200+00:00
-    modified: 2025-03-17 18:15:44.492214+00:00
-    name: youngest
-    model: 1
-    label: Youngest
-    default: 0
-    expression: Min(Age)
-    precision: 0
-    position: 5
-    ordering: null
-    source: 1
-- model: reportcraft.datafield
-  pk: 7
-  fields:
-    created: 2025-03-17 18:16:22.652267+00:00
-    modified: 2025-08-19 21:05:17.659630+00:00
-    name: oldest
-    model: 1
-    label: Oldest
-    default: 0
-    expression: Max(Age)
-    precision: 0
-    position: 6
-    ordering: null
-    source: 1
-- model: reportcraft.datafield
-  pk: 9
-  fields:
-    created: 2025-03-17 19:09:22.547813+00:00
-    modified: 2025-03-17 19:09:22.547860+00:00
-    name: users
-    model: 3
-    label: Users
-    default: 0
-    expression: Count(this)
-    precision: 0
-    position: 1
-    ordering: null
-    source: 2
-- model: reportcraft.datafield
+    name: Antigua and Barbuda
+    code: ATG
+    population: 96286
+    area: 443.0
+    gdp: 0.0
+    capital: null
+    names: 775
+- model: example.country
   pk: 10
   fields:
-    created: 2025-03-17 19:13:00.705941+00:00
-    modified: 2025-08-19 19:50:16.477285+00:00
-    name: category
-    model: 3
-    label: Category
-    default: null
-    expression: DisplayName(Type)
-    precision: null
-    position: 0
-    ordering: null
-    source: 2
-- model: reportcraft.datafield
+    name: Argentina
+    code: ARG
+    population: 44494502
+    area: 2766890.0
+    gdp: 0.0
+    capital: null
+    names: 58909
+- model: example.country
   pk: 11
   fields:
-    created: 2025-03-18 04:51:21.379146+00:00
-    modified: 2025-03-18 04:51:21.379176+00:00
-    name: user
-    model: 5
-    label: People
-    default: null
-    expression: Concat(FirstName, " ", LastName)
-    precision: null
-    position: 0
-    ordering: null
-    source: 3
-- model: reportcraft.datafield
+    name: Armenia
+    code: ARM
+    population: 2991200
+    area: 29800.0
+    gdp: 0.0
+    capital: null
+    names: 32084
+- model: example.country
   pk: 12
   fields:
-    created: 2025-03-18 04:52:27.789678+00:00
-    modified: 2025-03-21 00:23:22.207165+00:00
-    name: age
-    model: 5
-    label: Age
-    default: null
-    expression: ''
-    precision: null
-    position: 1
-    ordering: 1
-    source: 3
-- model: reportcraft.datafield
+    name: Aruba
+    code: ABW
+    population: 105845
+    area: 193.0
+    gdp: 0.0
+    capital: null
+    names: 485
+- model: example.country
   pk: 13
   fields:
-    created: 2025-03-18 04:55:53.195277+00:00
-    modified: 2025-03-18 04:58:42.183409+00:00
-    name: inst_name
-    model: 6
-    label: Institution
-    default: null
-    expression: Name
-    precision: null
-    position: 0
-    ordering: 1
-    source: 4
-- model: reportcraft.datafield
+    name: Australia
+    code: AUS
+    population: 24992369
+    area: 7686850.0
+    gdp: 0.0
+    capital: null
+    names: 214186
+- model: example.country
   pk: 14
   fields:
-    created: 2025-03-18 04:56:49.532685+00:00
-    modified: 2025-03-24 22:46:03.508254+00:00
-    name: total_people
-    model: 6
-    label: People
-    default: 0
-    expression: Count(People, distinct=True)
-    precision: null
-    position: 1
-    ordering: null
-    source: 4
-- model: reportcraft.datafield
+    name: Austria
+    code: AUT
+    population: 8847037
+    area: 83858.0
+    gdp: 0.0
+    capital: null
+    names: 52668
+- model: example.country
+  pk: 15
+  fields:
+    name: Azerbaijan
+    code: AZE
+    population: 9942334
+    area: 86600.0
+    gdp: 0.0
+    capital: null
+    names: 10032
+- model: example.country
   pk: 16
   fields:
-    created: 2025-03-18 05:08:44.275647+00:00
-    modified: 2025-03-18 05:14:07.957505+00:00
-    name: num_people
-    model: 7
-    label: People
-    default: 0
-    expression: Count(People)
-    precision: null
-    position: 1
-    ordering: null
-    source: 5
-- model: reportcraft.datafield
-  pk: 19
-  fields:
-    created: 2025-03-18 05:13:24.401930+00:00
-    modified: 2025-03-24 22:48:35.969595+00:00
-    name: country_name
-    model: 7
-    label: Country
-    default: null
-    expression: Country
-    precision: null
-    position: 0
-    ordering: null
-    source: 5
-- model: reportcraft.datafield
-  pk: 21
-  fields:
-    created: 2025-03-20 04:44:16.752971+00:00
-    modified: 2025-08-19 19:51:23.415528+00:00
-    name: category
-    model: 1
-    label: Category
-    default: null
-    expression: DisplayName(Type)
-    precision: null
-    position: 1
-    ordering: null
-    source: 1
-- model: reportcraft.datafield
-  pk: 23
-  fields:
-    created: 2025-03-20 05:21:33.508365+00:00
-    modified: 2025-08-19 14:49:35.459410+00:00
-    name: num_institutions
-    model: 7
-    label: Institutions
-    default: 0
-    expression: Count(this, distinct=True)
-    precision: null
-    position: 2
-    ordering: null
-    source: 5
-- model: reportcraft.datafield
-  pk: 25
-  fields:
-    created: 2025-03-21 00:27:27.237259+00:00
-    modified: 2025-08-20 20:00:13.856678+00:00
-    name: total
-    model: 8
-    label: Total
-    default: 0
-    expression: Count(this, distinct=True)
-    precision: null
-    position: 1
-    ordering: null
-    source: 6
-- model: reportcraft.datafield
-  pk: 26
-  fields:
-    created: 2025-03-24 02:02:01.691014+00:00
-    modified: 2025-03-24 02:02:01.691054+00:00
-    name: latitude
-    model: 6
-    label: Latitude
-    default: 0
-    expression: ''
-    precision: null
-    position: 2
-    ordering: null
-    source: 4
-- model: reportcraft.datafield
-  pk: 27
-  fields:
-    created: 2025-03-24 02:02:32.791666+00:00
-    modified: 2025-03-24 02:03:15.527137+00:00
-    name: longitude
-    model: 6
-    label: Longitude
-    default: null
-    expression: ''
-    precision: null
-    position: 3
-    ordering: null
-    source: 4
-- model: reportcraft.datafield
-  pk: 28
-  fields:
-    created: 2025-03-24 22:46:50.739420+00:00
-    modified: 2025-03-24 22:46:50.739485+00:00
-    name: total_institutions
-    model: 6
-    label: Institutions
-    default: 0
-    expression: Count(this, distinct=True)
-    precision: null
-    position: 4
-    ordering: null
-    source: 4
-- model: reportcraft.datafield
-  pk: 29
-  fields:
-    created: 2025-03-25 05:42:16.131953+00:00
-    modified: 2025-08-19 23:11:52.076596+00:00
-    name: lon
-    model: 7
-    label: Longitude
-    default: 0
-    expression: Avg(longitude)
-    precision: 3
-    position: 3
-    ordering: null
-    source: 5
-- model: reportcraft.datafield
-  pk: 30
-  fields:
-    created: 2025-03-25 05:42:51.732921+00:00
-    modified: 2025-08-19 23:11:25.918042+00:00
-    name: lat
-    model: 7
-    label: Latitude
-    default: 0
-    expression: Avg(Latitude)
-    precision: 3
-    position: 4
-    ordering: null
-    source: 5
-- model: reportcraft.datafield
-  pk: 36
-  fields:
-    created: 2025-08-13 19:18:01.049588+00:00
-    modified: 2025-08-13 19:19:00.337346+00:00
-    name: latitude
-    model: 8
-    label: Latitude
-    default: 0
-    expression: Avg(Institution.Latitude)
-    precision: 1
-    position: 2
-    ordering: null
-    source: 6
-- model: reportcraft.datafield
-  pk: 37
-  fields:
-    created: 2025-08-13 19:18:43.906215+00:00
-    modified: 2025-08-15 15:40:41.971744+00:00
-    name: longitude
-    model: 8
-    label: Longitude
-    default: 0
-    expression: Avg(Institution.Longitude)
-    precision: 1
-    position: 3
-    ordering: null
-    source: 6
-- model: reportcraft.datafield
-  pk: 38
-  fields:
-    created: 2025-08-13 19:21:56.769664+00:00
-    modified: 2025-08-19 18:52:49.516703+00:00
-    name: category
-    model: 8
-    label: Category
-    default: null
-    expression: DisplayName(Type)
-    precision: null
-    position: 4
-    ordering: null
-    source: 6
-- model: reportcraft.datafield
-  pk: 39
-  fields:
-    created: 2025-08-19 18:00:15.082405+00:00
-    modified: 2025-08-20 18:54:00.341559+00:00
-    name: age_group
-    model: 8
-    label: Age Group
-    default: null
-    expression: Interval(Age, lo=18, hi=65, size=6)
-    precision: null
-    position: 0
-    ordering: null
-    source: 6
-- model: reportcraft.datafield
-  pk: 41
-  fields:
-    created: 2025-08-19 21:25:28.492238+00:00
-    modified: 2025-08-19 21:25:55.141967+00:00
-    name: country
-    model: 11
-    label: Country
-    default: null
-    expression: Country
-    precision: null
-    position: 0
-    ordering: null
-    source: 7
-- model: reportcraft.datafield
-  pk: 42
-  fields:
-    created: 2025-08-19 21:27:30.487290+00:00
-    modified: 2025-08-19 21:27:30.487308+00:00
-    name: num_institutions
-    model: 11
-    label: Institutions
-    default: null
-    expression: Count(this, distinct=True)
-    precision: null
-    position: 1
-    ordering: null
-    source: 7
-- model: reportcraft.datafield
-  pk: 43
-  fields:
-    created: 2025-08-19 21:28:10.420912+00:00
-    modified: 2025-08-19 21:28:10.420926+00:00
-    name: lat
-    model: 11
-    label: Latitude
-    default: 0
-    expression: Avg(Latitude)
-    precision: 2
-    position: 2
-    ordering: null
-    source: 7
-- model: reportcraft.datafield
-  pk: 44
-  fields:
-    created: 2025-08-19 21:28:34.957279+00:00
-    modified: 2025-08-19 21:28:34.957292+00:00
-    name: lon
-    model: 11
-    label: Longitude
-    default: 0
-    expression: Avg(Longitude)
-    precision: 2
-    position: 3
-    ordering: null
-    source: 7
-- model: reportcraft.datafield
-  pk: 45
-  fields:
-    created: 2025-08-20 13:44:57.037880+00:00
-    modified: 2025-08-20 13:44:57.057655+00:00
-    name: year
-    model: 12
-    label: Year
-    default: null
-    expression: Created.Year
-    precision: null
-    position: 0
-    ordering: null
-    source: 8
-- model: reportcraft.datafield
-  pk: 46
-  fields:
-    created: 2025-08-20 13:52:39.062054+00:00
-    modified: 2025-08-20 13:52:39.081799+00:00
-    name: year
-    model: 13
-    label: Year
-    default: null
-    expression: Created.Year
-    precision: null
-    position: 0
-    ordering: null
-    source: 8
-- model: reportcraft.datafield
-  pk: 49
-  fields:
-    created: 2025-08-20 15:31:31.988518+00:00
-    modified: 2025-08-20 15:31:31.988532+00:00
-    name: num_institutes
-    model: 12
-    label: Institutions
-    default: 0
-    expression: Count(this, distinct=True)
-    precision: null
-    position: 2
-    ordering: null
-    source: 8
-- model: reportcraft.datafield
-  pk: 50
-  fields:
-    created: 2025-08-20 15:32:02.861603+00:00
-    modified: 2025-08-20 15:32:02.861617+00:00
-    name: num_people
-    model: 13
-    label: People
-    default: 0
-    expression: Count(this, distinct=True)
-    precision: null
-    position: 3
-    ordering: null
-    source: 8
-- model: reportcraft.datafield
-  pk: 51
-  fields:
-    created: 2025-08-20 16:31:27.956108+00:00
-    modified: 2025-08-20 16:31:27.956123+00:00
-    name: avg_age
-    model: 13
-    label: Average Age
-    default: 0
-    expression: Avg(Age)
-    precision: 1
-    position: 4
-    ordering: null
-    source: 8
-- model: reportcraft.datafield
-  pk: 52
-  fields:
-    created: 2025-08-20 16:32:11.202853+00:00
-    modified: 2025-08-20 16:32:38.859281+00:00
-    name: youngest
-    model: 13
-    label: Youngest Age
-    default: 0
-    expression: Min(Age)
-    precision: null
-    position: 5
-    ordering: null
-    source: 8
-- model: reportcraft.datafield
-  pk: 53
-  fields:
-    created: 2025-08-20 16:32:33.747293+00:00
-    modified: 2025-08-20 16:32:33.747306+00:00
-    name: oldest
-    model: 13
-    label: Oldest Age
-    default: 0
-    expression: Max(Age)
-    precision: null
-    position: 6
-    ordering: null
-    source: 8
-- model: reportcraft.datafield
-  pk: 54
-  fields:
-    created: 2025-08-20 18:08:22.095173+00:00
-    modified: 2025-08-20 18:08:22.095190+00:00
-    name: avg_subjects
-    model: 12
-    label: Subjects / Institution
-    default: null
-    expression: Count(Subjects) / Count(this, distinct=True)
-    precision: null
-    position: 7
-    ordering: null
-    source: 8
-- model: reportcraft.datafield
-  pk: 55
-  fields:
-    created: 2025-08-23 20:31:35.454758+00:00
-    modified: 2025-08-23 20:31:35.454813+00:00
-    name: age
-    model: 14
-    label: Age
-    default: null
-    expression: ''
-    precision: null
-    position: 0
-    ordering: null
-    source: 9
-- model: reportcraft.report
-  pk: 1
-  fields:
-    created: 2025-03-17 14:51:48.907356+00:00
-    modified: 2025-07-24 16:15:37.633678+00:00
-    slug: user-statistics
-    title: User Statistics
-    description: A report of user statistics
-    style: ''
-    notes: ''
-    section: ''
-- model: reportcraft.report
-  pk: 2
-  fields:
-    created: 2025-03-18 04:47:59.756926+00:00
-    modified: 2025-07-24 16:15:19.351670+00:00
-    slug: top-tens
-    title: Statistics of People and Institutions
-    description: A summary report showing statistics of people and institutions
-    style: ''
-    notes: ''
-    section: ''
-- model: reportcraft.report
-  pk: 3
-  fields:
-    created: 2025-03-18 19:38:15.597173+00:00
-    modified: 2025-03-19 21:45:56.179865+00:00
-    slug: institution-stats
-    title: Institution Statistics
-    description: This report presents the distribution of users and institutions
-    style: ''
-    notes: ''
-    section: ''
-- model: reportcraft.report
-  pk: 4
-  fields:
-    created: 2025-03-25 15:22:01.110988+00:00
-    modified: 2025-03-25 15:22:01.111014+00:00
-    slug: user-distribution
-    title: Distribution of Users
-    description: ''
-    style: ''
-    notes: ''
-    section: ''
-- model: reportcraft.entry
-  pk: 1
-  fields:
-    created: 2025-03-17 16:23:04.929205+00:00
-    modified: 2025-08-23 20:30:44.966181+00:00
-    title: Users Per Year
-    description: ''
-    notes: ''
-    style: col-md-6
-    kind: columns
-    source: 1
-    report: 1
-    position: 1
-    attrs:
-      categories: year
-      color_by: category
-      values:
-      - users
-      stack: false
-      sort_desc: false
-      scheme: Live8
-      ticks_every: 2
-- model: reportcraft.entry
-  pk: 2
-  fields:
-    created: 2025-03-17 19:02:09.479422+00:00
-    modified: 2025-08-23 20:30:44.966183+00:00
-    title: Statistics Summary
-    description: ''
-    notes: ''
-    style: col-md-12
-    kind: table
-    source: 8
-    report: 1
-    position: 2
-    attrs:
-      rows:
-      - num_institutes
-      - num_people
-      - avg_age
-      - youngest
-      - oldest
-      columns: year
-      total_row: false
-      total_column: false
-      force_strings: false
-      transpose: false
-      flip_headers: false
-      wrap_headers: false
-      max_cols: 12
-- model: reportcraft.entry
-  pk: 4
-  fields:
-    created: 2025-03-17 19:10:54.843697+00:00
-    modified: 2025-08-23 20:30:44.966176+00:00
-    title: User Types
-    description: ''
-    notes: ''
-    style: col-md-6
-    kind: donut
-    source: 2
-    report: 1
-    position: 0
-    attrs:
-      value: users
-      label: category
-      colors: Live8
-- model: reportcraft.entry
-  pk: 5
-  fields:
-    created: 2025-03-18 04:53:13.446290+00:00
-    modified: 2025-03-24 22:45:39.520034+00:00
-    title: Top 10 oldest People
-    description: ''
-    notes: ''
-    style: col-md-6
-    kind: list
-    source: 3
-    report: 2
-    position: 1
-    attrs:
-      columns:
-      - user
-      - age
-      order_by: -age
-      limit: 10
-- model: reportcraft.entry
-  pk: 6
-  fields:
-    created: 2025-03-18 04:57:52.534597+00:00
-    modified: 2025-03-18 04:59:10.882190+00:00
-    title: 'Top 10 Institutions by # of People'
-    description: ''
-    notes: ''
-    style: col-md-6
-    kind: list
-    source: 4
-    report: 2
-    position: 1
-    attrs:
-      columns:
-      - inst_name
-      - total_people
-      order_by: -total_people
-      limit: 10
-- model: reportcraft.entry
-  pk: 7
-  fields:
-    created: 2025-03-18 05:07:39.730325+00:00
-    modified: 2025-03-24 22:53:00.523387+00:00
-    title: 'Top 10 Countries by # of People'
-    description: ''
-    notes: Λορεμ ιπσθμ δολορ σιτ αμετ, αθτεμ μελιορε θτ νεc, εροσ δενιqθε ει ηασ.
-      Ρεγιονε δελενιτι αδιπισcι θτ ηισ, cονστιτθαμ αππελλαντθρ σιτ θτ, ερρορ φαβελλασ
-      θτ εαμ. Δελενιτ νομινατι περcιπιτθρ qθι αν, εξ ιδqθε ιμπερδιετ δισπθτατιονι
-      σιτ. Ιδ σεα δοcτθσ δελιcατισσιμι, νο σεα σαλε λαβορεσ ιμπεδιτ. Ενιμ δοcτθσ ρατιονιβθσ
-      νε qθο, vενιαμ νθμqθαμ ηασ αν, εα vελ προδεσσετ σαδιπσcινγ δετερρθισσετ. Μινιμθμ
-      cονστιτθτο θτ μεα, νεc ατ αππαρεατ περσεqθερισ θλλαμcορπερ. Τε παρτεμ βονορθμ
-      qθι.
-    style: col-md-12
-    kind: list
-    source: 5
-    report: 2
-    position: 2
-    attrs:
-      columns:
-      - country_name
-      - num_people
-      - num_institutions
-      order_by: -num_people
-      limit: 10
-- model: reportcraft.entry
-  pk: 8
-  fields:
-    created: 2025-03-20 05:05:01.169638+00:00
-    modified: 2025-08-23 20:30:44.966192+00:00
-    title: ''
-    description: ''
-    notes: You may leave out titles and description entries from Rich Text and instead
-      include any titles you want with Markdown.  Also, Rich Text entries do not use
-      the Source property.
-    style: col-md-12
-    kind: text
-    source: null
-    report: 1
-    position: 8
-    attrs:
-      rich_text: "Lorem markdownum indulgere est classe praemia ducens thalamos tecta
-        cum iam\r\nmunere abest lateque, litat contorta? Relictus non vocis narrantia
-        faciat\r\nnefandis tenet et amat adsidua ima quidam partem nostroque. Num
-        mora mundus.\r\n\r\n```js\r\nif (ppp) {\r\n    agp(igpCybercrime, teraflopsCore);\r\n}
-        else {\r\n    install += 90;\r\n    intranet_input += task_rate;\r\n}\r\nif
-        (lcdSystem >= adware_noc_recursive) {\r\n    asp_suffix += trinitron * macClipboard
-        + 1;\r\n    leaf_ieee += pdf_cross;\r\n}\r\ncursor *= windows;\r\njson = multiprocessing_pppoe;\r\n```\r\n\r\n##
-        Tempora recubare habet ad Theron potest\r\n\r\nOssa Iove leto quo, Dryope,
-        gerens viso solidas sinat accessit venere ruinas\r\nraptum, cumque, quid.
-        Sit **nuper poterat totidemque** eventuque pennis votis,\r\nut vixque. Draconi
-        me postera saxum nubila paries exposcere illic sensitque: a\r\naret.\r\n\r\n재판의
-        전심절차로서 행정심판을 할 수 있다. 법률이 정하는 주요방위산업체에 종사하는 근로자의 단체행동권은 법률이 정하는 바에 의하여 이를 제한하거나
-        인정하지 아니할 수 있다. 고용·임금 및 근로조건에 있어서 부당한 차별을 받지 아니한다. 위원은 탄핵 또는 금고 이상의 형의 선고에
-        의하지 아니하고는 파면되지 아니한다."
-- model: reportcraft.entry
-  pk: 9
-  fields:
-    created: 2025-03-20 05:23:37.054538+00:00
-    modified: 2025-08-23 20:30:44.966188+00:00
-    title: Top 10 Countries by Number of People
-    description: ''
-    notes: Calculated from the Institutions data model.
-    style: col-md-6
-    kind: bars
-    source: 5
-    report: 1
-    position: 6
-    attrs:
-      categories: country_name
-      sort_by: num_people
-      values:
-      - num_people
-      grouped: false
-      sort_desc: true
-      scheme: Live8
-      limit: 10
-      ticks_every: 1
-- model: reportcraft.entry
-  pk: 10
-  fields:
-    created: 2025-03-21 00:56:27.632266+00:00
-    modified: 2025-08-23 20:30:44.966186+00:00
-    title: Number of Persons per age group
-    description: ''
-    notes: ''
-    style: col-md-6
-    kind: columns
-    source: 6
-    report: 1
-    position: 4
-    attrs:
-      categories: age_group
-      color_by: category
-      values:
-      - total
-      grouped: true
-      sort_desc: false
-      scheme: Live8
-      ticks_every: 1
-- model: reportcraft.entry
-  pk: 11
-  fields:
-    created: 2025-03-21 23:53:40.671951+00:00
-    modified: 2025-08-19 21:30:41.336119+00:00
-    title: Global Distribution
-    description: ''
-    notes: "연소자의 근로는 특별한 보호를 받는다. 신체장애자 및 질병·노령 기타의 사유로 생활능력이 없는 국민은 법률이 정하는 바에 의하여
-      국가의 보호를 받는다. 국토와 자원은 국가의 보호를 받으며. 이 헌법공포 당시의 국회의원의 임기는 제1항에 의한 국회의 최초의 집회일 전일까지로
-      한다.\r\n\r\n국무총리·국무위원 또는 정부위원은 국회나 그 위원회에 출석하여 국정처리상황을 보고하거나 의견을 진술하고 질문에 응답할
-      수 있다, 모든 국민의 재산권은 보장된다. 대통령에 대한 탄핵소추는 국회재적의원 과반수의 발의와 국회재적의원 3분의 2 이상의 찬성이 있어야
-      한다. 사면·감형 및 복권에 관한 사항은 법률로 정한다."
-    style: col-md-12
-    kind: map
-    source: 7
-    report: 2
-    position: 0
-    attrs:
-      value: num_institutions
-      name: country
-      latitude: lat
-      longitude: lon
-      colors: Oranges
-      region: world
-      resolution: countries
-      mode: markers
-- model: reportcraft.entry
-  pk: 16
-  fields:
-    created: 2025-08-11 16:47:27.874636+00:00
-    modified: 2025-08-11 19:05:56.238883+00:00
-    title: Types of Users
-    description: ''
-    notes: ''
-    style: col-md-12
-    kind: donut
-    source: 2
-    report: 4
-    position: 0
-    attrs:
-      value: users
-      label: category
-      colors: Live8
-- model: reportcraft.entry
+    name: Bahamas
+    code: BHS
+    population: 385640
+    area: 13940.0
+    gdp: 0.0
+    capital: null
+    names: 2484
+- model: example.country
   pk: 17
   fields:
-    created: 2025-08-11 18:56:46.086450+00:00
-    modified: 2025-08-19 20:59:21.765721+00:00
-    title: ''
-    description: ''
-    notes: ''
-    style: col-md-12
-    kind: plot
-    source: 1
-    report: 4
-    position: 1
-    attrs:
-      groups:
-      - y: institutions
-        z: users
-        type: points
-      x_value: year
-      group_by: category
-      scheme: Live8
-- model: reportcraft.entry
+    name: Bahrain
+    code: BHR
+    population: 1569439
+    area: 665.0
+    gdp: 0.0
+    capital: null
+    names: 560
+- model: example.country
   pk: 18
   fields:
-    created: 2025-08-19 19:54:36.586671+00:00
-    modified: 2025-08-23 20:30:44.966185+00:00
-    title: Statistics Plots
-    description: ''
-    notes: ''
-    style: col-md-6
-    kind: plot
-    source: 1
-    report: 1
-    position: 3
-    attrs:
-      groups:
-      - y: users
-        z: users
-        type: area
-      x_value: year
-      group_by: category
-      scheme: Live8
-- model: reportcraft.entry
+    name: Bangladesh
+    code: BGD
+    population: 161356039
+    area: 144000.0
+    gdp: 0.0
+    capital: null
+    names: 59117
+- model: example.country
   pk: 19
   fields:
-    created: 2025-08-19 21:06:41.050243+00:00
-    modified: 2025-08-23 20:30:44.966191+00:00
-    title: Top 10 Countries by Number of Institutions
-    description: ''
-    notes: ''
-    style: col-md-6
-    kind: bars
-    source: 5
-    report: 1
-    position: 5
-    attrs:
-      categories: country_name
-      sort_by: num_institutions
-      values:
-      - num_institutions
-      grouped: false
-      sort_desc: true
-      scheme: Live8
-      limit: 10
-      ticks_every: 1
-- model: reportcraft.entry
+    name: Barbados
+    code: BRB
+    population: 286641
+    area: 431.0
+    gdp: 0.0
+    capital: null
+    names: 1084
+- model: example.country
   pk: 20
   fields:
-    created: 2025-08-20 19:56:59.759535+00:00
-    modified: 2025-08-23 20:30:44.966189+00:00
-    title: Age distribution by location
-    description: ''
-    notes: ''
-    style: col-md-6
-    kind: plot
-    source: 6
-    report: 1
-    position: 7
-    attrs:
-      groups:
-      - y: longitude
-        z: total
-        type: points
-      x_value: latitude
-      group_by: age_group
-      scheme: Live8
+    name: Belarus
+    code: BLR
+    population: 9485386
+    area: 207600.0
+    gdp: 0.0
+    capital: null
+    names: 33465
+- model: example.country
+  pk: 21
+  fields:
+    name: Belgium
+    code: BEL
+    population: 11422068
+    area: 30510.0
+    gdp: 0.0
+    capital: null
+    names: 20318
+- model: example.country
+  pk: 22
+  fields:
+    name: Belize
+    code: BLZ
+    population: 383071
+    area: 22966.0
+    gdp: 0.0
+    capital: null
+    names: 2333
+- model: example.country
+  pk: 23
+  fields:
+    name: Benin
+    code: BEN
+    population: 11485048
+    area: 112620.0
+    gdp: 0.0
+    capital: null
+    names: 5964
+- model: example.country
+  pk: 24
+  fields:
+    name: Bermuda
+    code: BMU
+    population: 63968
+    area: 53.0
+    gdp: 0.0
+    capital: null
+    names: 669
+- model: example.country
+  pk: 25
+  fields:
+    name: Bhutan
+    code: BTN
+    population: 754394
+    area: 47000.0
+    gdp: 0.0
+    capital: null
+    names: 536
+- model: example.country
+  pk: 26
+  fields:
+    name: Bolivia
+    code: BOL
+    population: 11353142
+    area: 1098580.0
+    gdp: 0.0
+    capital: null
+    names: 39911
+- model: example.country
+  pk: 27
+  fields:
+    name: Bonaire,  Sint Eustatius and Saba
+    code: BES
+    population: 18012
+    area: 328.0
+    gdp: 0.0
+    capital: null
+    names: 516
+- model: example.country
+  pk: 28
+  fields:
+    name: Bosnia and Herzegovina
+    code: BIH
+    population: 3323929
+    area: 51129.0
+    gdp: 0.0
+    capital: null
+    names: 51878
+- model: example.country
+  pk: 29
+  fields:
+    name: Botswana
+    code: BWA
+    population: 2254126
+    area: 600370.0
+    gdp: 0.0
+    capital: null
+    names: 3938
+- model: example.country
+  pk: 30
+  fields:
+    name: Bouvet Island
+    code: BVT
+    population: 0
+    area: 49.0
+    gdp: 0.0
+    capital: null
+    names: 47
+- model: example.country
+  pk: 31
+  fields:
+    name: Brazil
+    code: BRA
+    population: 209469333
+    area: 8511965.0
+    gdp: 0.0
+    capital: null
+    names: 234978
+- model: example.country
+  pk: 32
+  fields:
+    name: British Indian Ocean Territory
+    code: IOT
+    population: 4000
+    area: 60.0
+    gdp: 0.0
+    capital: null
+    names: 121
+- model: example.country
+  pk: 33
+  fields:
+    name: Virgin Islands (British)
+    code: VGB
+    population: 29802
+    area: 153.0
+    gdp: 0.0
+    capital: null
+    names: 773
+- model: example.country
+  pk: 34
+  fields:
+    name: Brunei Darussalam
+    code: BRN
+    population: 428962
+    area: 5770.0
+    gdp: 0.0
+    capital: null
+    names: 959
+- model: example.country
+  pk: 35
+  fields:
+    name: Bulgaria
+    code: BGR
+    population: 7000039
+    area: 110910.0
+    gdp: 0.0
+    capital: null
+    names: 18309
+- model: example.country
+  pk: 36
+  fields:
+    name: Burkina Faso
+    code: BFA
+    population: 19751535
+    area: 274200.0
+    gdp: 0.0
+    capital: null
+    names: 11885
+- model: example.country
+  pk: 37
+  fields:
+    name: Burundi
+    code: BDI
+    population: 11175378
+    area: 27830.0
+    gdp: 0.0
+    capital: null
+    names: 14117
+- model: example.country
+  pk: 38
+  fields:
+    name: Cabo Verde
+    code: CPV
+    population: 543767
+    area: 4033.0
+    gdp: 0.0
+    capital: null
+    names: 3780
+- model: example.country
+  pk: 39
+  fields:
+    name: Cambodia
+    code: KHM
+    population: 16249798
+    area: 181040.0
+    gdp: 0.0
+    capital: null
+    names: 19320
+- model: example.country
+  pk: 40
+  fields:
+    name: Cameroon
+    code: CMR
+    population: 25216237
+    area: 475440.0
+    gdp: 0.0
+    capital: null
+    names: 23963
+- model: example.country
+  pk: 41
+  fields:
+    name: Canada
+    code: CAN
+    population: 37058856
+    area: 9984670.0
+    gdp: 0.0
+    capital: null
+    names: 315645
+- model: example.country
+  pk: 42
+  fields:
+    name: Cayman Islands
+    code: CYM
+    population: 64174
+    area: 262.0
+    gdp: 0.0
+    capital: null
+    names: 380
+- model: example.country
+  pk: 43
+  fields:
+    name: Central African Republic
+    code: CAF
+    population: 4666377
+    area: 622984.0
+    gdp: 0.0
+    capital: null
+    names: 15449
+- model: example.country
+  pk: 44
+  fields:
+    name: Chad
+    code: TCD
+    population: 15477751
+    area: 1284000.0
+    gdp: 0.0
+    capital: null
+    names: 22892
+- model: example.country
+  pk: 45
+  fields:
+    name: Chile
+    code: CHL
+    population: 18729160
+    area: 756950.0
+    gdp: 0.0
+    capital: null
+    names: 46346
+- model: example.country
+  pk: 46
+  fields:
+    name: China
+    code: CHN
+    population: 1411778724
+    area: 9596960.0
+    gdp: 0.0
+    capital: null
+    names: 929760
+- model: example.country
+  pk: 47
+  fields:
+    name: Christmas Island
+    code: CXR
+    population: 1500
+    area: 135.0
+    gdp: 0.0
+    capital: null
+    names: 87
+- model: example.country
+  pk: 48
+  fields:
+    name: Cocos Islands
+    code: CCK
+    population: 628
+    area: 14.0
+    gdp: 0.0
+    capital: null
+    names: 60
+- model: example.country
+  pk: 49
+  fields:
+    name: Colombia
+    code: COL
+    population: 49648685
+    area: 1138910.0
+    gdp: 0.0
+    capital: null
+    names: 80270
+- model: example.country
+  pk: 50
+  fields:
+    name: Comoros
+    code: COM
+    population: 832322
+    area: 2170.0
+    gdp: 0.0
+    capital: null
+    names: 1132
+- model: example.country
+  pk: 51
+  fields:
+    name: Congo
+    code: COG
+    population: 5244363
+    area: 342000.0
+    gdp: 0.0
+    capital: null
+    names: 10109
+- model: example.country
+  pk: 52
+  fields:
+    name: Cook Islands
+    code: COK
+    population: 21388
+    area: 240.0
+    gdp: 0.0
+    capital: null
+    names: 802
+- model: example.country
+  pk: 53
+  fields:
+    name: Costa Rica
+    code: CRI
+    population: 4999441
+    area: 51100.0
+    gdp: 0.0
+    capital: null
+    names: 21263
+- model: example.country
+  pk: 54
+  fields:
+    name: Croatia
+    code: HRV
+    population: 3871833
+    area: 56542.0
+    gdp: 0.0
+    capital: null
+    names: 26609
+- model: example.country
+  pk: 55
+  fields:
+    name: Cuba
+    code: CUB
+    population: 11338138
+    area: 110860.0
+    gdp: 0.0
+    capital: null
+    names: 44904
+- model: example.country
+  pk: 56
+  fields:
+    name: Curaçao
+    code: CUW
+    population: 159849
+    area: 444.0
+    gdp: 0.0
+    capital: null
+    names: 498
+- model: example.country
+  pk: 57
+  fields:
+    name: Cyprus
+    code: CYP
+    population: 1189265
+    area: 9250.0
+    gdp: 0.0
+    capital: null
+    names: 7690
+- model: example.country
+  pk: 58
+  fields:
+    name: Czechia
+    code: CZE
+    population: 10625695
+    area: 78866.0
+    gdp: 0.0
+    capital: null
+    names: 43050
+- model: example.country
+  pk: 59
+  fields:
+    name: Congo,  Democratic Republic of the
+    code: COD
+    population: 84068091
+    area: 2345410.0
+    gdp: 0.0
+    capital: null
+    names: 66437
+- model: example.country
+  pk: 60
+  fields:
+    name: Denmark
+    code: DNK
+    population: 5797446
+    area: 43094.0
+    gdp: 0.0
+    capital: null
+    names: 15103
+- model: example.country
+  pk: 61
+  fields:
+    name: Djibouti
+    code: DJI
+    population: 958920
+    area: 23000.0
+    gdp: 0.0
+    capital: null
+    names: 5487
+- model: example.country
+  pk: 62
+  fields:
+    name: Dominica
+    code: DMA
+    population: 71625
+    area: 754.0
+    gdp: 0.0
+    capital: null
+    names: 464
+- model: example.country
+  pk: 63
+  fields:
+    name: Dominican Republic
+    code: DOM
+    population: 10627165
+    area: 48730.0
+    gdp: 0.0
+    capital: null
+    names: 36943
+- model: example.country
+  pk: 64
+  fields:
+    name: Ecuador
+    code: ECU
+    population: 17084357
+    area: 283560.0
+    gdp: 0.0
+    capital: null
+    names: 21308
+- model: example.country
+  pk: 65
+  fields:
+    name: Egypt
+    code: EGY
+    population: 98423595
+    area: 1001450.0
+    gdp: 0.0
+    capital: null
+    names: 34873
+- model: example.country
+  pk: 66
+  fields:
+    name: El Salvador
+    code: SLV
+    population: 6420744
+    area: 21040.0
+    gdp: 0.0
+    capital: null
+    names: 8008
+- model: example.country
+  pk: 67
+  fields:
+    name: Equatorial Guinea
+    code: GNQ
+    population: 1308974
+    area: 28051.0
+    gdp: 0.0
+    capital: null
+    names: 4396
+- model: example.country
+  pk: 68
+  fields:
+    name: Eritrea
+    code: ERI
+    population: 6209262
+    area: 121320.0
+    gdp: 0.0
+    capital: null
+    names: 6311
+- model: example.country
+  pk: 69
+  fields:
+    name: Estonia
+    code: EST
+    population: 1320884
+    area: 45226.0
+    gdp: 0.0
+    capital: null
+    names: 15185
+- model: example.country
+  pk: 70
+  fields:
+    name: Eswatini
+    code: SWZ
+    population: 1136191
+    area: 17363.0
+    gdp: 0.0
+    capital: null
+    names: 1929
+- model: example.country
+  pk: 71
+  fields:
+    name: Ethiopia
+    code: ETH
+    population: 109224559
+    area: 1127127.0
+    gdp: 0.0
+    capital: null
+    names: 20509
+- model: example.country
+  pk: 72
+  fields:
+    name: Falkland Islands
+    code: FLK
+    population: 2638
+    area: 12173.0
+    gdp: 0.0
+    capital: null
+    names: 1128
+- model: example.country
+  pk: 73
+  fields:
+    name: Faroe Islands
+    code: FRO
+    population: 48497
+    area: 1399.0
+    gdp: 0.0
+    capital: null
+    names: 1902
+- model: example.country
+  pk: 74
+  fields:
+    name: Fiji
+    code: FJI
+    population: 883483
+    area: 18270.0
+    gdp: 0.0
+    capital: null
+    names: 17828
+- model: example.country
+  pk: 75
+  fields:
+    name: Finland
+    code: FIN
+    population: 5518050
+    area: 337030.0
+    gdp: 0.0
+    capital: null
+    names: 463910
+- model: example.country
+  pk: 76
+  fields:
+    name: France
+    code: FRA
+    population: 66987244
+    area: 547030.0
+    gdp: 0.0
+    capital: null
+    names: 172807
+- model: example.country
+  pk: 77
+  fields:
+    name: French Guiana
+    code: GUF
+    population: 195506
+    area: 91000.0
+    gdp: 0.0
+    capital: null
+    names: 3716
+- model: example.country
+  pk: 78
+  fields:
+    name: French Polynesia
+    code: PYF
+    population: 277679
+    area: 4167.0
+    gdp: 0.0
+    capital: null
+    names: 4322
+- model: example.country
+  pk: 79
+  fields:
+    name: French Southern Territories
+    code: ATF
+    population: 140
+    area: 7829.0
+    gdp: 0.0
+    capital: null
+    names: 1648
+- model: example.country
+  pk: 80
+  fields:
+    name: Gabon
+    code: GAB
+    population: 2119275
+    area: 267667.0
+    gdp: 0.0
+    capital: null
+    names: 6877
+- model: example.country
+  pk: 81
+  fields:
+    name: Georgia
+    code: GEO
+    population: 3731000
+    area: 69700.0
+    gdp: 0.0
+    capital: null
+    names: 9257
+- model: example.country
+  pk: 82
+  fields:
+    name: Germany
+    code: DEU
+    population: 82927922
+    area: 357021.0
+    gdp: 0.0
+    capital: null
+    names: 202097
+- model: example.country
+  pk: 83
+  fields:
+    name: Ghana
+    code: GHA
+    population: 29767108
+    area: 239460.0
+    gdp: 0.0
+    capital: null
+    names: 23440
+- model: example.country
+  pk: 84
+  fields:
+    name: Gibraltar
+    code: GIB
+    population: 33718
+    area: 6.5
+    gdp: 0.0
+    capital: null
+    names: 261
+- model: example.country
+  pk: 85
+  fields:
+    name: Greece
+    code: GRC
+    population: 10727668
+    area: 131940.0
+    gdp: 0.0
+    capital: null
+    names: 36887
+- model: example.country
+  pk: 86
+  fields:
+    name: Greenland
+    code: GRL
+    population: 56025
+    area: 2166086.0
+    gdp: 0.0
+    capital: null
+    names: 7568
+- model: example.country
+  pk: 87
+  fields:
+    name: Grenada
+    code: GRD
+    population: 111454
+    area: 344.0
+    gdp: 0.0
+    capital: null
+    names: 791
+- model: example.country
+  pk: 88
+  fields:
+    name: Guadeloupe
+    code: GLP
+    population: 443000
+    area: 1780.0
+    gdp: 0.0
+    capital: null
+    names: 4036
+- model: example.country
+  pk: 89
+  fields:
+    name: Guam
+    code: GUM
+    population: 165768
+    area: 549.0
+    gdp: 0.0
+    capital: null
+    names: 1221
+- model: example.country
+  pk: 90
+  fields:
+    name: Guatemala
+    code: GTM
+    population: 17247807
+    area: 108890.0
+    gdp: 0.0
+    capital: null
+    names: 36327
+- model: example.country
+  pk: 91
+  fields:
+    name: Guernsey
+    code: GGY
+    population: 65228
+    area: 78.0
+    gdp: 0.0
+    capital: null
+    names: 854
+- model: example.country
+  pk: 92
+  fields:
+    name: Guinea
+    code: GIN
+    population: 12414318
+    area: 245857.0
+    gdp: 0.0
+    capital: null
+    names: 10875
+- model: example.country
+  pk: 93
+  fields:
+    name: Guinea-Bissau
+    code: GNB
+    population: 1874309
+    area: 36120.0
+    gdp: 0.0
+    capital: null
+    names: 6931
+- model: example.country
+  pk: 94
+  fields:
+    name: Guyana
+    code: GUY
+    population: 779004
+    area: 214970.0
+    gdp: 0.0
+    capital: null
+    names: 6181
+- model: example.country
+  pk: 95
+  fields:
+    name: Haiti
+    code: HTI
+    population: 11123176
+    area: 27750.0
+    gdp: 0.0
+    capital: null
+    names: 16587
+- model: example.country
+  pk: 96
+  fields:
+    name: Heard and McDonald Islands
+    code: HMD
+    population: 0
+    area: 412.0
+    gdp: 0.0
+    capital: null
+    names: 97
+- model: example.country
+  pk: 97
+  fields:
+    name: Honduras
+    code: HND
+    population: 9587522
+    area: 112090.0
+    gdp: 0.0
+    capital: null
+    names: 19993
+- model: example.country
+  pk: 98
+  fields:
+    name: Hong Kong
+    code: HKG
+    population: 7491609
+    area: 1092.0
+    gdp: 0.0
+    capital: null
+    names: 2730
+- model: example.country
+  pk: 99
+  fields:
+    name: Hungary
+    code: HUN
+    population: 9768785
+    area: 93030.0
+    gdp: 0.0
+    capital: null
+    names: 24615
+- model: example.country
+  pk: 100
+  fields:
+    name: Iceland
+    code: ISL
+    population: 353574
+    area: 103000.0
+    gdp: 0.0
+    capital: null
+    names: 16278
+- model: example.country
+  pk: 101
+  fields:
+    name: India
+    code: IND
+    population: 1352617328
+    area: 3287590.0
+    gdp: 0.0
+    capital: null
+    names: 657069
+- model: example.country
+  pk: 102
+  fields:
+    name: Indonesia
+    code: IDN
+    population: 267663435
+    area: 1919440.0
+    gdp: 0.0
+    capital: null
+    names: 447794
+- model: example.country
+  pk: 103
+  fields:
+    name: Iran
+    code: IRN
+    population: 81800269
+    area: 1648000.0
+    gdp: 0.0
+    capital: null
+    names: 247998
+- model: example.country
+  pk: 104
+  fields:
+    name: Iraq
+    code: IRQ
+    population: 38433600
+    area: 437072.0
+    gdp: 0.0
+    capital: null
+    names: 55868
+- model: example.country
+  pk: 105
+  fields:
+    name: Ireland
+    code: IRL
+    population: 4853506
+    area: 70280.0
+    gdp: 0.0
+    capital: null
+    names: 29899
+- model: example.country
+  pk: 106
+  fields:
+    name: Isle of Man
+    code: IMN
+    population: 84077
+    area: 572.0
+    gdp: 0.0
+    capital: null
+    names: 216
+- model: example.country
+  pk: 107
+  fields:
+    name: Israel
+    code: ISR
+    population: 8883800
+    area: 20770.0
+    gdp: 0.0
+    capital: null
+    names: 10209
+- model: example.country
+  pk: 108
+  fields:
+    name: Italy
+    code: ITA
+    population: 60431283
+    area: 301230.0
+    gdp: 0.0
+    capital: null
+    names: 123828
+- model: example.country
+  pk: 109
+  fields:
+    name: Côte d'Ivoire
+    code: CIV
+    population: 25069229
+    area: 322460.0
+    gdp: 0.0
+    capital: null
+    names: 19227
+- model: example.country
+  pk: 110
+  fields:
+    name: Jamaica
+    code: JAM
+    population: 2934855
+    area: 10991.0
+    gdp: 0.0
+    capital: null
+    names: 7718
+- model: example.country
+  pk: 111
+  fields:
+    name: Japan
+    code: JPN
+    population: 126529100
+    area: 377835.0
+    gdp: 0.0
+    capital: null
+    names: 103154
+- model: example.country
+  pk: 112
+  fields:
+    name: Jersey
+    code: JEY
+    population: 90812
+    area: 116.0
+    gdp: 0.0
+    capital: null
+    names: 495
+- model: example.country
+  pk: 113
+  fields:
+    name: Jordan
+    code: JOR
+    population: 9956011
+    area: 92300.0
+    gdp: 0.0
+    capital: null
+    names: 13172
+- model: example.country
+  pk: 114
+  fields:
+    name: Kazakhstan
+    code: KAZ
+    population: 18276499
+    area: 2717300.0
+    gdp: 0.0
+    capital: null
+    names: 68592
+- model: example.country
+  pk: 115
+  fields:
+    name: Kenya
+    code: KEN
+    population: 51393010
+    area: 582650.0
+    gdp: 0.0
+    capital: null
+    names: 31214
+- model: example.country
+  pk: 116
+  fields:
+    name: Kiribati
+    code: KIR
+    population: 115847
+    area: 811.0
+    gdp: 0.0
+    capital: null
+    names: 1081
+- model: example.country
+  pk: 117
+  fields:
+    name: Kuwait
+    code: KWT
+    population: 4137309
+    area: 17820.0
+    gdp: 0.0
+    capital: null
+    names: 1003
+- model: example.country
+  pk: 118
+  fields:
+    name: Kyrgyzstan
+    code: KGZ
+    population: 6315800
+    area: 198500.0
+    gdp: 0.0
+    capital: null
+    names: 8102
+- model: example.country
+  pk: 119
+  fields:
+    name: Lao People's Democratic Republic
+    code: LAO
+    population: 7061507
+    area: 236800.0
+    gdp: 0.0
+    capital: null
+    names: 25346
+- model: example.country
+  pk: 120
+  fields:
+    name: Latvia
+    code: LVA
+    population: 1926542
+    area: 64589.0
+    gdp: 0.0
+    capital: null
+    names: 30852
+- model: example.country
+  pk: 121
+  fields:
+    name: Lebanon
+    code: LBN
+    population: 6848925
+    area: 10400.0
+    gdp: 0.0
+    capital: null
+    names: 24703
+- model: example.country
+  pk: 122
+  fields:
+    name: Lesotho
+    code: LSO
+    population: 2108132
+    area: 30355.0
+    gdp: 0.0
+    capital: null
+    names: 1437
+- model: example.country
+  pk: 123
+  fields:
+    name: Liberia
+    code: LBR
+    population: 4818977
+    area: 111370.0
+    gdp: 0.0
+    capital: null
+    names: 8797
+- model: example.country
+  pk: 124
+  fields:
+    name: Libya
+    code: LBY
+    population: 6678567
+    area: 1759540.0
+    gdp: 0.0
+    capital: null
+    names: 22207
+- model: example.country
+  pk: 125
+  fields:
+    name: Liechtenstein
+    code: LIE
+    population: 37910
+    area: 160.0
+    gdp: 0.0
+    capital: null
+    names: 1845
+- model: example.country
+  pk: 126
+  fields:
+    name: Lithuania
+    code: LTU
+    population: 2789533
+    area: 65200.0
+    gdp: 0.0
+    capital: null
+    names: 34340
+- model: example.country
+  pk: 127
+  fields:
+    name: Luxembourg
+    code: LUX
+    population: 607728
+    area: 2586.0
+    gdp: 0.0
+    capital: null
+    names: 1235
+- model: example.country
+  pk: 128
+  fields:
+    name: Macao
+    code: MAC
+    population: 631636
+    area: 254.0
+    gdp: 0.0
+    capital: null
+    names: 177
+- model: example.country
+  pk: 129
+  fields:
+    name: Madagascar
+    code: MDG
+    population: 26262368
+    area: 587040.0
+    gdp: 0.0
+    capital: null
+    names: 50951
+- model: example.country
+  pk: 130
+  fields:
+    name: Malawi
+    code: MWI
+    population: 17563749
+    area: 118480.0
+    gdp: 0.0
+    capital: null
+    names: 13205
+- model: example.country
+  pk: 131
+  fields:
+    name: Malaysia
+    code: MYS
+    population: 31528585
+    area: 329750.0
+    gdp: 0.0
+    capital: null
+    names: 71482
+- model: example.country
+  pk: 132
+  fields:
+    name: Maldives
+    code: MDV
+    population: 515696
+    area: 300.0
+    gdp: 0.0
+    capital: null
+    names: 1767
+- model: example.country
+  pk: 133
+  fields:
+    name: Mali
+    code: MLI
+    population: 19077690
+    area: 1240000.0
+    gdp: 0.0
+    capital: null
+    names: 24310
+- model: example.country
+  pk: 134
+  fields:
+    name: Malta
+    code: MLT
+    population: 483530
+    area: 316.0
+    gdp: 0.0
+    capital: null
+    names: 2927
+- model: example.country
+  pk: 135
+  fields:
+    name: Marshall Islands
+    code: MHL
+    population: 58413
+    area: 181.3
+    gdp: 0.0
+    capital: null
+    names: 1316
+- model: example.country
+  pk: 136
+  fields:
+    name: Martinique
+    code: MTQ
+    population: 432900
+    area: 1100.0
+    gdp: 0.0
+    capital: null
+    names: 3140
+- model: example.country
+  pk: 137
+  fields:
+    name: Mauritania
+    code: MRT
+    population: 4403319
+    area: 1030700.0
+    gdp: 0.0
+    capital: null
+    names: 10319
+- model: example.country
+  pk: 138
+  fields:
+    name: Mauritius
+    code: MUS
+    population: 1265303
+    area: 2040.0
+    gdp: 0.0
+    capital: null
+    names: 1706
+- model: example.country
+  pk: 139
+  fields:
+    name: Mayotte
+    code: MYT
+    population: 279471
+    area: 374.0
+    gdp: 0.0
+    capital: null
+    names: 654
+- model: example.country
+  pk: 140
+  fields:
+    name: Mexico
+    code: MEX
+    population: 126190788
+    area: 1972550.0
+    gdp: 0.0
+    capital: null
+    names: 459968
+- model: example.country
+  pk: 141
+  fields:
+    name: Micronesia
+    code: FSM
+    population: 112640
+    area: 702.0
+    gdp: 0.0
+    capital: null
+    names: 2616
+- model: example.country
+  pk: 142
+  fields:
+    name: Moldova
+    code: MDA
+    population: 3545883
+    area: 33843.0
+    gdp: 0.0
+    capital: null
+    names: 2504
+- model: example.country
+  pk: 143
+  fields:
+    name: Monaco
+    code: MCO
+    population: 38682
+    area: 1.9
+    gdp: 0.0
+    capital: null
+    names: 98
+- model: example.country
+  pk: 144
+  fields:
+    name: Mongolia
+    code: MNG
+    population: 3170208
+    area: 1565000.0
+    gdp: 0.0
+    capital: null
+    names: 7071
+- model: example.country
+  pk: 145
+  fields:
+    name: Montenegro
+    code: MNE
+    population: 622345
+    area: 14026.0
+    gdp: 0.0
+    capital: null
+    names: 14151
+- model: example.country
+  pk: 146
+  fields:
+    name: Montserrat
+    code: MSR
+    population: 9341
+    area: 102.0
+    gdp: 0.0
+    capital: null
+    names: 306
+- model: example.country
+  pk: 147
+  fields:
+    name: Morocco
+    code: MAR
+    population: 36029138
+    area: 446550.0
+    gdp: 0.0
+    capital: null
+    names: 153227
+- model: example.country
+  pk: 148
+  fields:
+    name: Mozambique
+    code: MOZ
+    population: 29495962
+    area: 801590.0
+    gdp: 0.0
+    capital: null
+    names: 49107
+- model: example.country
+  pk: 149
+  fields:
+    name: Myanmar
+    code: MMR
+    population: 53708395
+    area: 678500.0
+    gdp: 0.0
+    capital: null
+    names: 62106
+- model: example.country
+  pk: 150
+  fields:
+    name: Nauru
+    code: NRU
+    population: 12704
+    area: 21.0
+    gdp: 0.0
+    capital: null
+    names: 109
+- model: example.country
+  pk: 151
+  fields:
+    name: Nepal
+    code: NPL
+    population: 28087871
+    area: 140800.0
+    gdp: 0.0
+    capital: null
+    names: 147808
+- model: example.country
+  pk: 152
+  fields:
+    name: New Caledonia
+    code: NCL
+    population: 284060
+    area: 19060.0
+    gdp: 0.0
+    capital: null
+    names: 5337
+- model: example.country
+  pk: 153
+  fields:
+    name: New Zealand
+    code: NZL
+    population: 4885500
+    area: 268680.0
+    gdp: 0.0
+    capital: null
+    names: 67211
+- model: example.country
+  pk: 154
+  fields:
+    name: Nicaragua
+    code: NIC
+    population: 6465513
+    area: 129494.0
+    gdp: 0.0
+    capital: null
+    names: 6435
+- model: example.country
+  pk: 155
+  fields:
+    name: Niger
+    code: NER
+    population: 22442948
+    area: 1267000.0
+    gdp: 0.0
+    capital: null
+    names: 24426
+- model: example.country
+  pk: 156
+  fields:
+    name: Nigeria
+    code: NGA
+    population: 195874740
+    area: 923768.0
+    gdp: 0.0
+    capital: null
+    names: 75638
+- model: example.country
+  pk: 157
+  fields:
+    name: Niue
+    code: NIU
+    population: 2166
+    area: 260.0
+    gdp: 0.0
+    capital: null
+    names: 323
+- model: example.country
+  pk: 158
+  fields:
+    name: Norfolk Island
+    code: NFK
+    population: 1828
+    area: 34.6
+    gdp: 0.0
+    capital: null
+    names: 81
+- model: example.country
+  pk: 159
+  fields:
+    name: North Korea
+    code: PRK
+    population: 25549819
+    area: 120540.0
+    gdp: 0.0
+    capital: null
+    names: 44405
+- model: example.country
+  pk: 160
+  fields:
+    name: North Macedonia
+    code: MKD
+    population: 2082958
+    area: 25333.0
+    gdp: 0.0
+    capital: null
+    names: 25235
+- model: example.country
+  pk: 161
+  fields:
+    name: Northern Mariana Islands
+    code: MNP
+    population: 56882
+    area: 477.0
+    gdp: 0.0
+    capital: null
+    names: 919
+- model: example.country
+  pk: 162
+  fields:
+    name: Norway
+    code: NOR
+    population: 5314336
+    area: 324220.0
+    gdp: 0.0
+    capital: null
+    names: 607862
+- model: example.country
+  pk: 163
+  fields:
+    name: Oman
+    code: OMN
+    population: 4829483
+    area: 212460.0
+    gdp: 0.0
+    capital: null
+    names: 12363
+- model: example.country
+  pk: 164
+  fields:
+    name: Pakistan
+    code: PAK
+    population: 212215030
+    area: 803940.0
+    gdp: 0.0
+    capital: null
+    names: 227888
+- model: example.country
+  pk: 165
+  fields:
+    name: Palau
+    code: PLW
+    population: 17907
+    area: 458.0
+    gdp: 0.0
+    capital: null
+    names: 831
+- model: example.country
+  pk: 166
+  fields:
+    name: Palestine,  State of
+    code: PSE
+    population: 4569087
+    area: 5970.0
+    gdp: 0.0
+    capital: null
+    names: 6136
+- model: example.country
+  pk: 167
+  fields:
+    name: Panama
+    code: PAN
+    population: 4176873
+    area: 78200.0
+    gdp: 0.0
+    capital: null
+    names: 30760
+- model: example.country
+  pk: 168
+  fields:
+    name: Papua New Guinea
+    code: PNG
+    population: 8606316
+    area: 462840.0
+    gdp: 0.0
+    capital: null
+    names: 21905
+- model: example.country
+  pk: 169
+  fields:
+    name: Paraguay
+    code: PRY
+    population: 6956071
+    area: 406750.0
+    gdp: 0.0
+    capital: null
+    names: 18514
+- model: example.country
+  pk: 170
+  fields:
+    name: Peru
+    code: PER
+    population: 31989256
+    area: 1285220.0
+    gdp: 0.0
+    capital: null
+    names: 109039
+- model: example.country
+  pk: 171
+  fields:
+    name: Philippines
+    code: PHL
+    population: 106651922
+    area: 300000.0
+    gdp: 0.0
+    capital: null
+    names: 93924
+- model: example.country
+  pk: 172
+  fields:
+    name: Pitcairn
+    code: PCN
+    population: 46
+    area: 47.0
+    gdp: 0.0
+    capital: null
+    names: 46
+- model: example.country
+  pk: 173
+  fields:
+    name: Poland
+    code: POL
+    population: 37978548
+    area: 312685.0
+    gdp: 0.0
+    capital: null
+    names: 58270
+- model: example.country
+  pk: 174
+  fields:
+    name: Portugal
+    code: PRT
+    population: 10281762
+    area: 92391.0
+    gdp: 0.0
+    capital: null
+    names: 38289
+- model: example.country
+  pk: 175
+  fields:
+    name: Puerto Rico
+    code: PRI
+    population: 3195153
+    area: 9104.0
+    gdp: 0.0
+    capital: null
+    names: 8278
+- model: example.country
+  pk: 176
+  fields:
+    name: Qatar
+    code: QAT
+    population: 2781677
+    area: 11437.0
+    gdp: 0.0
+    capital: null
+    names: 4118
+- model: example.country
+  pk: 177
+  fields:
+    name: Romania
+    code: ROU
+    population: 19473936
+    area: 237500.0
+    gdp: 0.0
+    capital: null
+    names: 35519
+- model: example.country
+  pk: 178
+  fields:
+    name: Russian Federation
+    code: RUS
+    population: 144478050
+    area: 17100000.0
+    gdp: 0.0
+    capital: null
+    names: 397997
+- model: example.country
+  pk: 179
+  fields:
+    name: Rwanda
+    code: RWA
+    population: 12301939
+    area: 26338.0
+    gdp: 0.0
+    capital: null
+    names: 20735
+- model: example.country
+  pk: 180
+  fields:
+    name: Réunion
+    code: REU
+    population: 776948
+    area: 2517.0
+    gdp: 0.0
+    capital: null
+    names: 2104
+- model: example.country
+  pk: 181
+  fields:
+    name: Saint Barthélemy
+    code: BLM
+    population: 8450
+    area: 21.0
+    gdp: 0.0
+    capital: null
+    names: 133
+- model: example.country
+  pk: 182
+  fields:
+    name: Saint Helena,  Ascension and Tristan da Cunha
+    code: SHN
+    population: 7460
+    area: 410.0
+    gdp: 0.0
+    capital: null
+    names: 665
+- model: example.country
+  pk: 183
+  fields:
+    name: Saint Lucia
+    code: LCA
+    population: 181889
+    area: 616.0
+    gdp: 0.0
+    capital: null
+    names: 1536
+- model: example.country
+  pk: 184
+  fields:
+    name: Saint Martin (French)
+    code: MAF
+    population: 37264
+    area: 53.0
+    gdp: 0.0
+    capital: null
+    names: 229
+- model: example.country
+  pk: 185
+  fields:
+    name: Saint Pierre and Miquelon
+    code: SPM
+    population: 7012
+    area: 242.0
+    gdp: 0.0
+    capital: null
+    names: 522
+- model: example.country
+  pk: 186
+  fields:
+    name: Samoa
+    code: WSM
+    population: 196130
+    area: 2944.0
+    gdp: 0.0
+    capital: null
+    names: 931
+- model: example.country
+  pk: 187
+  fields:
+    name: San Marino
+    code: SMR
+    population: 33785
+    area: 61.2
+    gdp: 0.0
+    capital: null
+    names: 71
+- model: example.country
+  pk: 188
+  fields:
+    name: Saudi Arabia
+    code: SAU
+    population: 33699947
+    area: 1960582.0
+    gdp: 0.0
+    capital: null
+    names: 27703
+- model: example.country
+  pk: 189
+  fields:
+    name: Senegal
+    code: SEN
+    population: 15854360
+    area: 196190.0
+    gdp: 0.0
+    capital: null
+    names: 12303
+- model: example.country
+  pk: 190
+  fields:
+    name: Serbia
+    code: SRB
+    population: 6982084
+    area: 88361.0
+    gdp: 0.0
+    capital: null
+    names: 24531
+- model: example.country
+  pk: 191
+  fields:
+    name: Seychelles
+    code: SYC
+    population: 96762
+    area: 455.0
+    gdp: 0.0
+    capital: null
+    names: 561
+- model: example.country
+  pk: 192
+  fields:
+    name: Sierra Leone
+    code: SLE
+    population: 7650154
+    area: 71740.0
+    gdp: 0.0
+    capital: null
+    names: 17227
+- model: example.country
+  pk: 193
+  fields:
+    name: Singapore
+    code: SGP
+    population: 5638676
+    area: 692.7
+    gdp: 0.0
+    capital: null
+    names: 1978
+- model: example.country
+  pk: 194
+  fields:
+    name: Sint Maarten (Dutch)
+    code: SXM
+    population: 40654
+    area: 21.0
+    gdp: 0.0
+    capital: null
+    names: 199
+- model: example.country
+  pk: 195
+  fields:
+    name: Slovakia
+    code: SVK
+    population: 5447011
+    area: 48845.0
+    gdp: 0.0
+    capital: null
+    names: 11234
+- model: example.country
+  pk: 196
+  fields:
+    name: Slovenia
+    code: SVN
+    population: 2067372
+    area: 20273.0
+    gdp: 0.0
+    capital: null
+    names: 8133
+- model: example.country
+  pk: 197
+  fields:
+    name: Solomon Islands
+    code: SLB
+    population: 652858
+    area: 28450.0
+    gdp: 0.0
+    capital: null
+    names: 9393
+- model: example.country
+  pk: 198
+  fields:
+    name: Somalia
+    code: SOM
+    population: 15008154
+    area: 637657.0
+    gdp: 0.0
+    capital: null
+    names: 17472
+- model: example.country
+  pk: 199
+  fields:
+    name: South Africa
+    code: ZAF
+    population: 57779622
+    area: 1219912.0
+    gdp: 0.0
+    capital: null
+    names: 102878
+- model: example.country
+  pk: 200
+  fields:
+    name: South Georgia and the South Sandwich Islands
+    code: SGS
+    population: 30
+    area: 3903.0
+    gdp: 0.0
+    capital: null
+    names: 813
+- model: example.country
+  pk: 201
+  fields:
+    name: South Korea
+    code: KOR
+    population: 51635256
+    area: 98480.0
+    gdp: 0.0
+    capital: null
+    names: 143538
+- model: example.country
+  pk: 202
+  fields:
+    name: South Sudan
+    code: SSD
+    population: 8260490
+    area: 644329.0
+    gdp: 0.0
+    capital: null
+    names: 12154
+- model: example.country
+  pk: 203
+  fields:
+    name: Spain
+    code: ESP
+    population: 46723749
+    area: 504782.0
+    gdp: 0.0
+    capital: null
+    names: 86668
+- model: example.country
+  pk: 204
+  fields:
+    name: Sri Lanka
+    code: LKA
+    population: 21670000
+    area: 65610.0
+    gdp: 0.0
+    capital: null
+    names: 56755
+- model: example.country
+  pk: 205
+  fields:
+    name: Saint Kitts and Nevis
+    code: KNA
+    population: 52441
+    area: 261.0
+    gdp: 0.0
+    capital: null
+    names: 544
+- model: example.country
+  pk: 206
+  fields:
+    name: Saint Vincent and the Grenadines
+    code: VCT
+    population: 110211
+    area: 389.0
+    gdp: 0.0
+    capital: null
+    names: 676
+- model: example.country
+  pk: 207
+  fields:
+    name: Sudan
+    code: SDN
+    population: 41801533
+    area: 1861484.0
+    gdp: 0.0
+    capital: null
+    names: 27036
+- model: example.country
+  pk: 208
+  fields:
+    name: Suriname
+    code: SUR
+    population: 575991
+    area: 163270.0
+    gdp: 0.0
+    capital: null
+    names: 2480
+- model: example.country
+  pk: 209
+  fields:
+    name: Svalbard and Jan Mayen
+    code: SJM
+    population: 2550
+    area: 62049.0
+    gdp: 0.0
+    capital: null
+    names: 5541
+- model: example.country
+  pk: 210
+  fields:
+    name: Sweden
+    code: SWE
+    population: 10183175
+    area: 449964.0
+    gdp: 0.0
+    capital: null
+    names: 96549
+- model: example.country
+  pk: 211
+  fields:
+    name: Switzerland
+    code: CHE
+    population: 8516543
+    area: 41290.0
+    gdp: 0.0
+    capital: null
+    names: 82419
+- model: example.country
+  pk: 212
+  fields:
+    name: Syrian Arab Republic
+    code: SYR
+    population: 16906283
+    area: 185180.0
+    gdp: 0.0
+    capital: null
+    names: 39304
+- model: example.country
+  pk: 213
+  fields:
+    name: Sao Tome and Principe
+    code: STP
+    population: 197700
+    area: 1001.0
+    gdp: 0.0
+    capital: null
+    names: 1267
+- model: example.country
+  pk: 214
+  fields:
+    name: Taiwan
+    code: TWN
+    population: 23451837
+    area: 35980.0
+    gdp: 0.0
+    capital: null
+    names: 45567
+- model: example.country
+  pk: 215
+  fields:
+    name: Tajikistan
+    code: TJK
+    population: 9100837
+    area: 143100.0
+    gdp: 0.0
+    capital: null
+    names: 4419
+- model: example.country
+  pk: 216
+  fields:
+    name: Tanzania
+    code: TZA
+    population: 56318348
+    area: 945087.0
+    gdp: 0.0
+    capital: null
+    names: 19386
+- model: example.country
+  pk: 217
+  fields:
+    name: Thailand
+    code: THA
+    population: 69428524
+    area: 514000.0
+    gdp: 0.0
+    capital: null
+    names: 262592
+- model: example.country
+  pk: 218
+  fields:
+    name: Gambia
+    code: GMB
+    population: 2280102
+    area: 11300.0
+    gdp: 0.0
+    capital: null
+    names: 2414
+- model: example.country
+  pk: 219
+  fields:
+    name: Netherlands
+    code: NLD
+    population: 17231017
+    area: 41526.0
+    gdp: 0.0
+    capital: null
+    names: 22842
+- model: example.country
+  pk: 220
+  fields:
+    name: Timor-Leste
+    code: TLS
+    population: 1267972
+    area: 15007.0
+    gdp: 0.0
+    capital: null
+    names: 7843
+- model: example.country
+  pk: 221
+  fields:
+    name: Togo
+    code: TGO
+    population: 7889094
+    area: 56785.0
+    gdp: 0.0
+    capital: null
+    names: 5822
+- model: example.country
+  pk: 222
+  fields:
+    name: Tokelau
+    code: TKL
+    population: 1466
+    area: 10.0
+    gdp: 0.0
+    capital: null
+    names: 118
+- model: example.country
+  pk: 223
+  fields:
+    name: Tonga
+    code: TON
+    population: 103197
+    area: 748.0
+    gdp: 0.0
+    capital: null
+    names: 766
+- model: example.country
+  pk: 224
+  fields:
+    name: Trinidad and Tobago
+    code: TTO
+    population: 1389858
+    area: 5128.0
+    gdp: 0.0
+    capital: null
+    names: 1826
+- model: example.country
+  pk: 225
+  fields:
+    name: Tunisia
+    code: TUN
+    population: 11565204
+    area: 163610.0
+    gdp: 0.0
+    capital: null
+    names: 25813
+- model: example.country
+  pk: 226
+  fields:
+    name: Turkmenistan
+    code: TKM
+    population: 5850908
+    area: 488100.0
+    gdp: 0.0
+    capital: null
+    names: 5717
+- model: example.country
+  pk: 227
+  fields:
+    name: Turks and Caicos Islands
+    code: TCA
+    population: 37665
+    area: 430.0
+    gdp: 0.0
+    capital: null
+    names: 616
+- model: example.country
+  pk: 228
+  fields:
+    name: Tuvalu
+    code: TUV
+    population: 11508
+    area: 26.0
+    gdp: 0.0
+    capital: null
+    names: 356
+- model: example.country
+  pk: 229
+  fields:
+    name: Türkiye
+    code: TUR
+    population: 82319724
+    area: 780580.0
+    gdp: 0.0
+    capital: null
+    names: 94224
+- model: example.country
+  pk: 230
+  fields:
+    name: United States Minor Outlying Islands
+    code: UMI
+    population: 0
+    area: 0.0
+    gdp: 0.0
+    capital: null
+    names: 282
+- model: example.country
+  pk: 231
+  fields:
+    name: Virgin Islands (U.S.)
+    code: VIR
+    population: 106977
+    area: 352.0
+    gdp: 0.0
+    capital: null
+    names: 1872
+- model: example.country
+  pk: 232
+  fields:
+    name: Uganda
+    code: UGA
+    population: 42723139
+    area: 236040.0
+    gdp: 0.0
+    capital: null
+    names: 26778
+- model: example.country
+  pk: 233
+  fields:
+    name: Ukraine
+    code: UKR
+    population: 44622516
+    area: 603700.0
+    gdp: 0.0
+    capital: null
+    names: 43243
+- model: example.country
+  pk: 234
+  fields:
+    name: United Arab Emirates
+    code: ARE
+    population: 9630959
+    area: 82880.0
+    gdp: 0.0
+    capital: null
+    names: 8548
+- model: example.country
+  pk: 235
+  fields:
+    name: United Kingdom
+    code: GBR
+    population: 66488991
+    area: 244820.0
+    gdp: 0.0
+    capital: null
+    names: 109108
+- model: example.country
+  pk: 236
+  fields:
+    name: United States of America
+    code: USA
+    population: 327167434
+    area: 9629091.0
+    gdp: 0.0
+    capital: null
+    names: 2241215
+- model: example.country
+  pk: 237
+  fields:
+    name: Uruguay
+    code: URY
+    population: 3449299
+    area: 176220.0
+    gdp: 0.0
+    capital: null
+    names: 8126
+- model: example.country
+  pk: 238
+  fields:
+    name: Uzbekistan
+    code: UZB
+    population: 32955400
+    area: 447400.0
+    gdp: 0.0
+    capital: null
+    names: 11110
+- model: example.country
+  pk: 239
+  fields:
+    name: Vanuatu
+    code: VUT
+    population: 292680
+    area: 12200.0
+    gdp: 0.0
+    capital: null
+    names: 4903
+- model: example.country
+  pk: 240
+  fields:
+    name: Holy See
+    code: VAT
+    population: 921
+    area: 0.4
+    gdp: 0.0
+    capital: null
+    names: 129
+- model: example.country
+  pk: 241
+  fields:
+    name: Venezuela
+    code: VEN
+    population: 28870195
+    area: 912050.0
+    gdp: 0.0
+    capital: null
+    names: 69021
+- model: example.country
+  pk: 242
+  fields:
+    name: Viet Nam
+    code: VNM
+    population: 95540395
+    area: 329560.0
+    gdp: 0.0
+    capital: null
+    names: 65317
+- model: example.country
+  pk: 243
+  fields:
+    name: Wallis and Futuna
+    code: WLF
+    population: 16025
+    area: 274.0
+    gdp: 0.0
+    capital: null
+    names: 625
+- model: example.country
+  pk: 244
+  fields:
+    name: Western Sahara
+    code: ESH
+    population: 273008
+    area: 266000.0
+    gdp: 0.0
+    capital: null
+    names: 2271
+- model: example.country
+  pk: 245
+  fields:
+    name: Yemen
+    code: YEM
+    population: 28498687
+    area: 527970.0
+    gdp: 0.0
+    capital: null
+    names: 97693
+- model: example.country
+  pk: 246
+  fields:
+    name: Zambia
+    code: ZMB
+    population: 17351822
+    area: 752614.0
+    gdp: 0.0
+    capital: null
+    names: 28857
+- model: example.country
+  pk: 247
+  fields:
+    name: Zimbabwe
+    code: ZWE
+    population: 14439018
+    area: 390580.0
+    gdp: 0.0
+    capital: null
+    names: 24802
+- model: example.country
+  pk: 248
+  fields:
+    name: Åland Islands
+    code: ALA
+    population: 26711
+    area: 1580.0
+    gdp: 0.0
+    capital: null
+    names: 3646
