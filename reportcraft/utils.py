@@ -767,7 +767,8 @@ def prepare_data(
         {
             k: item.get(k, default)
             for k in select
-            if (k in select or default != ValueType.IGNORE)     # if default is not ValueType.IGNORE, include it
+            if (k in select or default != ValueType.IGNORE) and item.get(k) != ValueType.IGNORE
+            # if default is not ValueType.IGNORE, include it
         }
         for item in data
     ]
@@ -927,7 +928,9 @@ SEQUENTIAL_SCHEMES = {
 
 CATEGORICAL_COLORS = [(scheme, scheme) for scheme in CATEGORICAL_SCHEMES.keys()]
 SEQUENTIAL_COLORS = [(scheme, scheme) for scheme in SEQUENTIAL_SCHEMES.keys()]
-AXIS_CHOICES = [('', 'Choose...'), ('y', 'Y1-Axis'), ('y2', 'Y2-Axis')]
+COLOR_SCHEMES = [('', 'Select...')] + CATEGORICAL_COLORS + SEQUENTIAL_COLORS
+
+AXIS_CHOICES = [('', 'Select...'), ('y', 'Y1-Axis'), ('y2', 'Y2-Axis')]
 
 
 def map_colors(data, scheme='Live16'):

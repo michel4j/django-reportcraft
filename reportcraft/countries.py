@@ -337,7 +337,7 @@ COUNTRIES = {
         'iso_3116_2': 'ISO 3166-2:BQ',
         'name': 'Bonaire,  Sint Eustatius and Saba',
         'code': '535',
-        'region': None
+        'region': '029'
     },
     'BFA': {
         'alpha2': 'BF',
@@ -643,7 +643,7 @@ COUNTRIES = {
         'iso_3116_2': 'ISO 3166-2:CW',
         'name': 'Curaçao',
         'code': '531',
-        'region': None
+        'region': '029'
     },
     'CXR': {
         'alpha2': 'CX',
@@ -677,7 +677,7 @@ COUNTRIES = {
         'alpha3': 'CZE',
         'independent': True,
         'iso_3116_2': 'ISO 3166-2:CZ',
-        'name': 'Czechia',
+        'name': 'Czech Republic',
         'code': '203',
         'region': '151'
     },
@@ -1856,7 +1856,7 @@ COUNTRIES = {
         'alpha3': 'RUS',
         'independent': True,
         'iso_3116_2': 'ISO 3166-2:RU',
-        'name': 'Russian Federation',
+        'name': 'Russia',
         'code': '643',
         'region': '151'
     },
@@ -2065,7 +2065,7 @@ COUNTRIES = {
         'iso_3116_2': 'ISO 3166-2:SX',
         'name': 'Sint Maarten (Dutch)',
         'code': '534',
-        'region': None
+        'region': "029"
     },
     'SYC': {
         'alpha2': 'SC',
@@ -2324,7 +2324,7 @@ COUNTRIES = {
         'alpha3': 'VNM',
         'independent': True,
         'iso_3116_2': 'ISO 3166-2:VN',
-        'name': 'Viet Nam',
+        'name': 'Vietnam',
         'code': '704',
         'region': '035'
     },

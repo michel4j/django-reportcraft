@@ -1,5 +1,6 @@
 import re
 from collections import defaultdict
+from typing import Any
 
 from crispy_forms.layout import Div, Field
 from django import forms
@@ -13,7 +14,7 @@ from crisp_modals.forms import (
 
 from . import models, utils
 from .models import DataSource
-from .utils import CATEGORICAL_COLORS, SEQUENTIAL_COLORS, REGION_CHOICES, AXIS_CHOICES
+from .utils import CATEGORICAL_COLORS, SEQUENTIAL_COLORS, REGION_CHOICES, AXIS_CHOICES, COLOR_SCHEMES
 
 disabled_widget = forms.HiddenInput(attrs={'readonly': True})
 
@@ -345,6 +346,49 @@ class EntryConfigForm(ModalModelForm):
 
         return attrs, field_queryset
 
+    def initialize_groups(self, attrs: dict, queryset: Any, fields: list = None, count: int = PLOT_SERIES):
+        """
+        Initialize a grouped fields
+        """
+        group_fields = [] if not fields else fields
+        for i in range(count):
+            for key in group_fields:
+                self.fields[f'groups__{i}__{key}'].queryset = queryset
+
+        flat_groups = {
+            f'groups__{i}__{k}': (k, v)
+            for i, g in enumerate(attrs.get('groups', []))
+            for k, v in g.items()
+        }
+        for field, (key, value) in flat_groups.items():
+            if key in group_fields:
+                self.fields[field].initial = queryset.filter(name=value).first()
+            else:
+                self.fields[field].initial = value
+
+    @staticmethod
+    def clean_groups(data, required: list = None) -> dict:
+        """
+        Extract and clean grouped fields from the form data.
+        :param data: The cleaned form data.
+        :param required: List of required keys in each group. If None, no keys are required. Groups without any of the
+        required keys will be removed.
+        """
+        required = set() if not required else set(required)
+        groups = defaultdict(dict)
+        for field, value in data.items():
+            match = re.match(r'groups__(\d+)__(\w+)', field)
+            if match:
+                index = int(match.group(1))
+                key = match.group(2)
+                if isinstance(value, models.DataField):
+                    value = value.name
+                if value:
+                    groups[index][key] = value
+
+        data['attrs']['groups'] = [g for g in groups.values() if set(g.keys()) & set(required)]  # Remove empty groups
+        return data
+
     def clean(self):
         """
         Clean the form data and prepare the attributes for saving.
@@ -543,40 +587,11 @@ class PlotForm(EntryConfigForm):
 
     def update_initial(self):
         attrs, queryset = super().update_initial()
-
-        group_fields = ['y', 'z']
-        for i in range(PLOT_SERIES):
-            for f in ['y', 'z']:
-                self.fields[f'groups__{i}__{f}'].queryset = queryset
-        flat_groups = {
-            f'groups__{i}__{k}': (k, v)
-            for i, g in enumerate(attrs.get('groups', []))
-            for k, v in g.items()
-        }
-        for field, (key, value) in flat_groups.items():
-            if key in group_fields:
-                self.fields[field].initial = queryset.filter(name=value).first()
-            else:
-                self.fields[field].initial = value
-
-        return attrs, queryset
+        return self.initialize_groups(attrs, queryset, fields=['y', 'z'], count=PLOT_SERIES)
 
     def clean(self):
         cleaned_data = super().clean()
-        groups = defaultdict(dict)
-
-        for field, value in cleaned_data.items():
-            match = re.match(r'groups__(\d+)__(\w+)', field)
-            if match:
-                index = int(match.group(1))
-                key = match.group(2)
-                if isinstance(value, models.DataField):
-                    value = value.name
-                if value:
-                    groups[index][key] = value
-
-        cleaned_data['attrs']['groups'] = [g for g in groups.values() if 'y' in g]  # Remove empty groups
-        return cleaned_data
+        return self.clean_groups(cleaned_data, required=['y'])
 
 
 class ListForm(EntryConfigForm):
@@ -793,30 +808,23 @@ class HistogramForm(EntryConfigForm):
 
 
 MODE_CHOICES = (
-    ('regions', 'Area'),
-    ('markers', 'Bubbles'),
-)
-
-RESOLUTION_CHOICES = (
-    ('countries', 'Countries'),
-    ('provinces', 'Provinces'),
-    ('metros', 'Metropolitan'),
+    ('', 'Select...'),
+    ('area', 'Area'),
+    ('bubble', 'Bubbles'),
+    ('density', 'Density'),
+    ('hex-bins', 'Hex Bins'),
+    ('markers', 'Markers'),
 )
 
 
 class GeoCharForm(EntryConfigForm):
     latitude = forms.ModelChoiceField(label='Latitude', required=False, queryset=models.DataField.objects.none())
     longitude = forms.ModelChoiceField(label='Longitude', required=False, queryset=models.DataField.objects.none())
-    name = forms.ModelChoiceField(label='Name', required=False, queryset=models.DataField.objects.none())
     location = forms.ModelChoiceField(label='Location', required=False, queryset=models.DataField.objects.none())
-    value = forms.ModelChoiceField(label='Values', required=True, queryset=models.DataField.objects.none())
     map = forms.ChoiceField(label='Map', choices=REGION_CHOICES, initial='001')
-    resolution = forms.ChoiceField(label='Resolution', choices=RESOLUTION_CHOICES, required=True, initial='countries')
-    mode = forms.ChoiceField(label='Mode', choices=MODE_CHOICES, required=True)
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=SEQUENTIAL_COLORS, initial='Blues')
 
-    SINGLE_FIELDS = ['latitude', 'longitude', 'name', 'location', 'value']
-    OTHER_FIELDS = ['map', 'resolution', 'mode', 'scheme']
+    SINGLE_FIELDS = ['latitude', 'longitude', 'location']
+    OTHER_FIELDS = ['map']
 
     class Meta:
         model = models.Entry
@@ -831,40 +839,63 @@ class GeoCharForm(EntryConfigForm):
         super().__init__(*args, **kwargs)
         self.body.append(
             Row(
-                ThirdWidth('latitude'),
-                ThirdWidth('longitude'),
-                ThirdWidth('name'),
+                FullWidth(Field('map', css_class='selectize')),
             ),
             Row(
                 ThirdWidth('location'),
-                ThirdWidth('value'),
-                ThirdWidth('scheme'),
-            ),
-            Row(
-                FullWidth(Field('map', css_class='selectize')),
-                HalfWidth(Field('resolution', css_class='select')),
-                HalfWidth(Field('mode', css_class='select')),
+                ThirdWidth('latitude'),
+                ThirdWidth('longitude'),
+                style='g-3'
             ),
             Field('attrs'),
         )
+        for i in range(PLOT_SERIES):
+            self.body.append(
+                Row(
+                    ThirdWidth(f'groups__{i}__type'),
+                    ThirdWidth(f'groups__{i}__value'),
+                    ThirdWidth(f'groups__{i}__scheme'),
+                ),
+            )
+
+    def add_fields(self):
+        for i in range(PLOT_SERIES):
+            self.fields[f'groups__{i}__type'] = forms.ChoiceField(label="Type", required=False, choices=MODE_CHOICES)
+            self.fields[f'groups__{i}__value'] = forms.ModelChoiceField(
+                label=f'Value', required=False, queryset=models.DataField.objects.none()
+            )
+            self.fields[f'groups__{i}__scheme'] = forms.ChoiceField(
+                label='Color Scheme', required=False, choices=COLOR_SCHEMES, initial='Blues'
+            )
+
+    def update_initial(self):
+        attrs, queryset = super().update_initial()
+        return self.initialize_groups(attrs, queryset, fields=['value'])
 
     def clean(self):
         cleaned_data = super().clean()
+        cleaned_data = self.clean_groups(cleaned_data, required=['type', 'value'])
         attrs = cleaned_data['attrs']
+        groups = attrs.get('groups', [])
+        location_defined = bool(attrs.get('location'))
+        coordinates_defined = attrs.get('latitude') and attrs.get('longitude')
+        coordinates_required = any(
+            group.get('type') in ['bubble', 'hex-bin', 'density', 'markers']
+            for group in groups
+        )
+        location_required = any(
+            group.get('type') in ['area']
+            for group in groups
+        )
+        if location_required and not location_defined:
+            self.add_error('location', _("Location is required for the selected Area features"))
 
-        mode = attrs.get('mode')
-        invalid_markers = (
-            mode == 'markers' and not
-            all(attrs.get(field) for field in ['latitude', 'longitude', 'name', 'value'])
-        )
-        invalid_regions = (
-            mode == 'regions' and not
-            all(attrs.get(field) for field in ['location', 'value'])
-        )
-        if invalid_markers:
-            raise forms.ValidationError(_("Latitude, Longitude, Name, and Value fields are required for Markers mode"))
-        elif invalid_regions:
-            raise forms.ValidationError(_("Location and Value fields are required for Area mode"))
+        if coordinates_required and not coordinates_defined:
+            self.add_error('latitude', _("Latitude and Longitude are required for the selected feature types"))
+            self.add_error('longitude', _("Latitude and Longitude are required for the selected feature types"))
+
+        if not location_defined and not coordinates_defined:
+            self.add_error('location', _("Either Location or Latitude and Longitude are required"))
 
         return cleaned_data
 

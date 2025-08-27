@@ -17,7 +17,7 @@ class Institution(models.Model):
     name = models.CharField(_('Name'), max_length=200, unique=True)
     city = models.CharField(max_length=200)
     province = models.CharField(max_length=200, blank=True)
-    country = models.CharField(max_length=200)
+    country = models.ForeignKey('Country', on_delete=models.PROTECT, verbose_name=_('Country'))
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -70,6 +70,8 @@ class Person(models.Model):
 class Country(models.Model):
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=3, unique=True)
+    continent = models.CharField(max_length=50, blank=True, null=True)
+    subregion = models.CharField(max_length=100, blank=True, null=True)
     population = models.IntegerField(default=0)
     area = models.FloatField(help_text="Area in square kilometers", default=0.0)
     gdp = models.FloatField(help_text="Gross Domestic Product in USD", default=0.0)

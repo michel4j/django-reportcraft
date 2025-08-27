@@ -291,7 +291,7 @@ function setAxisScale(axisOptions, scale) {
 
 function drawBarChart(figure, chart, options) {
     let marks = [];
-    const markTypes = chart.types || [];
+    const markTypes = chart.features || [];
     const valueAxis = (chart.kind === 'bars') ? 'x' : 'y';
     const categoryAxis = (chart.kind === 'bars') ? 'y' : 'x';
     const ticksEvery = chart["ticks-every"] || 1; // Default to every tick
@@ -355,7 +355,7 @@ function drawBarChart(figure, chart, options) {
 
 function drawXYPlot(figure, chart, options) {
     let marks = [];
-    const markTypes = chart.types || [];
+    const markTypes = chart.features || [];
     const colorScale = d3.scaleOrdinal(options.scheme);
     const xScale = chart["x-scale"] || 'linear';
     const yScale = chart["y-scale"] || 'linear';
@@ -578,55 +578,45 @@ function drawTimeline(figure, chart, options) {
 
 
 function drawGeoChart(figure, chart, options) {
+    console.log(chart);
     const colorScale = d3.scaleOrdinal(options.scheme);
     const plotOptions = {
         className: "rc-chart",
         width: options.width || 800,
         height: options.height || 600,
-        marginLeft: 40,
-        marginRight: 40,
-        marginTop: 40,
-        marginBottom: 40,
         projection: {},
         marks: []
     };
 
     d3.json(`${options.staticRoot}/maps/${chart.map}.json`).then(function(geoData) {
-        const land = topojson.feature(geoData, geoData.objects.land || geoData.objects["world"]);
-        let projection = 'orthographic';
-        let rotation = [-11.6, 0];
-        let domain = null;
-        let map = null;
-        if (chart.map === '001') {
-            projection = "mercator";
-            domain = land;
+        const land = topojson.feature(geoData, geoData.objects.land);
+        const map = topojson.feature(geoData, geoData.objects["subunits"] || geoData.objects["countries"]);
+
+        if (chart.map === '001') {  // World map, no need to show land
+            plotOptions.projection = {
+                type: "mercator",
+                rotate: [-11.6, 0],
+                domain: map,
+            }
         } else {
-            map = topojson.feature(geoData, geoData.objects["subunits"] || geoData.objects["countries"]);
             const centroid = d3.geoCentroid(map);
-            rotation = [-centroid[0], -centroid[1]];
-            domain = map;
+            plotOptions.projection = {
+                type: "orthographic",
+                rotate: [-centroid[0], -centroid[1]],
+                domain: map,
+                inset: 5
+            }
+            plotOptions.marks.push(Plot.geo(land, {fill: "var(--bs-secondary)", fillOpacity: 0.1}));
         }
 
-        plotOptions.marks = [
-            Plot.geo(land, {
-                //stroke: "var(--bs-body-color)",
-                //strokeWidth: 0.5,
-                fill: "var(--bs-secondary)",
-                fillOpacity: 0.1,
+        plotOptions.marks.push(
+            Plot.geo(map, {
+                stroke: "var(--bs-body-color)",
+                strokeWidth: 0.5,
             }),
-            map ? Plot.geo(map, {
-                stroke: "var(--bs-border-color-translucent)",
-                strokeWidth: 2,
-                fillOpacity: 0.2,
-            }) : null,
-            Plot.graticule({strokeOpacity: 0.05}),
-        ]
-        plotOptions.projection = {
-            type: projection,
-            rotate: rotation,
-            domain: domain,
-            inset: 5
-        };
+            Plot.graticule({strokeOpacity: 0.05})
+        );
+
         if (chart.colors) {
             plotOptions.color.legend = true;
         }

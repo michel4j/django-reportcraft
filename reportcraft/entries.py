@@ -113,7 +113,7 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
     if not categories or not values:
         return {}
 
-    types = []
+    features = []
     category_name = labels.get(categories, categories)
     color_name = labels.get(color_by, color_by) if color_by else None
     group_name = None
@@ -143,7 +143,7 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
             sort = labels.get(sort_by, sort_by)
             mark['sort'] = f'-{sort}' if sort_desc else sort
 
-        types.append(mark)
+        features.append(mark)
 
     raw_data = entry.source.get_data(*args, **kwargs)
     data = prepare_data(raw_data, select=data_fields, labels=labels, sort=sort_by, sort_desc=sort_desc)
@@ -154,7 +154,7 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
         'title': entry.title,
         'description': entry.description,
         'kind': kind,
-        'types': types,
+        'features': features,
         'style': entry.style,
         'ticks-every': ticks_every,
         'scheme': scheme,
@@ -241,7 +241,7 @@ def generate_plot(entry, *args, **kwargs):
     scheme = entry.attrs.get('scheme', 'Live8')
 
     raw_data = entry.source.get_data(*args, **kwargs)
-    types = [
+    features = [
         {
             'type': group.pop('type', 'points'),
             'x': labels.get(x_value, x_value),                                      # All plots share the same x-value
@@ -265,7 +265,7 @@ def generate_plot(entry, *args, **kwargs):
         'y-scale': y_scale,
         'x-label': x_label,
         'y-label': y_label,
-        'types': types,
+        'features': features,
         'data': data,
         'notes': entry.notes
     }
@@ -407,36 +407,39 @@ def generate_geochart(entry, *args, **kwargs):
     """
     Generate a geo chart from the data source
     :param entry: The report entry containing the configuration for the table
-    returns: A dictionary containing the table data and metadata suitable for rendering
+    returns: A dictionary containing the data and metadata suitable for rendering
     """
-    all_columns = {
-        'Lat': entry.attrs.get('latitude'),
-        'Lon': entry.attrs.get('longitude'),
-        'Location': entry.attrs.get('location'),
-        'Name': entry.attrs.get('name'),
-        'Value': entry.attrs.get('value'),
-        'Color': entry.attrs.get('color_by'),
-    }
-    columns = {key: value for key, value in all_columns.items() if value}
 
-    map = entry.attrs.get('map', '001')
-    resolution = entry.attrs.get('resolution', 'countries')
-    mode = entry.attrs.get('mode', 'regions')
-    scheme = entry.attrs.get('scheme', 'YlOrRd')
+    labels = entry.source.get_labels()
+    groups = entry.attrs.get('groups', [])
+    map_id = entry.attrs.get('map', '001')
+    mode = entry.attrs.get('mode', 'area')
+    location = entry.attrs.get('location', None)
+    latitude = entry.attrs.get('latitude', None)
+    longitude = entry.attrs.get('longitude', None)
+    scheme = entry.attrs.get('scheme', 'Live8')
 
     raw_data = entry.source.get_data(*args, **kwargs)
-    data = [
-        {k: item.get(v) for k, v in columns.items()}
-        for item in raw_data
+    features = [
+        {
+            'type': group.get('type', 'area'),
+            'value': labels.get(group['value'], group['value']),
+            'scheme': group.get('scheme', scheme),
+        }
+        for group in groups if 'value' in group
     ]
+
+    select_fields = {field for field in [location, latitude, longitude] if field}
+    select_fields |= {group['value'] for group in groups if 'value' in group}
+    data = prepare_data(raw_data, select=select_fields, labels=labels)
 
     return {
         'title': entry.title,
         'description': entry.description,
         'kind': 'geochart',
         'mode': mode,
-        'map': map,
-        'resolution': resolution,
+        'map': map_id,
+        'features': features,
         'scheme': scheme,
         'show-legend': False,
         'style': entry.style,
