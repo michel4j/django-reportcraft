@@ -419,10 +419,10 @@ def generate_geochart(entry, *args, **kwargs):
     }
     columns = {key: value for key, value in all_columns.items() if value}
 
-    region = entry.attrs.get('region', 'world')
+    map = entry.attrs.get('map', '001')
     resolution = entry.attrs.get('resolution', 'countries')
     mode = entry.attrs.get('mode', 'regions')
-    colors = entry.attrs.get('colors', 'YlOrRd')
+    scheme = entry.attrs.get('scheme', 'YlOrRd')
 
     raw_data = entry.source.get_data(*args, **kwargs)
     data = [
@@ -435,13 +435,12 @@ def generate_geochart(entry, *args, **kwargs):
         'description': entry.description,
         'kind': 'geochart',
         'mode': mode,
-        'region': region,
+        'map': map,
         'resolution': resolution,
-        'colors': colors,
+        'scheme': scheme,
         'show-legend': False,
         'style': entry.style,
         'notes': entry.notes,
-        'map': 'canada',
         'data': data
     }
 

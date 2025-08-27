@@ -1,6 +1,7 @@
 import * as Plot from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
 import _ from "https://cdn.jsdelivr.net/npm/underscore@1.13.7/+esm";
 import showdown from "https://cdn.jsdelivr.net/npm/showdown@1.9.1/+esm";
+import * as topojson from "https://cdn.jsdelivr.net/npm/topojson@3.0.2/+esm";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 export const figureTypes = [
@@ -11,8 +12,6 @@ export const figureTypes = [
     "donut",
     "histogram",
     "timeline",
-
-    "gauge",
     'geochart',
 
 ];
@@ -142,8 +141,9 @@ function decodeObj(base64Str) {
 }
 
 
-export function showReport(selector, sections) {
+export function showReport(selector, sections, staticRoot = "/static/reportcraft/") {
     const target = document.querySelector(selector);
+
     if (!target) {
         console.error("Container Not found");
         return;
@@ -169,6 +169,7 @@ export function showReport(selector, sections) {
             height: figure.offsetWidth / aspectRatio,
             scheme: (ColorSchemes[chart.scheme] || d3[`scheme${chart.scheme}`]) || d3.Observable10,
             aspectRatio: aspectRatio,
+            staticRoot: staticRoot,
         };
 
         switch (figure.dataset.type) {
@@ -188,6 +189,9 @@ export function showReport(selector, sections) {
                 break;
             case 'timeline':
                 drawTimeline(figure, chart, options);
+                break;
+            case 'geochart':
+                drawGeoChart(figure, chart, options);
                 break;
         }
 
@@ -525,7 +529,6 @@ function drawPieChart(figure, chart, options) {
 
 
 function drawTimeline(figure, chart, options) {
-    console.log(chart);
     const colorScale = d3.scaleOrdinal(options.scheme);
     const plotOptions = {
         className: "rc-chart",
@@ -571,4 +574,58 @@ function drawTimeline(figure, chart, options) {
     // Create chart
     const plot = Plot.plot(plotOptions);
     addFigurePlot(figure, plot);
+}
+
+
+function drawGeoChart(figure, chart, options) {
+    console.log(chart);
+    const colorScale = d3.scaleOrdinal(options.scheme);
+    const plotOptions = {
+        className: "rc-chart",
+        width: options.width || 800,
+        height: options.height || 600,
+        marginLeft: 40,
+        marginRight: 40,
+        marginTop: 40,
+        marginBottom: 40,
+        projection: {},
+        marks: []
+    };
+
+    d3.json(`${options.staticRoot}/maps/${chart.map}.json`).then(function(geoData) {
+        console.log(geoData);
+        const land = topojson.feature(geoData, geoData.objects.land)
+        const map = topojson.feature(geoData, geoData.objects.subunits || geoData.objects.countries);
+
+        const centroid = d3.geoCentroid(map);
+        plotOptions.marks = [
+            Plot.geo(land, {
+                //stroke: "var(--bs-body-color)",
+                //strokeWidth: 0.5,
+                fill: "var(--bs-secondary)",
+                fillOpacity: 0.1,
+            }),
+            Plot.geo(map, {
+                stroke: "var(--bs-border-color-translucent)",
+                strokeWidth: 2,
+                fillOpacity: 0.2,
+            }),
+            Plot.graticule({strokeOpacity: 0.05}),
+        ]
+        plotOptions.projection = {
+            type: "orthographic",
+            rotate: [-centroid[0], -centroid[1]],
+            domain: map,
+            inset: 5
+        };
+        if (chart.colors) {
+            plotOptions.color.legend = true;
+        }
+        // Create chart
+        const plot = Plot.plot(plotOptions);
+        addFigurePlot(figure, plot);
+
+    });
+
+
 }

@@ -810,13 +810,13 @@ class GeoCharForm(EntryConfigForm):
     name = forms.ModelChoiceField(label='Name', required=False, queryset=models.DataField.objects.none())
     location = forms.ModelChoiceField(label='Location', required=False, queryset=models.DataField.objects.none())
     value = forms.ModelChoiceField(label='Values', required=True, queryset=models.DataField.objects.none())
-    region = forms.ChoiceField(label='Map', choices=REGION_CHOICES, initial='world')
+    map = forms.ChoiceField(label='Map', choices=REGION_CHOICES, initial='001')
     resolution = forms.ChoiceField(label='Resolution', choices=RESOLUTION_CHOICES, required=True, initial='countries')
     mode = forms.ChoiceField(label='Mode', choices=MODE_CHOICES, required=True)
-    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=SEQUENTIAL_COLORS, initial='Blues')
+    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=SEQUENTIAL_COLORS, initial='Blues')
 
     SINGLE_FIELDS = ['latitude', 'longitude', 'name', 'location', 'value']
-    OTHER_FIELDS = ['region', 'resolution', 'mode', 'colors']
+    OTHER_FIELDS = ['map', 'resolution', 'mode', 'scheme']
 
     class Meta:
         model = models.Entry
@@ -838,10 +838,10 @@ class GeoCharForm(EntryConfigForm):
             Row(
                 ThirdWidth('location'),
                 ThirdWidth('value'),
-                ThirdWidth('colors'),
+                ThirdWidth('scheme'),
             ),
             Row(
-                FullWidth(Field('region', css_class='selectize')),
+                FullWidth(Field('map', css_class='selectize')),
                 HalfWidth(Field('resolution', css_class='select')),
                 HalfWidth(Field('mode', css_class='select')),
             ),
