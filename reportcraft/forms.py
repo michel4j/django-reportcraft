@@ -812,7 +812,6 @@ MODE_CHOICES = (
     ('area', 'Area'),
     ('bubble', 'Bubbles'),
     ('density', 'Density'),
-    ('hex-bins', 'Hex Bins'),
     ('markers', 'Markers'),
 )
 

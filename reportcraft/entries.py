@@ -439,9 +439,11 @@ def generate_geochart(entry, *args, **kwargs):
         'kind': 'geochart',
         'mode': mode,
         'map': map_id,
-        'features': features,
+        'latitude': labels.get(latitude, latitude),
+        'longitude': labels.get(longitude, longitude),
+        'location': labels.get(location, location),
         'scheme': scheme,
-        'show-legend': False,
+        'features': features,
         'style': entry.style,
         'notes': entry.notes,
         'data': data

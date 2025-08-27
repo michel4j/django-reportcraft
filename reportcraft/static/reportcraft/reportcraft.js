@@ -289,6 +289,38 @@ function setAxisScale(axisOptions, scale) {
     }
 }
 
+
+function radiusLegend(data, options) {
+    return new Plot.dot(data, {
+        ...options,
+        frameAnchor: "bottom-right",
+        strokeWidth: 0.8,
+        dx: -40,
+        dy: -3,
+        render: (i, s, v, d, c, next) => {
+            const g = next(i, s, v, d, c);
+            d3.select(g)
+                .selectAll("circle")
+                .each(function (i) {
+                    const r = +this.getAttribute("r");
+                    const x = +this.getAttribute("cx");
+                    const y = +this.getAttribute("cy");
+                    this.setAttribute("transform", `translate(0,${-r})`);
+                    const title = d3.select(this).select("title");
+                    d3.select(g)
+                        .append("text")
+                        .attr("x", x)
+                        .attr("y", y - 2 * r - 4)
+                        .attr("stroke", "none")
+                        .attr("fill", "currentColor")
+                        .text(title.text());
+                    title.remove();
+                });
+            return g;
+        }
+    });
+}
+
 function drawBarChart(figure, chart, options) {
     let marks = [];
     const markTypes = chart.features || [];
@@ -578,12 +610,17 @@ function drawTimeline(figure, chart, options) {
 
 
 function drawGeoChart(figure, chart, options) {
-    console.log(chart);
     const colorScale = d3.scaleOrdinal(options.scheme);
+    let colorLegend = false;
     const plotOptions = {
         className: "rc-chart",
         width: options.width || 800,
         height: options.height || 600,
+        color: {
+            type: "quantize",
+            n: 10,
+            scheme: "blues",
+        },
         projection: {},
         marks: []
     };
@@ -610,21 +647,67 @@ function drawGeoChart(figure, chart, options) {
         }
 
         plotOptions.marks.push(
-            Plot.geo(map, {
-                stroke: "var(--bs-body-color)",
-                strokeWidth: 0.5,
-            }),
-            Plot.graticule({strokeOpacity: 0.05})
+            Plot.geo(map, {stroke: "var(--bs-body-color)", strokeWidth: 1}),
+            Plot.graticule({strokeOpacity: 0.05}),
         );
 
-        if (chart.colors) {
+        // add features now
+
+        chart.features.forEach(function(feature, index) {
+            switch (feature.type) {
+                case 'area':
+                    let locMap = new Map(chart.data.map(d => [d[chart.location], d[feature.value]]))
+                    plotOptions.marks.push(
+                        Plot.geo(map, {
+                            fill: d => locMap.get(d.id),
+                            tip: true,
+                            strokeWidth: 1,
+                        })
+                    )
+                    colorLegend = true;
+                    break;
+                case 'bubble':
+                    plotOptions.marks.push(
+                        new Plot.dot(chart.data, {
+                            x: chart.longitude,
+                            y: chart.latitude,
+                            r: feature.value,
+                            strokeWidth: 1,
+                            stroke: feature.value,
+                            opacity: 0.7
+                        })
+                    );
+                    break;
+                case 'density':
+                    plotOptions.marks.push(
+                        new Plot.density(chart.data, {
+                            x: chart.longitude,
+                            y: chart.latitude,
+                            weight: feature.value,
+                            opacity: 0.7,
+                        })
+                    )
+                    break;
+                case 'markers':
+                    plotOptions.marks.push(
+                        new Plot.text(chart.data, {
+                            x: chart.longitude,
+                            y: chart.latitude,
+                            text: feature.value,
+                            fill: "black",
+                            textAnchor: "middle",
+                        })
+                    )
+                    break;
+            }
+        });
+
+        if (colorLegend) {
             plotOptions.color.legend = true;
         }
+
         // Create chart
         const plot = Plot.plot(plotOptions);
         addFigurePlot(figure, plot);
-
     });
-
-
 }
