@@ -578,7 +578,6 @@ function drawTimeline(figure, chart, options) {
 
 
 function drawGeoChart(figure, chart, options) {
-    console.log(chart);
     const colorScale = d3.scaleOrdinal(options.scheme);
     const plotOptions = {
         className: "rc-chart",
@@ -593,11 +592,21 @@ function drawGeoChart(figure, chart, options) {
     };
 
     d3.json(`${options.staticRoot}/maps/${chart.map}.json`).then(function(geoData) {
-        console.log(geoData);
-        const land = topojson.feature(geoData, geoData.objects.land)
-        const map = topojson.feature(geoData, geoData.objects.subunits || geoData.objects.countries);
+        const land = topojson.feature(geoData, geoData.objects.land || geoData.objects["world"]);
+        let projection = 'orthographic';
+        let rotation = [-11.6, 0];
+        let domain = null;
+        let map = null;
+        if (chart.map === '001') {
+            projection = "mercator";
+            domain = land;
+        } else {
+            map = topojson.feature(geoData, geoData.objects["subunits"] || geoData.objects["countries"]);
+            const centroid = d3.geoCentroid(map);
+            rotation = [-centroid[0], -centroid[1]];
+            domain = map;
+        }
 
-        const centroid = d3.geoCentroid(map);
         plotOptions.marks = [
             Plot.geo(land, {
                 //stroke: "var(--bs-body-color)",
@@ -605,17 +614,17 @@ function drawGeoChart(figure, chart, options) {
                 fill: "var(--bs-secondary)",
                 fillOpacity: 0.1,
             }),
-            Plot.geo(map, {
+            map ? Plot.geo(map, {
                 stroke: "var(--bs-border-color-translucent)",
                 strokeWidth: 2,
                 fillOpacity: 0.2,
-            }),
+            }) : null,
             Plot.graticule({strokeOpacity: 0.05}),
         ]
         plotOptions.projection = {
-            type: "orthographic",
-            rotate: [-centroid[0], -centroid[1]],
-            domain: map,
+            type: projection,
+            rotate: rotation,
+            domain: domain,
             inset: 5
         };
         if (chart.colors) {
