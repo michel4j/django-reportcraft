@@ -46,6 +46,27 @@ def yaml_html(data):
 
 
 @register.filter
+def data_table(data):
+    if not data:
+        return mark_safe('<p>No data</p>')
+
+    headers = data[0].keys()
+    table_html = '<table class="table table-sm"><thead><tr>'
+    for header in headers:
+        table_html += f'<th scope="col">{header}</th>'
+    table_html += '</tr></thead><tbody>'
+
+    for row in data:
+        table_html += '<tr>'
+        for header in headers:
+            table_html += f'<td>{row.get(header, "")}</td>'
+        table_html += '</tr>'
+
+    table_html += '</tbody></table>'
+    return mark_safe(table_html)
+
+
+@register.filter
 def expression_html(text):
     formatter = HtmlFormatter(nobackground=True)
     highlighted_data = highlight(text, PythonLexer(), formatter)

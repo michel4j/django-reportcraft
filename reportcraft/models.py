@@ -188,7 +188,7 @@ class DataSource(models.Model):
         except DataField.DoesNotExist:
             return 0
 
-    def snippet(self, filters=None, order_by=None, size=5) -> list[dict]:
+    def snippet(self, filters=None, order_by=None, size=50) -> list[dict]:
         """
         Generate a snippet of data for this data source
         :param filters: dynamic filters to apply

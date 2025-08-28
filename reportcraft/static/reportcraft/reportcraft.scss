@@ -408,6 +408,50 @@ svg {
     }
   }
 }
+html.report-editor, body.report-editor {
+  height: 100vh;
+}
+
+#rc-editor {
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  height: 100%;
+  max-height: 100%;
+  display: grid;
+  overflow: hidden;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+		"header header"
+		"work-area sidebar";
+}
+
+#rc-header {
+  grid-area: header;
+  padding: 0.75em;
+}
+
+#rc-sidebar {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  grid-area: sidebar;
+  overflow: hidden;
+  .rc-sidebar-content {
+    width: 250px;
+  }
+}
+
+#rc-main {
+    padding: 1em;
+    height: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    grid-area: work-area;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
 
 .report-editor {
   .entry .card-body {
