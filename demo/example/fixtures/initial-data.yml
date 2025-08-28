@@ -461,12 +461,12 @@
   fields:
     name: Dalhousie University
     city: Dalhousie
-    province: ''
+    province: NS
     country: 41
     latitude: 48.066666
     longitude: -66.36667
     created: 2017-11-01 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:15:30.181031+00:00
     parent: null
     subjects:
     - 4
@@ -1761,12 +1761,12 @@
   fields:
     name: York University
     city: Toronto
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 43.666668
     longitude: -79.416664
     created: 2010-12-30 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:15:13.160826+00:00
     parent: null
     subjects:
     - 2
@@ -2551,12 +2551,12 @@
   fields:
     name: University of New Brunswick
     city: Fredericton
-    province: ''
+    province: NB
     country: 41
     latitude: 45.95
     longitude: -66.63333
     created: 2018-10-21 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:15:02.202738+00:00
     parent: null
     subjects:
     - 6
@@ -2651,12 +2651,12 @@
   fields:
     name: Toronto Metropolitan University
     city: Toronto
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 43.666668
     longitude: -79.416664
     created: 2020-07-03 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:14:56.281835+00:00
     parent: null
     subjects:
     - 2
@@ -4085,12 +4085,12 @@
   fields:
     name: Institut national de la recherche scientifique
     city: Quebec
-    province: ''
+    province: QC
     country: 41
     latitude: 46.8
     longitude: -71.25
     created: 2007-09-28 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:14:48.557325+00:00
     parent: null
     subjects:
     - 10
@@ -6438,12 +6438,12 @@
   fields:
     name: University of Windsor
     city: Windsor
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 42.333332
     longitude: -83.03333
     created: 2007-04-16 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:14:42.660289+00:00
     parent: null
     subjects:
     - 1
@@ -7035,12 +7035,12 @@
   fields:
     name: Brock University
     city: St. Catharines
-    province: Ontario
+    province: 'ON'
     country: 41
     latitude: null
     longitude: null
     created: 2010-08-25 15:27:23.130811+00:00
-    modified: 2025-03-22 06:02:55.393014+00:00
+    modified: 2025-08-27 23:14:26.210670+00:00
     parent: null
     subjects:
     - 5
@@ -9756,12 +9756,12 @@
   fields:
     name: University of Victoria
     city: Victoria
-    province: ''
+    province: BC
     country: 41
     latitude: 48.433334
     longitude: -123.35
     created: 2016-03-30 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:14:17.331487+00:00
     parent: null
     subjects:
     - 5
@@ -9949,12 +9949,12 @@
   fields:
     name: University of Toronto
     city: Toronto
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 43.666668
     longitude: -79.416664
     created: 2020-11-27 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:14:12.271973+00:00
     parent: null
     subjects:
     - 2
@@ -10418,12 +10418,12 @@
   fields:
     name: McGill University
     city: Montreal
-    province: ''
+    province: QC
     country: 41
     latitude: 45.5
     longitude: -73.583336
     created: 2007-06-02 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:14:06.424782+00:00
     parent: null
     subjects:
     - 8
@@ -10741,12 +10741,12 @@
   fields:
     name: Laurentian University
     city: Sudbury
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 46.5
     longitude: -80.96667
     created: 2014-09-14 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:13:57.774340+00:00
     parent: null
     subjects:
     - 1
@@ -11688,12 +11688,12 @@
   fields:
     name: Memorial University of Newfoundland
     city: Saint John
-    province: ''
+    province: NL
     country: 41
     latitude: 45.266666
     longitude: -66.066666
     created: 2013-09-04 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:13:36.712578+00:00
     parent: null
     subjects:
     - 1
@@ -12377,12 +12377,12 @@
   fields:
     name: Carleton University
     city: Ottawa
-    province: Ontario
+    province: 'ON'
     country: 41
     latitude: 45.416668
     longitude: -75.7
     created: 2011-06-17 15:27:23.130811+00:00
-    modified: 2025-03-22 06:03:23.323566+00:00
+    modified: 2025-08-27 23:13:27.636841+00:00
     parent: null
     subjects:
     - 4
@@ -13046,12 +13046,12 @@
   fields:
     name: University of Guelph
     city: Guelph
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 43.55
     longitude: -80.25
     created: 2012-04-03 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:13:20.175219+00:00
     parent: null
     subjects:
     - 4
@@ -14084,12 +14084,12 @@
   fields:
     name: McMaster University
     city: Hamilton
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 43.25
     longitude: -79.833336
     created: 2024-12-14 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:13:07.670550+00:00
     parent: null
     subjects:
     - 6
@@ -14706,12 +14706,12 @@
   fields:
     name: University of Waterloo
     city: Waterloo
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 43.466667
     longitude: -80.53333
     created: 2007-02-07 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:13:01.076314+00:00
     parent: null
     subjects:
     - 5
@@ -15172,12 +15172,12 @@
   fields:
     name: Concordia University
     city: Montreal
-    province: ''
+    province: QC
     country: 41
     latitude: 45.5
     longitude: -73.583336
     created: 2011-01-18 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:12:55.246323+00:00
     parent: null
     subjects:
     - 4
@@ -16067,12 +16067,12 @@
   fields:
     name: Ontario Tech University
     city: Oshawa
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 43.9
     longitude: -78.86667
     created: 2021-11-16 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:12:48.635441+00:00
     parent: null
     subjects:
     - 2
@@ -17294,12 +17294,12 @@
   fields:
     name: University of Montreal
     city: Montreal
-    province: ''
+    province: QC
     country: 41
     latitude: 45.5
     longitude: -73.583336
     created: 2013-05-12 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:12:40.592468+00:00
     parent: null
     subjects:
     - 2
@@ -18656,12 +18656,12 @@
   fields:
     name: Simon Fraser University
     city: Burnaby
-    province: ''
+    province: BC
     country: 41
     latitude: null
     longitude: null
     created: 2023-08-27 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:12:34.620049+00:00
     parent: null
     subjects:
     - 1
@@ -18784,12 +18784,12 @@
   fields:
     name: Wilfrid Laurier University
     city: Waterloo
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 43.466667
     longitude: -80.53333
     created: 2007-03-20 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:12:21.346151+00:00
     parent: null
     subjects:
     - 4
@@ -20050,12 +20050,12 @@
   fields:
     name: University of Manitoba
     city: Winnipeg
-    province: ''
+    province: MB
     country: 41
     latitude: 49.88333
     longitude: -97.166664
     created: 2011-08-25 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:11:51.867741+00:00
     parent: null
     subjects:
     - 2
@@ -20380,12 +20380,12 @@
   fields:
     name: Queen's University
     city: Kingston
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 44.233334
     longitude: -76.48333
     created: 2010-12-05 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:11:36.920485+00:00
     parent: null
     subjects:
     - 5
@@ -20524,12 +20524,12 @@
   fields:
     name: University of Québec at Montreal
     city: Montreal
-    province: ''
+    province: QC
     country: 41
     latitude: 45.5
     longitude: -73.583336
     created: 2022-12-29 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:11:19.973990+00:00
     parent: null
     subjects:
     - 9
@@ -22215,12 +22215,12 @@
   fields:
     name: University of Lethbridge
     city: Lethbridge
-    province: ''
+    province: AB
     country: 41
     latitude: 49.7
     longitude: -112.833336
     created: 2018-04-28 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:10:53.480459+00:00
     parent: null
     subjects:
     - 4
@@ -23281,12 +23281,12 @@
   fields:
     name: University of Québec at Trois-Rivières
     city: Trois-Rivières
-    province: ''
+    province: QC
     country: 41
     latitude: 46.35
     longitude: -72.55
     created: 2010-05-10 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:10:48.327031+00:00
     parent: null
     subjects:
     - 1
@@ -23871,12 +23871,12 @@
   fields:
     name: Western University
     city: London
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 42.983334
     longitude: -81.25
     created: 2024-10-27 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:10:42.326145+00:00
     parent: null
     subjects:
     - 9
@@ -24008,12 +24008,12 @@
   fields:
     name: University of Saskatchewan
     city: Saskatoon
-    province: ''
+    province: SK
     country: 41
     latitude: 52.13333
     longitude: -106.666664
     created: 2011-04-16 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:10:35.014694+00:00
     parent: null
     subjects:
     - 7
@@ -24603,12 +24603,12 @@
   fields:
     name: École de technologie supérieure
     city: Montreal
-    province: ''
+    province: QC
     country: 41
     latitude: 45.5
     longitude: -73.583336
     created: 2009-06-17 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:10:28.531381+00:00
     parent: null
     subjects:
     - 2
@@ -24886,12 +24886,12 @@
   fields:
     name: University of Ottawa
     city: Ottawa
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 45.416668
     longitude: -75.7
     created: 2019-03-12 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:10:21.792742+00:00
     parent: null
     subjects:
     - 8
@@ -25182,12 +25182,12 @@
   fields:
     name: Saint Mary's University
     city: Halifax
-    province: ''
+    province: NS
     country: 41
     latitude: 44.65
     longitude: -63.6
     created: 2019-12-12 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:11:11.657737+00:00
     parent: null
     subjects:
     - 8
@@ -25749,12 +25749,12 @@
   fields:
     name: Trent University
     city: Peterborough
-    province: ''
+    province: 'ON'
     country: 41
     latitude: 44.3
     longitude: -78.333336
     created: 2014-01-11 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:12:06.324805+00:00
     parent: null
     subjects:
     - 4
@@ -25794,12 +25794,12 @@
   fields:
     name: University of Regina
     city: Regina
-    province: ''
+    province: SK
     country: 41
     latitude: 50.45
     longitude: -104.61667
     created: 2023-01-25 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:09:30.951141+00:00
     parent: null
     subjects:
     - 1
@@ -26543,12 +26543,12 @@
   fields:
     name: University of British Columbia
     city: Vancouver
-    province: ''
+    province: BC
     country: 41
     latitude: 49.25
     longitude: -123.13333
     created: 2015-07-25 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:12:12.028314+00:00
     parent: null
     subjects:
     - 3
@@ -27515,12 +27515,12 @@
   fields:
     name: University of Sherbrooke
     city: Sherbrooke
-    province: ''
+    province: QC
     country: 41
     latitude: 45.4
     longitude: -71.9
     created: 2025-04-04 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:09:24.773224+00:00
     parent: null
     subjects:
     - 4
@@ -27708,12 +27708,12 @@
   fields:
     name: Laval University
     city: Quebec
-    province: ''
+    province: QC
     country: 41
     latitude: 46.8
     longitude: -71.25
     created: 2011-08-07 15:27:23.130811+00:00
-    modified: 2024-12-30 20:49:59.049236+00:00
+    modified: 2025-08-27 23:09:17.458668+00:00
     parent: null
     subjects:
     - 5
@@ -105752,6 +105752,17 @@
     group_by: []
     filters: ''
     limit: null
+- model: reportcraft.datasource
+  pk: 10
+  fields:
+    created: 2025-08-27 23:17:21.335417+00:00
+    modified: 2025-08-28 01:01:03.930826+00:00
+    name: Canadian Users
+    description: ''
+    group_by:
+    - province
+    filters: ''
+    limit: null
 - model: reportcraft.datamodel
   pk: 1
   fields:
@@ -105852,6 +105863,16 @@
     - person
     name: example.Person
     source: 9
+- model: reportcraft.datamodel
+  pk: 15
+  fields:
+    created: 2025-08-27 23:17:45.998528+00:00
+    modified: 2025-08-27 23:17:45.998579+00:00
+    model:
+    - example
+    - person
+    name: example.Person
+    source: 10
 - model: reportcraft.datafield
   pk: 1
   fields:
@@ -106552,6 +106573,48 @@
     position: 12
     ordering: null
     source: 7
+- model: reportcraft.datafield
+  pk: 68
+  fields:
+    created: 2025-08-27 23:17:46.019148+00:00
+    modified: 2025-08-27 23:17:46.035793+00:00
+    name: province
+    model: 15
+    label: Province
+    default: null
+    expression: Institution.Province
+    precision: null
+    position: 0
+    ordering: null
+    source: 10
+- model: reportcraft.datafield
+  pk: 69
+  fields:
+    created: 2025-08-27 23:18:19.859484+00:00
+    modified: 2025-08-27 23:18:19.859540+00:00
+    name: country_code
+    model: 15
+    label: Country
+    default: null
+    expression: Institution.Country.Code
+    precision: null
+    position: 1
+    ordering: null
+    source: 10
+- model: reportcraft.datafield
+  pk: 70
+  fields:
+    created: 2025-08-27 23:19:12.329759+00:00
+    modified: 2025-08-27 23:19:12.329812+00:00
+    name: users
+    model: 15
+    label: Users
+    default: 0
+    expression: Count(this)
+    precision: null
+    position: 2
+    ordering: null
+    source: 10
 - model: reportcraft.report
   pk: 1
   fields:
@@ -106589,13 +106652,13 @@
   pk: 4
   fields:
     created: 2025-03-25 15:22:01.110988+00:00
-    modified: 2025-03-25 15:22:01.111014+00:00
+    modified: 2025-08-27 23:21:27.149743+00:00
     slug: user-distribution
-    title: Distribution of Users
-    description: ''
+    title: Distribution of User Types
+    description: Distribution of users in Canada
     style: ''
     notes: ''
-    section: ''
+    section: null
 - model: reportcraft.entry
   pk: 1
   fields:
@@ -106839,11 +106902,11 @@
   pk: 16
   fields:
     created: 2025-08-11 16:47:27.874636+00:00
-    modified: 2025-08-11 19:05:56.238883+00:00
+    modified: 2025-08-27 23:16:10.895883+00:00
     title: Types of Users
     description: ''
     notes: ''
-    style: col-md-12
+    style: col-md-6
     kind: donut
     source: 2
     report: 4
@@ -106856,11 +106919,11 @@
   pk: 17
   fields:
     created: 2025-08-11 18:56:46.086450+00:00
-    modified: 2025-08-19 20:59:21.765721+00:00
+    modified: 2025-08-27 23:16:17.093431+00:00
     title: ''
     description: ''
     notes: ''
-    style: col-md-12
+    style: col-md-6
     kind: plot
     source: 1
     report: 4
@@ -107001,3 +107064,23 @@
       labels: country_name
       color_by: subregion
       scheme: Live8
+- model: reportcraft.entry
+  pk: 24
+  fields:
+    created: 2025-08-27 23:21:13.906547+00:00
+    modified: 2025-08-28 05:56:11.878502+00:00
+    title: Distribution of users in Canada
+    description: ''
+    notes: ''
+    style: col-md-12
+    kind: map
+    source: 10
+    report: 4
+    position: 2
+    attrs:
+      location: country_code
+      map: MAF
+      groups:
+      - type: area
+        value: users
+        scheme: Blues
