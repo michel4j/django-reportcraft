@@ -30,7 +30,7 @@ class FancyInstitutionList(ItemListView):
     template_name = 'list.html'
     list_columns = ['id', 'name', 'city', 'province', 'country__name', 'parent']
     list_search = ['name', 'city', 'parent__name', 'subjects__name']
-    list_filters = ['parent', 'created']
+    list_filters = ['parent', 'created', 'country']
     list_title = 'Fancy Institutions'
     link_url = 'institution-edit'
     link_attr = 'data-modal-url'

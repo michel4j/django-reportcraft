@@ -645,7 +645,6 @@ function drawGeoChart(figure, chart, options) {
             }
             plotOptions.marks.push(Plot.geo(land, {fill: "var(--bs-secondary)", fillOpacity: 0.1}));
         }
-
         plotOptions.marks.push(
             Plot.geo(map, {stroke: "var(--bs-body-color)", strokeWidth: 1}),
             Plot.graticule({strokeOpacity: 0.05}),
@@ -661,8 +660,18 @@ function drawGeoChart(figure, chart, options) {
                         Plot.geo(map, {
                             fill: d => locMap.get(d.id),
                             tip: true,
-                            strokeWidth: 1,
-                        })
+                            stroke: "var(--bs-body-color)",
+                            strokeWidth: 0.5,
+                        }),
+                        Plot.text(
+                            map.features,
+                            Plot.centroid({
+                                text: (d) => d.properties.name,
+                                textAnchor: "middle",
+                                stroke: "white",
+                                fill: "black",
+                            })
+                        )
                     )
                     colorLegend = true;
                     break;
@@ -672,7 +681,7 @@ function drawGeoChart(figure, chart, options) {
                             x: chart.longitude,
                             y: chart.latitude,
                             r: feature.value,
-                            strokeWidth: 1,
+                            strokeWidth: 0.5,
                             stroke: feature.value,
                             opacity: 0.7
                         })
