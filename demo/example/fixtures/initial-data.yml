@@ -105724,12 +105724,12 @@
   pk: 7
   fields:
     created: 2025-08-19 21:24:38.572865+00:00
-    modified: 2025-08-27 22:45:29.332470+00:00
+    modified: 2025-08-28 19:27:08.691498+00:00
     name: Global Distribution of Instutions
     description: ''
     group_by:
     - country_code
-    filters: Continent == "Europe"
+    filters: ''
     limit: null
 - model: reportcraft.datasource
   pk: 8
@@ -106238,6 +106238,20 @@
     ordering: null
     source: 6
 - model: reportcraft.datafield
+  pk: 41
+  fields:
+    created: 2025-08-19 21:25:28.492238+00:00
+    modified: 2025-08-19 21:25:55.141967+00:00
+    name: country
+    model: 11
+    label: Country
+    default: null
+    expression: Country
+    precision: null
+    position: 0
+    ordering: null
+    source: 7
+- model: reportcraft.datafield
   pk: 42
   fields:
     created: 2025-08-19 21:27:30.487290+00:00
@@ -106615,6 +106629,20 @@
     position: 2
     ordering: null
     source: 10
+- model: reportcraft.datafield
+  pk: 71
+  fields:
+    created: 2025-08-28 19:34:23.915431+00:00
+    modified: 2025-08-28 19:36:28.908583+00:00
+    name: records
+    model: 11
+    label: Records
+    default: 0
+    expression: Country.Names
+    precision: null
+    position: 14
+    ordering: null
+    source: 7
 - model: reportcraft.report
   pk: 1
   fields:
@@ -106870,7 +106898,7 @@
   pk: 11
   fields:
     created: 2025-03-21 23:53:40.671951+00:00
-    modified: 2025-08-27 22:52:32.277292+00:00
+    modified: 2025-08-28 19:40:25.027556+00:00
     title: Global Distribution
     description: ''
     notes: "연소자의 근로는 특별한 보호를 받는다. 신체장애자 및 질병·노령 기타의 사유로 생활능력이 없는 국민은 법률이 정하는 바에 의하여
@@ -106888,16 +106916,11 @@
       longitude: lon
       location: country_code
       map: '150'
+      map_labels: names
       groups:
       - type: area
-        value: population
+        value: records
         scheme: Purples
-      - type: density
-        value: population
-        scheme: Oranges
-      - type: markers
-        value: country_code
-        scheme: Blues
 - model: reportcraft.entry
   pk: 16
   fields:
@@ -107068,7 +107091,7 @@
   pk: 24
   fields:
     created: 2025-08-27 23:21:13.906547+00:00
-    modified: 2025-08-28 05:56:11.878502+00:00
+    modified: 2025-08-28 16:59:57.366134+00:00
     title: Distribution of users in Canada
     description: ''
     notes: ''
@@ -107079,7 +107102,7 @@
     position: 2
     attrs:
       location: country_code
-      map: MAF
+      map: '150'
       groups:
       - type: area
         value: users
