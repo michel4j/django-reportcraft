@@ -6,6 +6,7 @@ import io
 import json
 import re
 import threading
+from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import wraps, reduce
@@ -1020,11 +1021,43 @@ class CsvResponse(HttpResponse):
         super().__init__(content=content, **kwargs)
 
 
-REGION_CHOICES = sorted([
-    (code, f"{code} - {region['name']}") for code, region in countries.REGIONS.items()
-] + [
-    (country['alpha3'], f"{country['name']} - {country['alpha2']}") for code, country in countries.COUNTRIES.items()
-], key=lambda x: x[1])
+def get_map_choices():
+    """
+    Get grouped list of choices for continent, subregions and countries
+    :return: A sorted list of tuples of (code, name)
+    """
+
+    choices = defaultdict(list)
+
+    choices['Continents'] = [
+        (r[0], f"{r[0]} - {r[1]}")
+        for r in
+        sorted([
+            (k, f"{v['name']} - {k}") for k, v in countries.REGIONS.items() if v.get('parent') == '001'
+        ])
+    ]
+    choices['Regions'] = [
+        (r[0], f"{r[0]} - {r[1]}")
+        for r in
+        sorted(
+            [
+                (k, v['name'], countries.REGIONS[v['parent']]['name'])
+                for k, v in countries.REGIONS.items()
+                if 'parent' in v and v['parent'] != '001'
+            ], key=lambda x: x[2] + x[1]
+        )
+    ]
+
+    for country in sorted(countries.COUNTRIES.values(), key=lambda x: x['name']):
+        region_name = countries.REGIONS.get(country.get('region'), {}).get('name', 'Other')
+        choices[region_name].append((country['alpha3'], f"{country['alpha3']} - {country['name']}"))
+
+    return [('001', '001 - World')] + [
+        (key, value) for key, value in choices.items()
+    ]
+
+
+MAP_CHOICES = get_map_choices()
 
 
 def camel_case(snake_str: str) -> str:

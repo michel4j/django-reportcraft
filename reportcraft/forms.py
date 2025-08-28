@@ -14,7 +14,7 @@ from crisp_modals.forms import (
 
 from . import models, utils
 from .models import DataSource
-from .utils import CATEGORICAL_COLORS, SEQUENTIAL_COLORS, REGION_CHOICES, AXIS_CHOICES, COLOR_SCHEMES
+from .utils import CATEGORICAL_COLORS, SEQUENTIAL_COLORS, MAP_CHOICES, AXIS_CHOICES, COLOR_SCHEMES
 
 disabled_widget = forms.HiddenInput(attrs={'readonly': True})
 
@@ -815,15 +815,23 @@ MODE_CHOICES = (
     ('markers', 'Markers'),
 )
 
+MAP_LABELS = (
+    ('', 'None'),
+    ('names', 'Names'),
+    ('codes', 'Codes'),
+    ('places', 'Places'),
+)
+
 
 class GeoCharForm(EntryConfigForm):
     latitude = forms.ModelChoiceField(label='Latitude', required=False, queryset=models.DataField.objects.none())
     longitude = forms.ModelChoiceField(label='Longitude', required=False, queryset=models.DataField.objects.none())
     location = forms.ModelChoiceField(label='Location', required=False, queryset=models.DataField.objects.none())
-    map = forms.ChoiceField(label='Map', choices=REGION_CHOICES, initial='001')
+    map = forms.ChoiceField(label='Map', choices=MAP_CHOICES, initial='001')
+    map_labels = forms.ChoiceField(label='Labels', choices=MAP_LABELS, initial='', required=False)
 
     SINGLE_FIELDS = ['latitude', 'longitude', 'location']
-    OTHER_FIELDS = ['map']
+    OTHER_FIELDS = ['map', 'map_labels']
 
     class Meta:
         model = models.Entry
@@ -838,7 +846,8 @@ class GeoCharForm(EntryConfigForm):
         super().__init__(*args, **kwargs)
         self.body.append(
             Row(
-                FullWidth(Field('map', css_class='selectize')),
+                TwoThirdWidth(Field('map', css_class='selectize')),
+                ThirdWidth('map_labels'),
             ),
             Row(
                 ThirdWidth('location'),

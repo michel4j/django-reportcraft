@@ -1,6 +1,9 @@
+from pprint import pprint
+
 REGIONS = {
     "002": {
-        "name": "Africa"
+        "name": "Africa",
+        "parent": "001"
     },
     "015": {
         "name": "North Africa",
@@ -23,7 +26,8 @@ REGIONS = {
         "parent": "002"
     },
     "150": {
-        "name": "Europe"
+        "name": "Europe",
+        "parent": "001"
     },
     "154": {
         "name": "Northern Europe",
@@ -42,7 +46,8 @@ REGIONS = {
         "parent": "150"
     },
     "019": {
-        "name": "Americas"
+        "name": "Americas",
+        "parent": "001"
     },
     "005": {
         "name": "South America",
@@ -61,7 +66,8 @@ REGIONS = {
         "parent": "019"
     },
     "142": {
-        "name": "Asia"
+        "name": "Asia",
+        "parent": "001"
     },
     "030": {
         "name": "Eastern Asia",
@@ -84,7 +90,8 @@ REGIONS = {
         "parent": "142"
     },
     "009": {
-        "name": "Oceania"
+        "name": "Oceania",
+        "parent": "001"
     },
     "053": {
         "name": "Australia and New Zealand",
@@ -104,49 +111,11 @@ REGIONS = {
     },
     "001": {
         "name": "World"
+    },
+    "010": {
+        "name": "Antarctica",
+        "parent": "001"
     }
-}
-
-REGION_COUNTRIES = {
-    "015": ["DZA", "EGY", "ESH", "LBY", "MAR", "SDN", "SSD", "TUN"],
-    "011": [
-        "BFA", "BEN", "CIV", "CPV", "GHA", "GMB", "GIN", "GNB", "LBR", "MLI", "MRT", "NER", "NGA", "SHN", "SLE",
-        "SEN", "TGO"
-    ],
-    "017": ["AGO", "COD", "CAF", "COG", "CMR", "GAB", "GNQ", "STP", "TCD"],
-    "014": [
-        "BDI", "DJI", "ERI", "ETH", "KEN", "COM", "MDG", "MUS", "MWI", "MOZ", "REU", "RWA", "SYC", "SOM", "TZA",
-        "UGA", "MYT", "ZMB", "ZWE"
-    ],
-    "018": ["BWA", "LSO", "NAM", "SWZ", "ZAF"],
-    "154": [
-        "ALA", "DNK", "EST", "FIN", "FRO", "GBR", "GGY", "IRL", "IMN", "ISL", "JEY", "LTU", "LVA", "NOR", "SWE",
-        "SJM"
-    ],
-    "155": ["AUT", "BEL", "CHE", "DEU", "FRA", "LIE", "LUX", "MCO", "NLD"],
-    "151": ["BGR", "BLR", "CZE", "HUN", "MDA", "POL", "ROU", "RUS", "SVK", "UKR"],
-    "039": [
-        "AND", "ALB", "BIH", "ESP", "GIB", "GRC", "HRV", "ITA", "MNE", "MKD", "MLT", "SRB", "PRT", "SVN", "SMR",
-        "VAT"
-    ],
-    "021": ["BMU", "CAN", "GRL", "SPM", "USA"],
-    "029": [
-        "ATG", "AIA", "ABW", "BRB", "BLM", "BHS", "CUB", "DMA", "DOM", "GRD", "GLP", "HTI", "JAM", "KNA", "CYM",
-        "LCA", "MAF", "MTQ", "MSR", "PRI", "TCA", "TTO", "VCT", "VGB", "VIR"
-    ],
-    "013": ["BLZ", "CRI", "GTM", "HND", "MEX", "NIC", "PAN", "SLV"],
-    "005": ["ARG", "BOL", "BRA", "CHL", "COL", "ECU", "FLK", "GUF", "GUY", "PER", "PRY", "SUR", "URY", "VEN"],
-    "143": ["KAZ", "KGZ", "TJK", "TKM", "UZB"], "030": ["CHN", "HKG", "JPN", "PRK", "KOR", "MNG", "MAC", "TWN"],
-    "034": ["AFG", "BGD", "BTN", "IND", "IRN", "LKA", "MDV", "NPL", "PAK"],
-    "035": ["BRN", "IDN", "KHM", "LAO", "MMR", "MYS", "PHL", "SGP", "THA", "TLS", "VNM"],
-    "145": [
-        "ARE", "ARM", "AZE", "BHR", "CYP", "GEO", "ISR", "IRQ", "JOR", "KWT", "LBN", "OMN", "PSE", "QAT", "SAU",
-        "SYR", "TUR", "YEM"]
-    ,
-    "053": ["AUS", "NFK", "NZL"],
-    "054": ["FJI", "NCL", "PNG", "SLB", "VUT"],
-    "057": ["FSM", "GUM", "KIR", "MHL", "MNP", "NRU", "PLW"],
-    "061": ["ASM", "COK", "NIU", "PYF", "PCN", "TKL", "TON", "TUV", "WLF", "WSM"]
 }
 
 COUNTRIES = {

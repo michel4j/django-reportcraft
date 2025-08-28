@@ -417,6 +417,7 @@ def generate_geochart(entry, *args, **kwargs):
     location = entry.attrs.get('location', None)
     latitude = entry.attrs.get('latitude', None)
     longitude = entry.attrs.get('longitude', None)
+    map_labels = entry.attrs.get('map_labels', None)
     scheme = entry.attrs.get('scheme', 'Live8')
 
     raw_data = entry.source.get_data(*args, **kwargs)
@@ -439,6 +440,7 @@ def generate_geochart(entry, *args, **kwargs):
         'kind': 'geochart',
         'mode': mode,
         'map': map_id,
+        'labels': map_labels,
         'latitude': labels.get(latitude, latitude),
         'longitude': labels.get(longitude, longitude),
         'location': labels.get(location, location),

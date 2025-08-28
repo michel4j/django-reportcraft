@@ -165,8 +165,10 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
         let aspectRatio = chart.data['aspect-ratio'] || 16/9;
         const options = {
             uid: (index + Date.now()).toString(36),
-            width: figure.offsetWidth,
-            height: figure.offsetWidth / aspectRatio,
+            // width: figure.offsetWidth,
+            // height: figure.offsetWidth / aspectRatio,
+            width: 800,
+            height: 800 / aspectRatio,
             scheme: (ColorSchemes[chart.scheme] || d3[`scheme${chart.scheme}`]) || d3.Observable10,
             aspectRatio: aspectRatio,
             staticRoot: staticRoot,
@@ -618,8 +620,7 @@ function drawGeoChart(figure, chart, options) {
         height: options.height || 600,
         color: {
             type: "quantize",
-            n: 10,
-            scheme: "blues",
+            //scheme: "greens",
         },
         projection: {},
         marks: []
@@ -659,19 +660,9 @@ function drawGeoChart(figure, chart, options) {
                     plotOptions.marks.push(
                         Plot.geo(map, {
                             fill: d => locMap.get(d.id),
-                            tip: true,
                             stroke: "var(--bs-body-color)",
                             strokeWidth: 0.5,
                         }),
-                        Plot.text(
-                            map.features,
-                            Plot.centroid({
-                                text: (d) => d.properties.name,
-                                textAnchor: "middle",
-                                stroke: "white",
-                                fill: "black",
-                            })
-                        )
                     )
                     colorLegend = true;
                     break;
@@ -710,6 +701,58 @@ function drawGeoChart(figure, chart, options) {
                     break;
             }
         });
+
+        switch (chart.labels) {
+            case 'names':
+            case 'codes':
+                const isCode = (chart.labels === 'codes') || false;
+                plotOptions.marks.push(
+                    Plot.text(
+                        map.features,
+                        Plot.centroid({
+                            text: (d) => isCode? d.id: d.properties.name,
+                            textAnchor: "middle",
+                            tip: true,
+                            fill: "var(--bs-body-color)",
+                            stroke: "white",
+                            strokeWidth: 0.5,
+                            paintOrder: "stroke",
+                            fontSize: 8,
+                            dy: 3
+                        })
+                    )
+                );
+                break;
+            case 'places':
+                if (geoData.objects.places) {
+                    const places = topojson.feature(geoData, geoData.objects.places);
+                    plotOptions.marks.push(
+                        Plot.dot(places, {
+                            filter: (d) => d.properties.scalerank < 5, // Show only major places
+                            x: (d) => d.geometry.coordinates[0],
+                            y: (d) => d.geometry.coordinates[1],
+                            fill: "currentColor",
+                            r: 1,
+                        }),
+                        Plot.text(places, {
+                            filter: (d) => d.properties.scalerank < 5, // Show only major places
+                            x: (d) => d.geometry.coordinates[0],
+                            y: (d) => d.geometry.coordinates[1],
+                            text: (d) => d.properties.name,
+                            textAnchor: "middle",
+                            tip: true,
+                            fill: "var(--bs-body-color)",
+                            stroke: "white",
+                            strokeWidth: 0.5,
+                            paintOrder: "stroke",
+                            fontSize: 8,
+                            marker: true,
+                            dy: 3
+                        })
+                    );
+                }
+                break;
+        }
 
         if (colorLegend) {
             plotOptions.color.legend = true;
