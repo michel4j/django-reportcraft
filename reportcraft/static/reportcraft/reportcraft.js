@@ -614,6 +614,7 @@ function drawTimeline(figure, chart, options) {
 function drawGeoChart(figure, chart, options) {
     const colorScale = d3.scaleOrdinal(options.scheme);
     let colorLegend = false;
+    let showLand = chart.map === '001' ? false : (chart["show-land"] || true);
     const plotOptions = {
         className: "rc-chart",
         width: options.width || 800,
@@ -626,10 +627,11 @@ function drawGeoChart(figure, chart, options) {
         marks: []
     };
 
-    d3.json(`${options.staticRoot}/maps/${chart.map}.json`).then(function(geoData) {
-        const land = topojson.feature(geoData, geoData.objects.land);
+    Promise.all([
+        d3.json(`${options.staticRoot}/maps/${chart.map}.json`),
+        showLand ? d3.json(`${options.staticRoot}/maps/land.json`) : null,
+    ]).then(function([geoData, landData]) {
         const map = topojson.feature(geoData, geoData.objects["subunits"] || geoData.objects["countries"]);
-
         if (chart.map === '001') {  // World map, no need to show land
             plotOptions.projection = {
                 type: "mercator",
@@ -644,6 +646,11 @@ function drawGeoChart(figure, chart, options) {
                 domain: map,
                 inset: 5
             }
+        }
+
+        // show land if needed
+        if (showLand && landData) {
+            const land = topojson.feature(landData, landData.objects.land);
             plotOptions.marks.push(Plot.geo(land, {fill: "var(--bs-secondary)", fillOpacity: 0.1}));
         }
         plotOptions.marks.push(
@@ -652,7 +659,6 @@ function drawGeoChart(figure, chart, options) {
         );
 
         // add features now
-
         chart.features.forEach(function(feature, index) {
             switch (feature.type) {
                 case 'area':
@@ -715,9 +721,10 @@ function drawGeoChart(figure, chart, options) {
                             tip: true,
                             fill: "var(--bs-body-color)",
                             stroke: "white",
-                            strokeWidth: 0.5,
+                            strokeOpacity: 0.7,
+                            //strokeWidth: 0.5,
                             paintOrder: "stroke",
-                            fontSize: 8,
+                            fontSize: 10,
                             dy: 3
                         })
                     )
@@ -743,10 +750,10 @@ function drawGeoChart(figure, chart, options) {
                             tip: true,
                             fill: "var(--bs-body-color)",
                             stroke: "white",
-                            strokeWidth: 0.5,
+                            strokeOpacity: 0.7,
+                            //strokeWidth: 0.5,
                             paintOrder: "stroke",
-                            fontSize: 8,
-                            marker: true,
+                            fontSize: 10,
                             dy: 3
                         })
                     );

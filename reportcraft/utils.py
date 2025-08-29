@@ -1033,7 +1033,7 @@ def get_map_choices():
         (r[0], f"{r[0]} - {r[1]}")
         for r in
         sorted([
-            (k, f"{v['name']} - {k}") for k, v in countries.REGIONS.items() if v.get('parent') == '001'
+            (k, v['name']) for k, v in countries.REGIONS.items() if v.get('parent') == '001'
         ])
     ]
     choices['Regions'] = [
@@ -1049,8 +1049,7 @@ def get_map_choices():
     ]
 
     for country in sorted(countries.COUNTRIES.values(), key=lambda x: x['name']):
-        region_name = countries.REGIONS.get(country.get('region'), {}).get('name', 'Other')
-        choices[region_name].append((country['alpha3'], f"{country['alpha3']} - {country['name']}"))
+        choices['Countries'].append((country['alpha3'], f"{country['alpha3']} - {country['name']}"))
 
     return [('001', '001 - World')] + [
         (key, value) for key, value in choices.items()

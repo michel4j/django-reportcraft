@@ -37,6 +37,10 @@ REGIONS = {
         "name": "Western Europe",
         "parent": "150"
     },
+    "EUE": {
+        "name": "European Union",
+        "parent": "150"
+    },
     "151": {
         "name": "Eastern Europe",
         "parent": "150"
@@ -51,10 +55,14 @@ REGIONS = {
     },
     "005": {
         "name": "South America",
-        "parent": "019"
+        "parent": "001"
+    },
+    "003": {
+        "name": "North America",
+        "parent": "001"
     },
     "021": {
-        "name": "North America",
+        "name": "Northern America",
         "parent": "019"
     },
     "013": {
