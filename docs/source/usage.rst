@@ -198,7 +198,10 @@ Here are some xamples of valid expressions:
     Avg(Journal.Metrics.ImpactFactor)
     Avg(Metrics.Citations) / Avg(Metrics.Mentions)
 
+
+
 .. _filters:
+
 Filters
 -------
 Filters are used to limit the data returned by a Data Source. Filters must only use fields added to the Data Source.
