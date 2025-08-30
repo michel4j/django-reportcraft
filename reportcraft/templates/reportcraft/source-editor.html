@@ -10,9 +10,7 @@
 {% endblock %}
 
 {% block editor-pretitle %}Edit Data Source{% endblock %}
-{% block editor-title %}
-    {{ object.name }}
-{% endblock %}
+{% block editor-title %}{{ object.name }}{% endblock %}
 
 {% block editor-tools %}
     <a href="#!" data-modal-url="{% url "edit-data-source" source.pk %}">
@@ -30,132 +28,144 @@
 {% endblock %}
 
 {% block editor-content %}
-    <div class="card mb-3">
-        <div class="card-header py-2 d-flex align-items-center">
-            <h5>Models</h5>
-            <div class="toolbox ms-auto pr-0">
-                <a href="#0" data-modal-url="{% url "add-source-model" source=source.pk %}"
-                   title="Add Model">
-                    {% tool_icon icon='database-plus' size='sm' %}
-                </a>
+    <div class="container-fluid h-100">
+        <div class="d-flex flex-column justify-content-stretch py-3 h-100">
+            <div class="alert alert-info small mb-4">
+                Add models to the Data Source and add fields linked to the models. Use groups and expressions for more
+                complex annotations and aggregations. Once fields are added specify any filters as needed.
             </div>
-        </div>
-        <table class="table">
-            <thead>
-            <tr>
-                <th>Model</th>
-                {% for group_field in source.group_by %}
-                    <th>{{ group_field|title }}<span
-                            class="hidden-xs text-muted">&nbsp;&middot;&nbsp;Group</span>
-                    </th>
-                {% endfor %}
-                <th>&nbsp;</th>
-            </tr>
-            </thead>
-            <tbody class="text-sm">
-            {% for src_model in source.models.all %}
-                <tr>
-                    <td>{{ src_model.name }}</td>
-                    {% for field_name, group_field in src_model.get_group_fields.items %}
-                        {% if group_field %}
-                            <td class="font-monospace">
-                                <a href="#0" data-modal-url="{% url 'edit-source-field' source=source.pk pk=group_field.pk %}">{{ group_field.expression }}</a>
+            <div class="card mb-3">
+                <div class="card-header py-2 d-flex align-items-center">
+                    <h5>Models</h5>
+                    <div class="toolbox ms-auto pr-0">
+                        <a href="#0" data-modal-url="{% url "add-source-model" source=source.pk %}"
+                           title="Add Model">
+                            {% tool_icon icon='database-plus' size='sm' %}
+                        </a>
+                    </div>
+                </div>
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Model</th>
+                        {% for group_field in source.group_by %}
+                            <th>{{ group_field|title }}<span
+                                    class="hidden-xs text-muted">&nbsp;&middot;&nbsp;Group</span>
+                            </th>
+                        {% endfor %}
+                        <th>&nbsp;</th>
+                    </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                    {% for src_model in source.models.all %}
+                        <tr>
+                            <td class="font-monospace">{{ src_model.name }}</td>
+                            {% for field_name, group_field in src_model.get_group_fields.items %}
+                                {% if group_field %}
+                                    <td class="font-monospace">
+                                        <a href="#0"
+                                           data-modal-url="{% url 'edit-source-field' source=source.pk pk=group_field.pk %}">{{ group_field.expression }}</a>
+                                    </td>
+                                {% else %}
+                                    <td class="text-danger">
+                                        <a href="#0"
+                                           data-modal-url="{% url 'add-group-field' source=source.pk group=field_name %}">Undefined</a>
+                                    </td>
+                                {% endif %}
+                            {% endfor %}
+                            <td>
+                                <div class="d-flex align-children-end">
+                                    <div class="toolbox ms-auto">
+                                        <a href="#0"
+                                           data-modal-url="{% url 'edit-source-model' source=source.pk pk=src_model.pk %}"
+                                           title="Edit">
+                                            {% tool_icon icon='pencil' size='sm' %}
+                                        </a>
+                                    </div>
+                                </div>
                             </td>
-                        {% else %}
-                            <td class="text-danger">
-                                <a href="#0" data-modal-url="{% url 'add-group-field' source=source.pk group=field_name %}">Undefined</a>
-                            </td>
-                        {% endif %}
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No models defined</td>
+                        </tr>
                     {% endfor %}
-                    <td>
-                        <div class="d-flex align-children-end">
-                            <div class="toolbox ms-auto">
-                                <a href="#0"
-                                   data-modal-url="{% url 'edit-source-model' source=source.pk pk=src_model.pk %}"
-                                   title="Edit">
-                                    {% tool_icon icon='pencil' size='sm' %}
-                                </a>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="5" class="text-center">No models defined</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <div class="card mb-3">
-        <div class="card-header py-2 d-flex align-items-center">
-            <h5>Fields</h5>
-            <div class="toolbox ms-auto pr-0">
-                <a href="#0" data-modal-url="{% url "add-source-field" source=source.pk %}"
-                   title="Add Field">
-                    {% tool_icon icon='table-plus' size='sm' %}
-                </a>
+                    </tbody>
+                </table>
             </div>
-        </div>
-        <table class="table">
-            <thead>
-            <tr>
-                <th>Name</th>
-                <th>Label</th>
-                <th>Model</th>
-                <th class="d-none d-md-table-cell">Expression</th>
-                <th>&nbsp;</th>
-            </tr>
-            </thead>
-            <tbody class="text-sm">
-            {% for field in source.non_group_fields %}
-                <tr>
-                    <td class="font-monospace pl-3">{{ field.name }}</td>
-                    <td>{{ field.label }}</td>
-                    <td>{{ field.model }}</td>
-                    <td class="d-none d-md-table-cell font-monospace">{{ field.expression }}</td>
-                    <td>
-                        <div class="d-flex align-children-end">
-                            <div class="toolbox ms-auto pr-0">
-                                <a href="#0"
-                                   data-modal-url="{% url 'edit-source-field' source=source.pk pk=field.pk %}"
-                                   title="Edit">
-                                    {% tool_icon icon='pencil' size='sm' %}
-                                </a>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <div class="card mb-3 flex-grow-1">
-        <div class="card-header py-2 d-flex align-items-center">
-            <h4 class="my-0"><span class="text-muted">Data</span></h4>
-            <div class="toolbox ms-auto pr-0">
-                <a download="{{ source.name_slug }}.csv"
-                   href="{% url 'source-data' pk=source.pk %}?type=csv" title="Download CSV">
-                    {% tool_icon icon='file-type-csv' size='sm' %}
-                </a>
-                <a download="{{ source.name_slug }}.json"
-                   href="{% url 'source-data' pk=source.pk %}" title="Download JSON">
-                    {% tool_icon icon='file-type-js' size='sm' %}
-                </a>
+            <div class="card mb-3  flex-scrollable d-flex flex-column">
+                <div class="card-header d-flex align-items-center">
+                    <h5>Fields</h5>
+                    <div class="toolbox ms-auto pr-0">
+                        <a href="#0" data-modal-url="{% url "add-source-field" source=source.pk %}"
+                           title="Add Field">
+                            {% tool_icon icon='table-plus' size='sm' %}
+                        </a>
+                    </div>
+                </div>
+                <div class="flex-scrollable">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Label</th>
+                        <th>Model</th>
+                        <th class="d-none d-md-table-cell">Expression</th>
+                        <th>&nbsp;</th>
+                    </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                    {% for field in source.non_group_fields %}
+                        <tr>
+                            <td class="font-monospace pl-3">{{ field.name }}</td>
+                            <td>{{ field.label }}</td>
+                            <td class="font-monospace">{{ field.model }}</td>
+                            <td class="d-none d-md-table-cell font-monospace">{{ field.expression }}</td>
+                            <td>
+                                <div class="d-flex align-children-end">
+                                    <div class="toolbox ms-auto pr-0">
+                                        <a href="#0"
+                                           data-modal-url="{% url 'edit-source-field' source=source.pk pk=field.pk %}"
+                                           title="Edit">
+                                            {% tool_icon icon='pencil' size='sm' %}
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
             </div>
-        </div>
-        <div class="card-body small p-0" style="overflow-x: auto">
-            {{ source.snippet|data_table }}
-            <code>
-                ...
-            </code>
+            <div class="card flex-shrink-0">
+                <div class="card-header d-flex align-items-center">
+                    <h5 class="my-0"><span class="text-muted">Data</span></h5>
+                    <div class="toolbox ms-auto pr-0">
+                        <a download="{{ source.name_slug }}.csv"
+                           href="{% url 'source-data' pk=source.pk %}?type=csv" title="Download CSV">
+                            {% tool_icon icon='file-type-csv' size='sm' %}
+                        </a>
+                        <a download="{{ source.name_slug }}.json"
+                           href="{% url 'source-data' pk=source.pk %}" title="Download JSON">
+                            {% tool_icon icon='file-type-js' size='sm' %}
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body small p-0 rc-data-preview flex-grow-1">
+                    {% data_snippet source %}
+                    <code>
+                        ...
+                    </code>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}
 {% block editor-sidebar %}
-    <div class="rc-sidebar-content h100">
+    <div class="d-flex flex-column py-3 pe-3 h-100">
     <div class="card mb-3">
-        <div class="card-header py-2">
+        <div class="card-header">
             <h5 class="my-0"><span class="text-muted">Related Reports</span></h5>
         </div>
         <ul class="list-group list-group-flush">
@@ -168,11 +178,11 @@
             {% endfor %}
         </ul>
     </div>
-    <div class="card mb-3" >
-        <div class="card-header py-2">
+    <div class="card flex-scrollable d-flex flex-column" >
+        <div class="card-header">
             <h5 class="my-0"><span class="text-muted">Records</span></h5>
         </div>
-        <div style="min-height: 0;">
+        <div class="flex-scrollable">
         <ul class="list-group-flush list-group text-condensed">
             {% for model in source.models.all %}
                 <li class="fs-6 list-group-item bg-body-secondary">
@@ -180,9 +190,7 @@
                 </li>
                 {% for name, type in model.get_model_specs %}
                 <li class="list-group-item bg-transparent"
-                    data-bs-toggle="tooltip"
-                    data-bs-title="{{ type }}"
-                    data-bs-placement="left"
+                    title="{{ type }}"
                 >
                     <div class="text-nowrap" style="overflow: hidden;">
                         <span class="text-warning-emphasis">{% svg_icon type|lower size='sm' %}</span>&nbsp;<small>{{ name }}</small>

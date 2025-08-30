@@ -6,10 +6,10 @@
 {% block body %}
     <div id="rc-editor" class="report-editor"  data-csrf-token="{{ csrf_token}}">
         <div id="rc-header" class="d-flex align-items-center border-bottom">
-            <h4 class="text-secondary pe-2">ReportCraft</h4>
-            <div class="border-start text-body secondary d-flex flex-column px-2">
+            <strong class="fs-4 fw-bold text-body-secondary pe-2 rough-underline">ReportCraft</strong>
+            <div class="border-start text-secondary d-flex flex-column px-2">
                 <div class="page-pretitle my-0">{% block editor-pretitle %}{% endblock %}</div>
-                <h6 class="editor-title my-0">{% block editor-title %}{% endblock %}</h6>
+                <div class="fs-4 fw-light editor-title my-0">{% block editor-title %}{% endblock %}</div>
             </div>
             <div class="ms-auto page-tools col-auto d-flex align-items-center gap-2 ps-3">
             {% block editor-tools %}{% endblock %}
@@ -21,8 +21,8 @@
             </a>
             </div>
         </div>
-        <div id="rc-sidebar" class="border-start">{% block editor-sidebar %}{% endblock %}</div>
-        <div id="rc-main">{% block editor-content %}{% endblock %}</div>
+        <div id="rc-editor-content">{% block editor-content %}{% endblock %}</div>
+        <div id="rc-editor-sidebar">{% block editor-sidebar %}{% endblock %}</div>
     </div>
     <div class="offcanvas offcanvas-start {% if show_sidebar %}show{% endif %}" tabindex="-1" id="rc-off-canvas" aria-labelledby="oc-list-title">
     {% block report-off-canvas %}{% endblock %}
@@ -31,12 +31,15 @@
 
 {% block page-scripts %}
     {{ block.super }}
+    <script>
+    $(document).ready(function () {
+         $("body, html").addClass("report-editor");
+    });
+    </script>
     {% if report %}
     <script src="{% static "reportcraft/sortable.min.js" %}"></script>
     <script>
         $(document).ready(function() {
-            $("body, html").addClass("report-editor");
-
             // allow sorting entries
             sortable({drag: '.entry', dropTo: '.entry-container'}, function () {
                 const csrfToken = "{{ csrf_token }}";

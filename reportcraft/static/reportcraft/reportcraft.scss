@@ -104,8 +104,9 @@ section:not(:first-child) {
 
   .table {
     --bs-border-color: var(--bs-border-color-translucent);
+
     caption {
-        counter-increment: tables;
+      counter-increment: tables;
     }
 
     tbody {
@@ -120,10 +121,12 @@ section:not(:first-child) {
         border-bottom: 2px solid var(--bs-border-color-translucent);
         vertical-align: bottom;
         border-top: 1px solid var(--bs-border-color-translucent);
+
         &:first-child {
           text-align: left;
         }
       }
+
       td {
         border-top: 1px solid var(--bs-border-color-translucent);
       }
@@ -158,6 +161,7 @@ section:not(:first-child) {
       margin-block-end: 1rem;
       padding-inline-start: 2rem;
     }
+
     li {
       background-color: inherit;
     }
@@ -171,6 +175,7 @@ section:not(:first-child) {
     overflow: hidden;
   }
 }
+
 .table-flip-headers {
   table > thead th:not(:first-child) {
     writing-mode: sideways-lr;
@@ -184,16 +189,19 @@ section:not(:first-child) {
   &.drag-placeholder {
     min-height: 15em;
     max-height: 100%;
+
     .card {
       border: 2px dashed var(--bs-border-color-translucent);
       border-radius: var(--bs-border-radius);
       min-height: 100%;
     }
   }
+
   &.dragging {
-    display:  none;
+    display: none;
   }
 }
+
 .drag-handle {
   cursor: grab;
   user-select: none
@@ -389,6 +397,7 @@ svg {
   + .swatches {
     border-top: 1px solid var(--bs-border-color-translucent);
   }
+
   .swatches-name {
     display: inline-block;
     font-family: var(--bs-font-monospace), monospace;
@@ -408,6 +417,7 @@ svg {
     }
   }
 }
+
 html.report-editor, body.report-editor {
   height: 100vh;
 }
@@ -431,33 +441,45 @@ html.report-editor, body.report-editor {
   padding: 0.75em;
 }
 
-#rc-sidebar {
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+#rc-editor-content {
+  height: 100%;
+  max-height: 100%;
+  grid-area: work-area;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+#rc-editor-sidebar {
+  height: 100%;
+  max-height: 100%;
   grid-area: sidebar;
   overflow: hidden;
-  .rc-sidebar-content {
-    width: 250px;
-  }
 }
 
-#rc-main {
-    padding: 1em;
-    height: 100%;
-    max-height: 100%;
-    display: flex;
-    flex-direction: column;
-    grid-area: work-area;
-    overflow-y: auto;
-    overflow-x: hidden;
+.rc-data-preview {
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: auto;
+  font-size: 0.9em;
+  min-height: 0;
+}
+
+.flex-scrollable {
+  min-height: 0;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.rc-snippet-table {
+  th {
+    line-height: 1;
+  }
 }
 
 .report-editor {
   .entry .card-body {
     min-height: 15em;
     max-height: 15em;
-    overflow: auto;
+    overflow: hidden;
 
     pre {
       overflow: unset;
@@ -470,7 +492,7 @@ html.report-editor, body.report-editor {
 }
 
 div.google-visualization-tooltip > ul > li > span {
-    font-family: var(--bs-font-sans-serif), sans-serif !important;
+  font-family: var(--bs-font-sans-serif), sans-serif !important;
 }
 
 
@@ -506,9 +528,10 @@ $grid-breakpoints: (
       .#{$breakpoint}-#{$num}-cols {
         column-count: $num;
         column-gap: var(--bs-column-gap);
+
         li {
-            break-inside: avoid;
-            page-break-inside: avoid;
+          break-inside: avoid;
+          page-break-inside: avoid;
         }
       }
     }
@@ -525,7 +548,8 @@ $grid-breakpoints: (
   --bs-list-group-item-padding-y: 0.5rem;
   --bs-list-group-disabled-color: var(--bs-secondary-color);
   --bs-list-group-disabled-bg: var(--bs-body-bg);
-  .list-group-item{
+
+  .list-group-item {
     border-width: 0 0 var(--bs-border-width);
     color: var(--bs-body-color);
     background: var(--bs-body-bg);
@@ -569,8 +593,8 @@ g {
   --plot-background: var(--bs-body-bg, #fff) !important;
 }
 
-figure > div {  // legend fix
-    display: flex;
-    justify-content: center;
-    gap: 1em;
+figure > div { // legend fix
+  display: flex;
+  justify-content: center;
+  gap: 1em;
 }
