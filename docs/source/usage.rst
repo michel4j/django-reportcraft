@@ -128,7 +128,7 @@ for more information:
         ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute,
         ExtractSecond, ExtractWeekDay, ExtractWeek,
         Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
-        Radians, Degrees, Q, ArrayAgg,
+        Radians, Degrees, Q, ArrayAgg, DisplayName, Interval
         ShiftStart, ShiftEnd, Hours, Minutes
     ]
 
@@ -143,6 +143,14 @@ Additionally, the following custom functions functions are supported:
 - `Join`: Join a list of strings into a single string using a separator. The separator can be specified using the
   `separator` keyword argument, which defaults to a comma (`,`). For example, `Join(Authors, separator=', ')` would
   join the authors into a single string separated by commas.
+- `DisplayName`: Gets the display name for of Django choice fields
+- `Interval`:  categorize a numeric field's value into dynamically generated intervals. For example:
+
+.. code-block:: python
+
+  Interval(Age, lo=18, hi=65, size=4)
+
+Will generate a string annotation with four categories '<18', '18-40', '40-65', '>65' based on the age value
 
 .. note::
     The `Join` and `ArrayAgg` functions are only available on PostgreSQL databases. If you are using a different
@@ -304,34 +312,34 @@ A Table Entry displays the data in a tabular format. The table entry has the fol
 - Values: The fields to use as the values of the table when a single field is specified under Rows. In this case, the
   Values of the Rows field will be used as the columns and the table cells will contain corresponding values from the
   Values field.
+- Max Columns: If the table has more than this number of columns it will wrap to additional tables.
 - Column Totals: Toggle to add a row at the bottom of the table that contains the totals for each column.
 - Row Totals: Toggle to add a column at the right of the table that contains the totals for each row.
 - Transpose:  Flip the rows and columns of the table. This is useful when the data is more naturally displayed with the
   rows as columns and the columns as rows.
 - Force Strings: Convert all values to formatted strings.
+- Flip Headers: Make headers vertical
+- Wrap Headers: Wrap header text to multiple lines if needed
+
 
 .. image:: static/table-form.png
   :width: 100%
   :alt: Table Configuration
 
-Bar Chart Entry
----------------
-A Bar Chart Entry displays the data in a bar chart format. The bar chart entry has the following configuration options:
+Bar & Column Chart Entries
+--------------------------
+A Bar Chart Entry displays data with a horizontal bar chart, while a Column Chart entry
+uses vertical bars. They have the following configuration options:
 
-- X Axis: The field to use as the x-axis of the chart. This field will be used to label the bars on the x-axis.
-- Y Axis: One or more fields to use as the y-axis of the chart. This field will be used to determine the height of the bars on the
-  y-axis. Enter multiple fields to represent multiple series of bars.
-- Values: The field to use as the values of the chart. This field will be used to determine the height of the bars on the
-  y-axis if a single field is specified under Y Axis. In this case, the
-  Values of the Y-axis field will be used as the series.
-- Sort By: The field to use for sorting the bars on the x-axis.
+- Categories: The field to use as the category axis of the chart.
+- Values: The field to use as the values of the chart. This field will be used to determine the height/length of bar.
+  If multiple values are provided, they will be used as independent series.
+- Type: Whether to use grouped or stacked bars.
 - Color By: The field to use for coloring the bars.
-- Aspect Ratio: The ratio of the width to the height of the bars.
-- Culling: The maximum number of X-axis ticks to display.
-- Stack: Specify the groups of fields to stack. Only fields already specified under Y-axis should be included
-- Wrap Labels: Wrap the labels on the x-axis to multiple lines.
-- Vertical bars: Display the bars vertically instead of horizontally.
+- Sort By: The field to use for sorting the bars on the x-axis.
 - Sort Descending: Sort the bars in descending order.
+- Value Scale: The scale for the value field.
+- Limit: Maximum number of bars to show. Usually used together with sorting
 - Color Scheme: The color palette to use for coloring the bars. The following color schemes are supported:
 
 .. image:: static/color-schemes.png
@@ -356,19 +364,25 @@ A Pie Chart Entry displays the data in a pie chart format. The pie chart entry h
 
 XY Plot
 -------
-An XY Plot Entry displays the data in a XY chart format with lines or points. The XY plot entry has the following
+An XY Plot Entry displays the data in a XY chart format with lines or points or areas. The XY plot entry has the following
 configuration options:
 
-- X Axis: The field to use as the x-axis of the chart. This field will be used to label the points on the x-axis.
-- Y1 Label: The label to use for the y-axis on the left side of the chart.
-- Y1 Axis: One or more fields to use as the source of Y1 axis values of the chart. Each field will be a separate series
-  on the chart.
-- Y2 Label: The label to use for the y-axis on the right side of the chart.
-- Y2 Axis: One or more fields to use as the source of Y2 axis values of the chart. Each field will be a separate series
-  on the chart.
-- Scatter Plot: Toggle this option to display the data as a scatter plot instead of a line plot.
+- X Value: The field to use as the x-axis of the chart.
+- X Label: The label to use for the x-axis.
+- Y Label: The label to use for the y-axis.
+- Group By: Field to use from grouping series
+- X-Scale: Scale of X-axis
+- Y-Scale: Scale of Y-axis
+- Precision: The precision of tick values
 - Color Scheme: The color palette to use for coloring the lines or points. Each series will be assigned a color based on
   the color scheme.
+- Plot Series:  One or more plots, each with the following settings
+
+   - Y-value: The Y-axis value.
+   - Z-value: An optional third dimention of data. The meaning varies by plot type. Not relevant for all plot types.
+   - Scatter Plot: Toggle this option to display the data as a scatter plot instead of a line plot.
+   - Type: The type of plot
+
 
 .. image:: static/plot-form.png
   :width: 100%
@@ -393,11 +407,15 @@ Histogram Entry
 ---------------
 A Histogram Entry displays the data in a histogram format. The histogram entry has the following configuration options:
 
-- Values: The field to use as the source pf values for the histogram. This should be a numeric field and should return
+- Values: The field to use as the source of values for the histogram. This should be a numeric field and should return
   the raw data, not the histogram itself.
+- Binning:  The algorithm for automatic binning.
 - Bins (optional): The number of bins to use for the histogram. If not specified, the number of bins will be determined
-  automatically.
+  automatically based on the Binning algorithm.
+- Group By: Field to use for grouping the data.
+- Stack Groups:  Whether to stack or overlay grouped histograms.
 - Color Scheme: The color palette to use for coloring the bars in the histogram.
+
 
 .. image:: static/histogram-form.png
   :width: 100%
@@ -418,20 +436,24 @@ Map / Geo Chart Entry
 ---------------------
 A Map Entry displays the data in a map format using Google Charts. The map entry has the following configuration options:
 
-- Resolution : The resolution of the map. The following resolutions are supported:
-    - countries: A map of the world, with country boundaries displayed.
-    - provinces: A map with provincial boundaries displayed.
-    - metros: A map with city boundaries displayed.
+- map : The map to use. Supported map options include the whole world, continents, subregions and individual countries.
+- Label: If specified, labels will be added to the centroid of map features.
 - Location: The field to use as the location of the data. This field should contain the name of the location to display
-  on the map. The location can be a country, state, city, or any other geographic location.
+  on the map. For World, continent and subregion maps, the location must be be a country ISO-3166-1 3-leter Alpha codes
+  (eg. CAN for Canada, USA for United States). For country maps, the location must be the 2-letter  ISO 3166-2 subunit
+  identifier without the Country suffix.
 - Latitude: The field to use as the latitude of the data. This field should contain the lattitude of the location to
   display on the map.
 - Longitude: The field to use as the longitude of the data. This field should contain the longitude of the location to
-- Value: The field to use as the value of the data. This field should contain the value to display on the map. The value
-  can be used to determine the size of the marker or the color of the marker.
-- Color By: The field to use for coloring the markers. If provided, the markers will be colored based on the values of
-  this field.
-- Color Scheme: The color palette to use for coloring the markers.
+- Map features: One or more features to display on the map, each with the following fields:
+
+  - Type: The feature type.
+  - Value: The field to use as the source of value of the features.
+  - Color Scheme: The color palette to use.
+
+.. note::
+   `Area` features require a location instead of latitude and logitude, while `bubbles`, `density` and `markers` features
+   require latitude and logitude coordinates.
 
 .. image:: static/geo-chart-form.png
   :width: 100%
