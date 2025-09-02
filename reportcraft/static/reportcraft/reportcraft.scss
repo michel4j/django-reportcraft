@@ -418,6 +418,27 @@ svg {
   }
 }
 
+.rc-chart-swatches {
+  margin-bottom: 0.5em;
+  font-size: 90%;
+
+  .rc-chart-swatch > svg {
+    margin-right: 0.5em;
+    overflow: visible;
+  }
+  &.rc-chart-swatches-wrap {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    .rc-chart-swatch {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 1em;
+    }
+  }
+
+}
+
 html.report-editor, body.report-editor {
   height: 100vh;
 }
@@ -596,5 +617,4 @@ g {
 figure > div { // legend fix
   display: flex;
   justify-content: center;
-  gap: 1em;
 }

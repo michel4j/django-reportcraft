@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import itertools
-from collections import defaultdict
-from typing import Any, Literal
+import logging
+import traceback
+from typing import Any
 
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
@@ -12,7 +13,9 @@ from django.db.models.functions import Round, Abs, Sign
 from django.utils.text import slugify, gettext_lazy as _
 
 from . import utils, entries
-from .utils import debug_value
+
+
+logger = logging.getLogger('reportcraft')
 
 VALUE_TYPES = {
     'STRING': str,
@@ -199,7 +202,8 @@ class DataSource(models.Model):
         try:
             result = self.get_source_data(filters=filters, order_by=order_by)[:size]
         except Exception as e:
-            result = DATA_ERROR_TEMPLATE.format(error=str(e), error_type=type(e).__name__)
+            logger.exception(e)
+            result = DATA_ERROR_TEMPLATE.format(error=traceback.format_exc(), error_type=type(e).__name__)
         return result
 
 
@@ -389,11 +393,12 @@ class Entry(models.Model):
                 raise ValueError(f"Unsupported entry type: {self.kind}")
             return generator(self, *args, **kwargs)
         except Exception as e:
+            logger.exception(e)
             return {
                 'title': self.title,
                 'description': self.description,
                 'kind': 'richtext',
                 'style': self.style,
-                'text': ENTRY_ERROR_TEMPLATE.format(error=str(e), error_type=type(e).__name__),
+                'text': ENTRY_ERROR_TEMPLATE.format(error=traceback.format_exc(), error_type=type(e).__name__),
                 'notes': self.notes
             }

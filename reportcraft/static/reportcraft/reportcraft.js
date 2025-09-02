@@ -167,8 +167,8 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
             uid: (index + Date.now()).toString(36),
             // width: figure.offsetWidth,
             // height: figure.offsetWidth / aspectRatio,
-            width: 800,
-            height: 800 / aspectRatio,
+            width: 650,
+            height: 650 / aspectRatio,
             scheme: (ColorSchemes[chart.scheme] || d3[`scheme${chart.scheme}`]) || d3.Observable10,
             aspectRatio: aspectRatio,
             staticRoot: staticRoot,
@@ -235,6 +235,10 @@ function addFigurePlot(figure, plot) {
         svg.setAttribute('width', '100%');
         svg.removeAttribute('height'); // Let CSS handle the height
     }
+    let swatchStyle = plot.querySelector('.rc-chart-swatches > style');
+    if (swatchStyle) {
+        swatchStyle.remove(); // Remove the style added by Plot.swatches
+    }
     if (plot.tagName === "FIGURE") {
         // If the plot is a figure, we transfer its contents into the existing figure
         // Add last first to place legend at the bottom
@@ -245,6 +249,7 @@ function addFigurePlot(figure, plot) {
         // If the plot is not a figure, we add it to the figure
         figure.appendChild(plot);
     }
+
 }
 
 function setAxisScale(axisOptions, scale) {
@@ -337,11 +342,15 @@ function drawBarChart(figure, chart, options) {
 
     const plotOptions = {
         className: "rc-chart",
+        style: {
+          fontSize: "14px",
+        },
         width: options.width || 800,
         color: {
             legend: true,
             range: options.scheme,
         },
+
         [categoryAxis]: {
             tickFormat: (d, i) => formatTick(d, i, ticksEvery, ticksInterval),
             interval: ticksInterval,
@@ -402,6 +411,9 @@ function drawXYPlot(figure, chart, options) {
         marginRight: 40,
         marginTop: 40,
         marginBottom: 40,
+        style: {
+          fontSize: "14px",
+        },
         color: {
             legend: true,
             range: options.scheme,
@@ -468,6 +480,9 @@ function drawHistogram(figure, chart, options) {
     const binOutput = {x: {value: chart.values, thresholds: chart.bins || 'auto' }};
     const plotOptions = {
         className: "rc-chart",
+        style: {
+          fontSize: "14px",
+        },
         width: options.width || 800,
         height: options.height || 600,
         marginLeft: 40,
@@ -537,7 +552,7 @@ function drawPieChart(figure, chart, options) {
     // Add legend
     const legend = d3.select(figure)
         .append("div")
-        .attr("class", `legend rc-chart-swatches`)
+        .attr("class", `legend rc-chart-swatches rc-swatches-wrap`)
         .style("min-height", "33px")
         .style("display", "flex")
         .style("flex-direction", "row")
@@ -549,13 +564,13 @@ function drawPieChart(figure, chart, options) {
         .data(uniqueLabels)
         .enter()
         .append("span")
-            .attr("class", "legend-item")
+            .attr("class", "rc-chart-swatch")
             .style("display", "inline-flex")
             .style("align-items", "center")
-            .style("font-size", "10px")
+            .style("font-size", "14px")
             .style("margin-right", "10px")
             .style("margin-bottom", "5px")
-            .html(d => `<svg width="15" height="15" style="margin-right: 0.5em;" fill="${color(d)}">
+            .html(d => `<svg width="15" height="15" fill="${color(d)}">
                         <rect width="100%" height="100%"></rect>
                         </svg>${d}`);
 
@@ -566,6 +581,9 @@ function drawTimeline(figure, chart, options) {
     const colorScale = d3.scaleOrdinal(options.scheme);
     const plotOptions = {
         className: "rc-chart",
+        style: {
+          fontSize: "14px",
+        },
         width: options.width || 800,
         height: options.height || 600,
         marginLeft: 40,
@@ -617,6 +635,9 @@ function drawGeoChart(figure, chart, options) {
     let showLand = chart.map === '001' ? false : (chart["show-land"] || true);
     const plotOptions = {
         className: "rc-chart",
+        style: {
+          fontSize: "12px",
+        },
         width: options.width || 800,
         height: options.height || 600,
         color: {
@@ -724,7 +745,7 @@ function drawGeoChart(figure, chart, options) {
                             strokeOpacity: 0.7,
                             //strokeWidth: 0.5,
                             paintOrder: "stroke",
-                            fontSize: 10,
+                            fontSize: "10",
                             dy: 3
                         })
                     )

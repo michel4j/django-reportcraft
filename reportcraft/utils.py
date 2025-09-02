@@ -709,6 +709,15 @@ def regroup_data(
     return data_list
 
 
+def _key_value(item, key_field):
+    value = item.get(key_field)
+    return str(value)
+
+
+def _make_key(item, keys):
+    return tuple(_key_value(item, k) for k in keys)
+
+
 def merge_data(
         data: list[dict],
         unique: list[str],
@@ -722,12 +731,12 @@ def merge_data(
     """
 
     # make a dictionary mapping unique values to unique entries, these will be populated later
-    unique_keys = sorted({tuple(item[f] for f in unique) for item in data})
+    # convert to tuple of strings to make it hashable
+    unique_keys = sorted({_make_key(item, unique) for item in data})
     raw_data = {key: {} for key in unique_keys}
-
     # first pass to populate raw_data
     for item in data:
-        key = tuple([item[f] for f in unique])
+        key = _make_key(item, unique)
         raw_data[key].update(item)
 
     return list(raw_data.values())
