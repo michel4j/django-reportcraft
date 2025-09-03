@@ -53,6 +53,9 @@ def data_snippet(source):
     if not data:
         return mark_safe('<p>No data</p>')
 
+    if isinstance(data, str):
+        return mark_safe(f"<pre>{data}</pre>")
+
     headers = data[0].keys()
     table_html = '<table class="table table-sm rc-snippet-table"><thead><tr>'
     for header in headers:

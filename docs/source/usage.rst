@@ -444,7 +444,7 @@ A Map Entry displays the data in a map format using Google Charts. The map entry
 - Location: The field to use as the location of the data. This field should contain the name of the location to display
   on the map. For World, continent and subregion maps, the location must be be a country ISO-3166-1 3-leter Alpha codes
   (eg. CAN for Canada, USA for United States). For country maps, the location must be the 2-letter  ISO 3166-2 subunit
-  identifier without the Country suffix.
+  identifier.
 - Latitude: The field to use as the latitude of the data. This field should contain the lattitude of the location to
   display on the map.
 - Longitude: The field to use as the longitude of the data. This field should contain the longitude of the location to

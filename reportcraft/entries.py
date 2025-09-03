@@ -295,7 +295,7 @@ def generate_pie(entry, kind: Literal['pie', 'donut'] = 'pie', *args, **kwargs):
         'kind': kind,
         'style': entry.style,
         'scheme': colors,
-        'data': [{'label': labels.get(label, label.title()), 'value': value} for label, value in data.items()],
+        'data': [{'label': labels.get(label, label), 'value': value} for label, value in data.items()],
         'notes': entry.notes
     }
 
