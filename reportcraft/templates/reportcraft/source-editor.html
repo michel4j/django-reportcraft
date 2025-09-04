@@ -138,7 +138,7 @@
                 </table>
                 </div>
             </div>
-            <div class="card flex-shrink-0">
+            <div class="card flex-scrollable d-flex flex-column">
                 <div class="card-header d-flex align-items-center">
                     <h5 class="my-0"><span class="text-muted">Data</span></h5>
                     <div class="toolbox ms-auto pr-0">
@@ -152,7 +152,7 @@
                         </a>
                     </div>
                 </div>
-                <div class="card-body small p-0 rc-data-preview flex-grow-1">
+                <div class="card-body small p-0 rc-data-preview flex-scrollable">
                     {% data_snippet source %}
                     <code>
                         ...
@@ -193,7 +193,7 @@
                     title="{{ type }}"
                 >
                     <div class="text-nowrap" style="overflow: hidden;">
-                        <span class="text-warning-emphasis">{% svg_icon type|lower size='sm' %}</span>&nbsp;<small>{{ name }}</small>
+                        <span class="text-warning-emphasis">{% svg_icon type size='sm' %}</span>&nbsp;<small>{{ name }}</small>
                     </div>
                 </li>
                 {% endfor %}

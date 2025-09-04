@@ -18,12 +18,31 @@ export const figureTypes = [
 
 // Define custom color schemes
 const ColorSchemes = {
-    "Live4": ['#8f9f9a', '#c56052', '#9f6dbf', '#a0b552'],
-    "Live8": ['#073b4c', '#06d6a0', '#ffd166', '#ef476f', '#118ab2', '#7f7eff', '#afc765', '#78c5e7'],
-    "Live16": [
-        '#67aec1', '#c45a81', '#cdc339', '#ae8e6b', '#6dc758', '#a084b6', '#667ccd', '#cd4f55',
-        '#805cd6', '#cf622d', '#a69e4c', '#9b9795', '#6db586', '#c255b6', '#073b4c', '#ffd166'
+    "Live4": [
+        '#073b4c', '#06d6a0', '#ffd166', '#ef476f',
     ],
+    "Live8": [
+        '#073b4c', '#06d6a0', '#ffd166', '#ef476f',
+        '#287DFF', '#82AFB7', '#B28600', '#DADADA'
+    ],
+    "Live16": [
+        '#67aec1', '#c45a81', '#cdc339', '#ae8e6b',
+        '#6dc758', '#a084b6', '#667ccd', '#cd4f55',
+        '#805cd6', '#cf622d', '#a69e4c', '#9b9795',
+        '#6db586', '#c255b6', '#073b4c', '#ffd166'
+    ],
+    "CarbonDark": [
+        '#8a3ffc', '#33b1ff', '#007d79', '#ff7eb6',
+        '#fa4d56', '#fff1f1', '#6fdc8c', '#4589ff',
+        '#d12771', '#d2a106', '#08bdba', '#bae6ff',
+        '#ba4e00', '#d4bbff'
+    ],
+    "Carbon": [
+        '#6929c4', '#1192e8', '#005d5d', '#9f1853',
+        '#fa4d56', '#570408', '#198038', '#002d9c',
+        '#ee538b', '#b28600', '#009d9a', '#012749',
+        '#8a3800', '#a56eff'
+    ]
 };
 
 const contentTemplate = _.template(

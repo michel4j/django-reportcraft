@@ -33,6 +33,37 @@ from django.utils import timezone
 from pyparsing.exceptions import ParseException
 from . import countries
 
+FIELD_TYPES = {
+    'CharField': 'STRING',
+    'TextField': 'TEXT',
+    'SlugField': 'STRING',
+    'EmailField': 'STRING',
+    'URLField': 'STRING',
+    'UUIDField': 'STRING',
+    'FilePathField': 'STRING',
+    'IPAddressField': 'STRING',
+    'GenericIPAddressField': 'STRING',
+    'CommaSeparatedIntegerField': 'STRING',
+    'BinaryField': 'STRING',
+    'FileField': 'STRING',
+    'ImageField': 'STRING',
+    'IntegerField': 'INTEGER',
+    'BigIntegerField': 'INTEGER',
+    'SmallIntegerField': 'INTEGER',
+    'PositiveIntegerField': 'INTEGER',
+    'PositiveSmallIntegerField': 'INTEGER',
+    'FloatField': 'FLOAT',
+    'DecimalField': 'FLOAT',
+    'BooleanField': 'BOOLEAN',
+    'NullBooleanField': 'BOOLEAN',
+    'DateField': 'DATE',
+    'DateTimeField': 'DATETIME',
+    'TimeField': 'TIME',
+    'DurationField': 'TIME',
+    'JSONField': 'JSON',
+    'ArrayField': 'ARRAY',
+}
+
 
 def load_object(import_path):
     """
@@ -430,7 +461,7 @@ class ExpressionParser(Parser):
         )
         self.integer = pp.Combine(pp.Optional('-') + pp.Word(pp.nums)).setParseAction(self.parse_int)
         self.boolean = pp.oneOf('True False true false').setParseAction(self.parse_bool)
-        self.variable = pp.Word(pp.alphas + '.').setParseAction(self.parse_var)
+        self.variable = pp.Word(pp.alphanums + '.').setParseAction(self.parse_var)
         self.string = pp.quotedString.setParseAction(pp.removeQuotes)
 
         # Define the function call
@@ -898,6 +929,8 @@ def list_colors(specifier):
 CATEGORICAL_SCHEMES = {
     "Accent": list_colors("7fc97fbeaed4fdc086ffff99386cb0f0027fbf5b17666666"),
     "Dark2": list_colors("1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666"),
+    "Carbon": list_colors("6929c41192e8005d5d9f1853fa4d56570408198038002d9cee538bb2860009d9a0127498a3800a56eff"),
+    "CarbonDark": list_colors("8a3ffc33b1ff007d79ff7eb6fa4d56fff1f16fdc8c4589ffd12771d2a10608bdbabae6ffba4e00d4bbff"),
     "Live4": list_colors("8f9f9ac560529f6dbfa0b552"),
     "Live8": list_colors("073b4c06d6a0ffd166ef476f118ab27f7effafc76578c5e7"),
     "Live16": list_colors(
@@ -926,14 +959,9 @@ SEQUENTIAL_SCHEMES = {
     "GnBu": ["#edf8fb", "#2ca25f"],
     "OrRd": ["#fee8c8", "#e34a33"],
     "PuBu": ["#ece7f2", "#2b8cbe"],
-    # "PuBuGn": ["#ece2f0", "#1c9099"],
     "PuRd": ["#e7e1ef", "#dd1c77"],
     "RdPu": ["#fde0dd", "#c51b8a"],
     "YlGn": ["#f7fcb9", "#31a354"],
-    # "YlGnBu": ["#edf8b1", "#2c7fb8"],
-    # "YlOrBr": ["#fff7bc", "#8c2d04"],
-    # "YlOrRd": ["#ffeda0", "#b30000"],
-
 }
 
 CATEGORICAL_COLORS = [(scheme, scheme) for scheme in CATEGORICAL_SCHEMES.keys()]

@@ -250,13 +250,13 @@ class DataModel(models.Model):
         field_type = field.get_internal_type()
         disallowed_types = [
             'AutoField', 'BigAutoField', 'UUIDField', 'BinaryField', 'FileField', 'ImageField', 'ForeignKey',
-            'GenericForeignKey', 'GenericRelation', 'OneToOneRel', 'ManyToManyField', 'ManyToOneRel',
+            'GenericForeignKey', 'GenericRelation', 'OneToOneRel', 'ManyToManyField', 'ManyToOneRel', 'OneToOneField'
         ]
 
         if isinstance(field, (models.OneToOneField, models.ForeignKey, models.ManyToManyField)):
             return self.get_model_specs(field.related_model, parent=spec, depth=depth + 1)
         elif field_type not in disallowed_types:
-            return [(utils.sanitize_field(spec), field_type.replace('Field', ''))]
+            return [(utils.sanitize_field(spec), utils.FIELD_TYPES.get(field_type, field_type.replace('Field', '')))]
         return []
 
     def get_model_specs(self, model=None, parent: str = None, depth: int = 0, max_depth: int = 3) -> list[tuple]:
