@@ -440,6 +440,7 @@ function drawXYPlot(figure, chart, options) {
         x: {
             grid: true,
             label: chart["x-label"] || undefined,
+            tickFormat: (d, i) => formatTick(d, i),
         },
         y: {
             grid: true,
@@ -615,6 +616,7 @@ function drawTimeline(figure, chart, options) {
         x: {
             axis: "top",
             grid: true,
+            tickFormat: (d, i) => formatTick(d, i),
         },
         y: {
             axis: null,
