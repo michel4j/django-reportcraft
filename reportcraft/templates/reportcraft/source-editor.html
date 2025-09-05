@@ -1,4 +1,4 @@
-{% extends "reportcraft/base.html" %}
+{% extends "reportcraft/editor.html" %}
 {% load reportcraft %}
 {% load static %}
 
@@ -9,18 +9,10 @@
     </style>
 {% endblock %}
 
-{% block page-pretitle %}Edit Data Source{% endblock %}
-{% block page-title %}
-    {{ object.name }}
-{% endblock %}
+{% block editor-pretitle %}Edit Data Source{% endblock %}
+{% block editor-title %}{{ object.name }}{% endblock %}
 
-{% block page-tools %}
-    <a href="#rc-off-canvas" data-oc-url="{% url "editor-report-list" %}" data-bs-toggle="offcanvas">
-        {% tool_icon label='Reports' icon='list-details' %}
-    </a>
-    <a href="#rc-off-canvas" data-oc-url="{% url "data-source-list" %}" data-bs-toggle="offcanvas">
-        {% tool_icon label='Sources' icon='database' %}
-    </a>
+{% block editor-tools %}
     <a href="#!" data-modal-url="{% url "edit-data-source" source.pk %}">
         {% tool_icon label='Edit' icon='pencil' %}
     </a>
@@ -35,9 +27,13 @@
     </a>
 {% endblock %}
 
-{% block page-content %}
-    <div class="row report-editor ">
-        <div class="col-md-9 col-sm-12 d-flex flex-column">
+{% block editor-content %}
+    <div class="container-fluid h-100">
+        <div class="d-flex flex-column justify-content-stretch py-3 h-100">
+            <div class="alert alert-info small mb-4">
+                Add models to the Data Source and add fields linked to the models. Use groups and expressions for more
+                complex annotations and aggregations. Once fields are added specify any filters as needed.
+            </div>
             <div class="card mb-3">
                 <div class="card-header py-2 d-flex align-items-center">
                     <h5>Models</h5>
@@ -63,15 +59,17 @@
                     <tbody class="text-sm">
                     {% for src_model in source.models.all %}
                         <tr>
-                            <td>{{ src_model.name }}</td>
+                            <td class="font-monospace">{{ src_model.name }}</td>
                             {% for field_name, group_field in src_model.get_group_fields.items %}
                                 {% if group_field %}
-                                    <td class="font-monospace"><a href="#0"
-                                                                  data-modal-url="{% url 'edit-source-field' source=source.pk pk=group_field.pk %}">{{ group_field.expression }}</a>
+                                    <td class="font-monospace">
+                                        <a href="#0"
+                                           data-modal-url="{% url 'edit-source-field' source=source.pk pk=group_field.pk %}">{{ group_field.expression }}</a>
                                     </td>
                                 {% else %}
-                                    <td class="text-danger"><a href="#0"
-                                                               data-modal-url="{% url 'add-group-field' source=source.pk group=field_name %}">Undefined</a>
+                                    <td class="text-danger">
+                                        <a href="#0"
+                                           data-modal-url="{% url 'add-group-field' source=source.pk group=field_name %}">Undefined</a>
                                     </td>
                                 {% endif %}
                             {% endfor %}
@@ -95,8 +93,8 @@
                     </tbody>
                 </table>
             </div>
-            <div class="card mb-3">
-                <div class="card-header py-2 d-flex align-items-center">
+            <div class="card mb-3  flex-scrollable d-flex flex-column">
+                <div class="card-header d-flex align-items-center">
                     <h5>Fields</h5>
                     <div class="toolbox ms-auto pr-0">
                         <a href="#0" data-modal-url="{% url "add-source-field" source=source.pk %}"
@@ -105,6 +103,7 @@
                         </a>
                     </div>
                 </div>
+                <div class="flex-scrollable">
                 <table class="table">
                     <thead>
                     <tr>
@@ -120,7 +119,7 @@
                         <tr>
                             <td class="font-monospace pl-3">{{ field.name }}</td>
                             <td>{{ field.label }}</td>
-                            <td>{{ field.model }}</td>
+                            <td class="font-monospace">{{ field.model }}</td>
                             <td class="d-none d-md-table-cell font-monospace">{{ field.expression }}</td>
                             <td>
                                 <div class="d-flex align-children-end">
@@ -137,63 +136,70 @@
                     {% endfor %}
                     </tbody>
                 </table>
+                </div>
             </div>
-            <div class="card mb-3 flex-grow-1">
-                <div class="card-header py-2 d-flex align-items-center">
-                    <h4 class="my-0"><span class="text-muted">Data</span></h4>
+            <div class="card flex-scrollable d-flex flex-column">
+                <div class="card-header d-flex align-items-center">
+                    <h5 class="my-0"><span class="text-muted">Data</span></h5>
                     <div class="toolbox ms-auto pr-0">
                         <a download="{{ source.name_slug }}.csv"
-                           href="{% url 'source-data' pk=source.pk %}?type=csv" title="Download CSV">
+                           href="{% url 'format-source-data' format="csv" pk=source.pk %}" title="Download CSV">
                             {% tool_icon icon='file-type-csv' size='sm' %}
                         </a>
                         <a download="{{ source.name_slug }}.json"
-                           href="{% url 'source-data' pk=source.pk %}" title="Download JSON">
+                           href="{% url 'format-source-data' format="json" pk=source.pk %}" title="Download JSON">
                             {% tool_icon icon='file-type-js' size='sm' %}
                         </a>
                     </div>
                 </div>
-                <div class="card-body">
-                    {{ source.snippet|yaml_html }}
+                <div class="card-body small p-0 rc-data-preview flex-scrollable">
+                    {% data_snippet source %}
                     <code>
                         ...
                     </code>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-12 d-flex flex-column">
-            <div class="card mb-3">
-                <div class="card-header py-2">
-                    <h5 class="my-0"><span class="text-muted">Related Reports</span></h5>
-                </div>
-                <ul class="list-group list-group-flush">
-                    {% for report in source.reports %}
-                        <li class="list-group-item bg-transparent">
-                            <a href="{% url 'report-editor' pk=report.pk %}">
-                                <small>{{ report }}</small>
-                            </a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            <div class="card mb-3 flex-grow-1" >
-                <div class="card-header py-2">
-                    <h5 class="my-0"><span class="text-muted">DB Records</span></h5>
-                </div>
-                <div style="min-height: 0;">
-                <ul class="list-group-flush list-group small">
-                    {% for model in source.models.all %}
-                        <li class="fs-6 list-group-item bg-body-secondary">
-                        {{ model }}
-                        </li>
-                        {% for name, type in model.get_model_specs %}
-                        <li class="list-group-item  bg-transparent overflow ellipsis" data-bs-toggle="tooltip" title="{{ name }} [{{ type }}]">
-                            <code class="font-monospace text-nowrap" >{{ name }}</code>
-                        </li>
-                        {% endfor %}
-                    {% endfor %}
-                </ul>
-                </div>
-            </div>
+    </div>
+{% endblock %}
+{% block editor-sidebar %}
+    <div class="d-flex flex-column py-3 pe-3 h-100">
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="my-0"><span class="text-muted">Related Reports</span></h5>
         </div>
+        <ul class="list-group list-group-flush">
+            {% for report in source.reports %}
+                <li class="list-group-item bg-transparent">
+                    <a href="{% url 'report-editor' pk=report.pk %}">
+                        {% svg_icon 'report' size='sm' %}&nbsp;<small>{{ report }}</small>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="card flex-scrollable d-flex flex-column" >
+        <div class="card-header">
+            <h5 class="my-0"><span class="text-muted">Records</span></h5>
+        </div>
+        <div class="flex-scrollable">
+        <ul class="list-group-flush list-group text-condensed">
+            {% for model in source.models.all %}
+                <li class="fs-6 list-group-item bg-body-secondary">
+                {{ model }}
+                </li>
+                {% for name, type in model.get_model_specs %}
+                <li class="list-group-item bg-transparent"
+                    title="{{ type }}"
+                >
+                    <div class="text-nowrap" style="overflow: hidden;">
+                        <span class="text-warning-emphasis">{% svg_icon type size='sm' %}</span>&nbsp;<small>{{ name }}</small>
+                    </div>
+                </li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+        </div>
+    </div>
     </div>
 {% endblock %}

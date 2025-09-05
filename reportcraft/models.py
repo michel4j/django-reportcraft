@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import itertools
-from collections import defaultdict
-from typing import Any, Literal
+import logging
+import traceback
+from typing import Any
 
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
@@ -11,8 +12,11 @@ from django.db.models import QuerySet, Q
 from django.db.models.functions import Round, Abs, Sign
 from django.utils.text import slugify, gettext_lazy as _
 
+import reportcraft.functions
 from . import utils, entries
 
+
+logger = logging.getLogger('reportcraft')
 
 VALUE_TYPES = {
     'STRING': str,
@@ -148,8 +152,7 @@ class DataSource(models.Model):
 
         return queryset
 
-    @utils.cached_model_method(duration=1)
-    def get_data(self, filters=None, order_by=None) -> list[dict]:
+    def get_source_data(self, filters=None, order_by=None) -> list[dict]:
         """
         Generate data for this data source
         :param filters: dynamic filters
@@ -164,7 +167,19 @@ class DataSource(models.Model):
             field_names = [field.name for field in self.fields.filter(model__name=model_name).all()]
             data.extend(list(queryset.values(*field_names)))
 
+        if self.group_by:
+            data = utils.merge_data(data, unique=self.group_by)
+
         return data
+
+    @utils.cached_model_method(duration=1)
+    def get_data(self, filters=None, order_by=None) -> list[dict]:
+        """
+        Cached wrapper of get_source_data.
+        :param filters: dynamic filters
+        :param order_by: order by fields
+        """
+        return self.get_source_data(filters=filters, order_by=order_by)
 
     def get_precision(self, field_name: str) -> int:
         """
@@ -177,7 +192,7 @@ class DataSource(models.Model):
         except DataField.DoesNotExist:
             return 0
 
-    def snippet(self, filters=None, order_by=None, size=5) -> list[dict]:
+    def snippet(self, filters=None, order_by=None, size=50) -> list[dict]:
         """
         Generate a snippet of data for this data source
         :param filters: dynamic filters to apply
@@ -186,9 +201,10 @@ class DataSource(models.Model):
 
         """
         try:
-            result = self.get_data(filters=filters, order_by=order_by)[:size]
+            result = self.get_source_data(filters=filters, order_by=order_by)[:size]
         except Exception as e:
-            result = DATA_ERROR_TEMPLATE.format(error=str(e), error_type=type(e).__name__)
+            logger.exception(e)
+            result = DATA_ERROR_TEMPLATE.format(error=traceback.format_exc(), error_type=type(e).__name__)
         return result
 
 
@@ -235,13 +251,13 @@ class DataModel(models.Model):
         field_type = field.get_internal_type()
         disallowed_types = [
             'AutoField', 'BigAutoField', 'UUIDField', 'BinaryField', 'FileField', 'ImageField', 'ForeignKey',
-            'GenericForeignKey', 'GenericRelation', 'OneToOneRel', 'ManyToManyField', 'ManyToOneRel',
+            'GenericForeignKey', 'GenericRelation', 'OneToOneRel', 'ManyToManyField', 'ManyToOneRel', 'OneToOneField'
         ]
 
         if isinstance(field, (models.OneToOneField, models.ForeignKey, models.ManyToManyField)):
             return self.get_model_specs(field.related_model, parent=spec, depth=depth + 1)
         elif field_type not in disallowed_types:
-            return [(utils.sanitize_field(spec), field_type.replace('Field', ''))]
+            return [(utils.sanitize_field(spec), utils.FIELD_TYPES.get(field_type, field_type.replace('Field', '')))]
         return []
 
     def get_model_specs(self, model=None, parent: str = None, depth: int = 0, max_depth: int = 3) -> list[tuple]:
@@ -294,8 +310,8 @@ class DataField(models.Model):
         parser = utils.ExpressionParser()
         if self.expression:
             db_expression = parser.parse(self.expression)
-            if isinstance(db_expression, utils.DisplayName):
-                db_expression = utils.ChoiceName(self.model.name, db_expression.name)
+            if isinstance(db_expression, reportcraft.functions.DisplayName):
+                db_expression = reportcraft.functions.ChoiceName(self.model.name, db_expression.name)
             if self.precision is not None:
                 db_expression = Round(db_expression, self.precision)
             return db_expression
@@ -318,12 +334,10 @@ class Report(models.Model):
 
 class Entry(models.Model):
     class Types(models.TextChoices):
-        AREA = 'area', _('Area Chart')
         BARS = 'bars', _('Bar Chart')
         COLUMNS = 'columns', _('Column Chart')
         DONUT = 'donut', _('Donut Chart')
         HISTOGRAM = 'histogram', _('Histogram')
-        LINE = 'line', _('Line Chart')
         LIST = 'list', _('List')
         MAP = 'map', _('Map Chart')
         PIE = 'pie', _('Pie Chart')
@@ -370,8 +384,6 @@ class Entry(models.Model):
         Types.TIMELINE: entries.generate_timeline,
         Types.TEXT: entries.generate_text,
         Types.MAP: entries.generate_geochart,
-        Types.LINE: entries.generate_line,
-        Types.AREA: entries.generate_area,
         Types.COLUMNS: entries.generate_columns,
     }
 
@@ -382,11 +394,12 @@ class Entry(models.Model):
                 raise ValueError(f"Unsupported entry type: {self.kind}")
             return generator(self, *args, **kwargs)
         except Exception as e:
+            logger.exception(e)
             return {
                 'title': self.title,
                 'description': self.description,
                 'kind': 'richtext',
                 'style': self.style,
-                'text': ENTRY_ERROR_TEMPLATE.format(error=str(e), error_type=type(e).__name__),
+                'text': ENTRY_ERROR_TEMPLATE.format(error=traceback.format_exc(), error_type=type(e).__name__),
                 'notes': self.notes
             }

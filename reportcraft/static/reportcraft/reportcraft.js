@@ -1,62 +1,50 @@
-'use strict';
+import * as Plot from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
+import _ from "https://cdn.jsdelivr.net/npm/underscore@1.13.7/+esm";
+import showdown from "https://cdn.jsdelivr.net/npm/showdown@1.9.1/+esm";
+import * as topojson from "https://cdn.jsdelivr.net/npm/topojson@3.0.2/+esm";
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
-
-const figureTypes = [
-    "histogram",
-    "line",
+export const figureTypes = [
     "bars",
-    "scatter",
-    "pie",
-    "gauge",
-    "timeline",
     "columns",
-    "plot",
     "xyplot",
-    "histo",
+    "pie",
+    "donut",
+    "histogram",
+    "timeline",
     'geochart',
-    'donut',
-    'area',
+
 ];
 
+// Define custom color schemes
 const ColorSchemes = {
-    Accent: ['#7fc97f', '#beaed4', '#fdc086', '#ffff99', '#386cb0', '#f0027f', '#bf5b17', '#666666'],
-    Category10: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'],
-    Dark2: ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02', '#a6761d', '#666666'],
-    Live16: ['#67aec1', '#c45a81', '#cdc339', '#ae8e6b', '#6dc758', '#a084b6', '#667ccd', '#cd4f55', '#805cd6', '#cf622d', '#a69e4c', '#9b9795', '#6db586', '#c255b6', '#073b4c', '#ffd166'],
-    Live4: ['#8f9f9a', '#c56052', '#9f6dbf', '#a0b552'],
-    Live8: ['#073b4c', '#06d6a0', '#ffd166', '#ef476f', '#118ab2', '#7f7eff', '#afc765', '#78c5e7'],
-    Observable10: ['#4269d0', '#efb118', '#ff725c', '#6cc5b0', '#3ca951', '#ff8ab7', '#a463f2', '#97bbf5', '#9c6b4e', '#9498a0'],
-    Paired: ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928'],
-    Pastel1: ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4', '#fed9a6', '#ffffcc', '#e5d8bd', '#fddaec', '#f2f2f2'],
-    Pastel2: ['#b3e2cd', '#fdcdac', '#cbd5e8', '#f4cae4', '#e6f5c9', '#fff2ae', '#f1e2cc', '#cccccc'],
-    Set1: ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999'],
-    Set2: ['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854', '#ffd92f', '#e5c494', '#b3b3b3'],
-    Set3: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69', '#fccde5', '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f'],
-    Tableau10: ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'],
-
-    // https://observablehq.com/@d3/color-schemes
-    // Sequential colors
-    Blues: d3.schemeBlues[9],
-    Greens: d3.schemeGreens[9],
-    Greys: d3.schemeGreys[9],
-    Oranges: d3.schemeOranges[9],
-    Purples: d3.schemePurples[9],
-    Reds: d3.schemeReds[9],
-    BuGn: d3.schemeBuGn[9],
-    BuPu: d3.schemeBuPu[9],
-    GnBu: d3.schemeGnBu[9],
-    OrRd: d3.schemeOrRd[9],
-    PuBu: d3.schemePuBu[9],
-    PuRd: d3.schemePuRd[9],
-    RdPu: d3.schemeRdPu[9],
-    YlGn: d3.schemeYlGn[9],
-    YlGnBu: d3.schemeYlGnBu[9],
-    YlOrBr: d3.schemeYlOrBr[9],
-    YlOrRd: d3.schemeYlOrRd[9],
-    PuBuGn: d3.schemePuBuGn[9],
+    "Live4": [
+        '#073b4c', '#06d6a0', '#ffd166', '#ef476f',
+    ],
+    "Live8": [
+        '#073b4c', '#06d6a0', '#ffd166', '#ef476f',
+        '#287DFF', '#82AFB7', '#B28600', '#DADADA'
+    ],
+    "Live16": [
+        '#67aec1', '#c45a81', '#cdc339', '#ae8e6b',
+        '#6dc758', '#a084b6', '#667ccd', '#cd4f55',
+        '#805cd6', '#cf622d', '#a69e4c', '#9b9795',
+        '#6db586', '#c255b6', '#073b4c', '#ffd166'
+    ],
+    "CarbonDark": [
+        '#8a3ffc', '#33b1ff', '#007d79', '#ff7eb6',
+        '#fa4d56', '#fff1f1', '#6fdc8c', '#4589ff',
+        '#d12771', '#d2a106', '#08bdba', '#bae6ff',
+        '#ba4e00', '#d4bbff'
+    ],
+    "Carbon": [
+        '#6929c4', '#1192e8', '#005d5d', '#9f1853',
+        '#fa4d56', '#570408', '#198038', '#002d9c',
+        '#ee538b', '#b28600', '#009d9a', '#012749',
+        '#8a3800', '#a56eff'
+    ]
 };
 
-const styleTemplate = _.template('<%= selector %> { <%= rules %> }');
 const contentTemplate = _.template(
     '<div id="entry-<%= id %>" <% let style = entry.style || ""; %> class="section-entry <%= entry.kind %>-entry <%= style %>" >' +
     '   <% if ((entry.title) && ((!entry.kind) || (entry.kind === "richtext")))  { %>' +
@@ -69,7 +57,9 @@ const contentTemplate = _.template(
     '       <div class="rich-text"><%= renderMarkdown(entry.text) %></div>' +
     '   <% } %>' +
     '   <% if ((entry.kind === "table") && (entry.data)) { %>' +
-    '       <%= tableTemplate({id: id, entry: entry}) %>' +
+    '       <% _.each(entry.data, function(table, t){ %>' +
+    '       <%= tableTemplate({id: id, entry: entry, table: table, showCaption: (t == entry.data.length -1)}) %>' +
+    '       <% }); %>' +
     '   <% } else if (figureTypes.includes(entry.kind)) { %>' +
     '       <figure id="figure-<%= entry.id || id %>" data-type="<%= entry.kind %>" data-chart="<%= encodeObj(entry) %>" >' +
     '       </figure>' +
@@ -79,34 +69,30 @@ const contentTemplate = _.template(
     '   <% } %>' +
     '</div>'
 );
-
 const sectionTemplate = _.template(
     '<section id="section-<%= id %>" <% let style = section.style || "row"; %>' +
     '       class="<%= style %>">' +
     '       <%  if (section.title)  {%>' +
-    '       <h3 class="section-title col-12"><%= section.title %></h3>' +
+    '           <div class="section-title col-12"><h2><%= section.title %></h2></div>' +
     '       <% } %>' +
-    '       <%  if (section.description)  {%>' +
-    '       <div class="description col-12"><%= renderMarkdown(section.description) %></div>' +
-    '       <% } %>' +
-    '     <% _.each(section.content, function(entry, j){ %><%= contentTemplate({id: id+"-"+j, entry: entry}) %><% }); %>' +
+    '     <% _.each(section.content, function(entry, j){ %><%= renderContent({id: id+"-"+j, entry: entry}) %><% }); %>' +
     '</section>'
 );
 
 const tableTemplate = _.template(
     '<table id="table-<%= id %>" class="table table-sm table-hover">' +
-    '<% if (entry.title) { %>' +
+    '<% if ((entry.title) && (showCaption))  { %>' +
     '   <caption class="text-center"><%= entry.title %></caption>' +
     '<% } %>' +
     '<% if (entry.header.includes("row")) { %>' +
     '   <thead><tr>' +
-    '       <% _.each(entry.data[0], function(cell, i){ %>' +
-    '       <th><%= cell %></th>' +
+    '       <% _.each(table[0], function(cell, i){ %>' +
+    '       <th><span><%= cell %></span></th>' +
     '       <% }); %>' +
     '   </tr></thead>' +
     '<% } %>' +
     '<tbody>' +
-    '<% _.each(entry.data, function(row, j){ %>' +
+    '<% _.each(table, function(row, j){ %>' +
     '   <% if ((!entry.header.includes("row")) || (j>0)) { %>' +
     '       <tr>' +
     '       <% _.each(row, function(cell, i){ %>' +
@@ -123,18 +109,36 @@ const tableTemplate = _.template(
     '</table>'
 );
 
-const NUM_TICKS = 10;
 
 function renderMarkdown(text) {
     let markdown = new showdown.Converter();
     return markdown.makeHtml(text);
 }
 
-function getPrecision(row, steps) {
-    steps = steps || 8;
-    let diff = (row[row.length - 1] - row[0]) / steps;
-    return Math.abs(Math.floor(Math.log10(diff.toPrecision(1)) || 2))
+
+function renderContent(options) {
+    return contentTemplate({
+        id: options.id,
+        entry: options.entry,
+        renderMarkdown: renderMarkdown,
+        tableTemplate: tableTemplate,
+        figureTypes: figureTypes,
+        encodeObj: encodeObj,
+        decodeObj: decodeObj
+    });
 }
+
+
+function renderSection(options) {
+    return sectionTemplate({
+        id: options.id,
+        section: options.section,
+        renderContent: renderContent,
+        figureTypes: options.figureTypes,
+        renderMarkdown: renderMarkdown,
+    });
+}
+
 
 function encodeObj(obj) {
     // encode object as base64 string
@@ -144,6 +148,7 @@ function encodeObj(obj) {
         });
     return btoa(utf8Bytes);
 }
+
 
 function decodeObj(base64Str) {
     // decode base64 string to object
@@ -155,978 +160,676 @@ function decodeObj(base64Str) {
 }
 
 
-function drawXYChart(figure, chart, options, type = 'spline') {
-    migrateXYData(chart);
-    let data = Object.fromEntries(chart.data.map(item => [item[0], item.slice(1)]));
+export function showReport(selector, sections, staticRoot = "/static/reportcraft/") {
+    const target = document.querySelector(selector);
 
-    let series = [];
-    let columns = [];
-    let axes = {};
-    let data_type = type;
-    let spline_opts = {interpolation: {}};
-    let axis_opts = {x: {}, y: {}, y2: {}};
-
-    let xdata = [];
-    let xmin = Math.min(...data[chart.x]);
-    let xmax = data[chart.x].slice(-1)[0];
-    let xscale = d3.scaleLinear().domain([xmin, xmax]);
-    let tick_values = xscale.ticks(NUM_TICKS);
-    let prec = chart['x-tick-precision'];
-
-    if (prec == null) {
-        prec = getPrecision(tick_values);
+    if (!target) {
+        console.error("Container Not found");
+        return;
     }
+    target.classList.add('report-viewer');          // add main class to the container
 
-    // conversion functions,
-    let xfwd = function (x) {
-        return x
-    };
-    let xbwd = function (x) {
-        return x
-    };
-
-    // X-axis scale
-    switch (chart['x-scale']) {
-        case 'time':
-            xfwd = function (x) {
-                return Date.parse(x)
-            };
-            axis_opts.x = $.extend(axis_opts.x, {
-                type: 'timeseries',
-                tick: {format: chart['time-format'], culling: {max: 13}}
-            });
-            break;
-        case 'pow':
-        case 'inv-square':
-            let mult = (chart['x-scale'] === 'pow') ? 1 : -1;
-            xfwd = d3.scalePow().exponent(mult * 2).domain([xmin, xmax]);
-            xbwd = xfwd.invert;
-
-            xscale.domain([xfwd(xmin), xfwd(xmax)]);
-            tick_values = xscale.ticks(NUM_TICKS);
-
-            prec = getPrecision(tick_values);
-            axis_opts.x = $.extend(axis_opts.x, {
-                tick: {
-                    values: tick_values,
-                    multiline: false,
-                    format: x => xbwd(x).toFixed(prec)
-                }
-            });
-            break;
-        case 'log':
-            xfwd = d3.scaleLog().domain([xmin, xmax]);
-            xbwd = xfwd.invert;
-            xscale.domain([xfwd(xmin), xfwd(xmax)]);
-            tick_values = xscale.ticks(NUM_TICKS);
-            prec = getPrecision(tick_values);
-            axis_opts.x = $.extend(axis_opts.x, {
-                tick: {
-                    values: tick_values,
-                    multiline: false,
-                    format: x => xbwd(x).toFixed(prec)
-                }
-            });
-            break;
-        case 'identity':
-            axis_opts.x = $.extend(axis_opts.x, {
-                type: 'index',
-                tick: {
-                    multiline: false,
-                }
-            });
-            break;
-        default:    // linear
-            axis_opts.x = $.extend(axis_opts.x, {
-                tick: {
-                    values: tick_values,
-                    fit: true,
-                    multiline: false,
-                    format: x => xbwd(x).toFixed(prec)
-                }
-            });
-    }
-
-    // Axis limits
-    if (chart['x-limits']) {
-        axis_opts.x = $.extend(axis_opts.x, {
-            min: xfwd(chart['x-limits'][0]),
-            max: xfwd(chart['x-limits'][1]),
-            padding: 0,
+    // add sections to the container, we'll fill the content in a second pass
+    sections.forEach(function(section, i) {
+        const sectionHTML = renderSection({
+            id: i,
+            section: section,
         });
-    }
-    if (chart['y1-limits']) {
-        axis_opts.y = $.extend(axis_opts.y, {
-            min: chart['y1-limits'][0],
-            max: chart['y1-limits'][1],
-            padding: 0,
-        });
-    }
-    if (chart['y2-limits']) {
-        axis_opts.y2 = $.extend(axis_opts.y2, {
-            min: chart['y2-limits'][0],
-            max: chart['y2-limits'][1],
-            padding: 0,
-        });
-    }
-
-    // Spline Plo type
-    if (["cardinal", "basis", "step", "step-before", "step-after"].includes(chart['interpolation'])) {
-        data_type = 'spline';
-        spline_opts.interpolation.type = chart['interpolation'];
-    }
-
-
-    // convert x values
-    xdata = [chart.x, ...(data[chart.x].map(xfwd))];
-    axis_opts.x.label = chart["x-label"] || chart.x;
-    columns.push(xdata);
-
-    // remove raw data from dom, not needed anymore
-    figure.removeData('chart').removeAttr('data-chart');
-
-    // gather y1 columns data and configure labels and color
-    $.each(chart.y1, function (i, line) {  // y1
-        columns.push([line, ...data[line]]);
-        axes[line] = 'y';
-        series.push(line);
-        if (i === 0) {
-            axis_opts.y.label = chart["y1-label"] || line;
-        }
+        target.insertAdjacentHTML('beforeend', sectionHTML);
     });
-
-    // gather y2 axes data
-    $.each(chart.y2, function (i, line) {  // y2
-        columns.push([line, ...data[line]]);
-        axes[line] = 'y2';
-        series.push(line);
-        axis_opts.y2.show = true;
-        if (i === 0) {
-            axis_opts.y.label = chart["y2-label"] || line;
-        }
-    });
-
-    let color_scale = d3.scaleOrdinal().domain(series).range(options.scheme);
-    $.each(series, function (i, key) {
-        if (!(key in options.colors)) {
-            options.colors[key] = color_scale(key);
-        }
-    });
-
-    let c3chart = c3.generate({
-        bindto: `#${figure.attr('id')}`,
-        size: {width: options.width, height: options.height},
-        data: {
-            type: data_type,
-            columns: columns,
-            colors: options.colors,
-            axes: axes,
-            x: chart.x,
-        },
-        spline: spline_opts,
-        point: {show: (data[chart.x].length < 15)},
-        axis: axis_opts,
-        grid: {y: {show: true}},
-        //zoom: {enabled: true, type: 'drag'},
-        onresize: function () {
-            this.api.resize({
-                width: figure.width(),
-                height: figure.width() * options.height / options.width
-            });
-        }
-    });
-    if (chart.annotations) {
-        c3chart.xgrids(chart.annotations)
-    }
-    figure.data('c3-chart', c3chart);
-}
-
-function drawScatterPlot(figure, chart, options) {
-    let spline_opts = {interpolation: {}};
-    let axisOptions = {x: {tick: {culling: true}}, y: {}, y2: {}};
-
-    const xData = [], zData= [];
-    $.each(chart.groups, function (i, item) {
-        xData.push(...chart.data[item.x]);
-        zData.push(... (chart.data[item.z] || []));
-    });
-    const xMin = Math.min(...xData);
-    const xMax = Math.max(...xData);
-    const maxRadius = chart['max-radius'] || 2.5;
-    const zMin = zData.length ? Math.min(...zData) : 0.0;
-    const zMax = zData.length ? Math.max(...zData) : 1.0;
-    const zRange = chart['z-range'] || [zMin, zMax];
-
-    let xScale = d3.scaleLinear().domain([xMin, xMax]);
-    const zScale = d3.scaleSqrt().domain(zRange).range([1, maxRadius]);
-    let tickValues = xScale.ticks(NUM_TICKS);
-    let precision = chart['x-tick-precision'];
-
-
-    if (precision == null) {
-        precision = getPrecision(tickValues);
-    }
-
-    // conversion functions,
-    let xForward = function (x) {
-        return x
-    };
-    let xBackward = function (x) {
-        return x
-    };
-
-    // X-axis scale
-    switch (chart['x-scale']) {
-        case 'time':
-            xForward = function (x) {
-                return Date.parse(x)
-            };
-            axisOptions.x = $.extend(axisOptions.x, {
-                type: 'timeseries',
-                tick: {format: chart['time-format'], culling: {max: 13}}
-            });
-            break;
-        case 'pow':
-        case 'inv-square':
-            let mult = (chart['x-scale'] === 'pow') ? 1 : -1;
-            xForward = d3.scalePow().exponent(mult * 2).domain([xMin, xMax]);
-            xBackward = xForward.invert;
-
-            xScale.domain([xForward(xMin), xForward(xMax)]);
-            tickValues = xScale.ticks(NUM_TICKS);
-
-            precision = getPrecision(tickValues);
-            axisOptions.x = $.extend(axisOptions.x, {
-                tick: {
-                    values: tickValues,
-                    multiline: false,
-                    format: x => xBackward(x).toFixed(precision)
-                }
-            });
-            break;
-        case 'log':
-            xForward = d3.scaleLog().domain([xMin, xMax]);
-            xBackward = xForward.invert;
-            xScale.domain([xForward(xMin), xForward(xMax)]);
-            tickValues = xScale.ticks(NUM_TICKS);
-            precision = getPrecision(tickValues);
-            axisOptions.x = $.extend(axisOptions.x, {
-                tick: {
-                    values: tickValues,
-                    multiline: false,
-                    format: x => xBackward(x).toFixed(precision)
-                }
-            });
-            break;
-        case 'identity':
-            axisOptions.x = $.extend(axisOptions.x, {
-                type: 'index',
-                tick: {
-                    multiline: false,
-                }
-            });
-            break;
-        default:    // linear
-            axisOptions.x = $.extend(axisOptions.x, {
-                tick: {
-                    culling: true,
-                    fit: true,
-                    values: tickValues,
-                    multiline: false,
-                    format: x => xBackward(x).toFixed(precision)
-                }
-            });
-    }
-
-    // Axis limits
-    if (chart['x-limits']) {
-        axisOptions.x = $.extend(axisOptions.x, {
-            min: xForward(chart['x-limits'][0]),
-            max: xForward(chart['x-limits'][1]),
-            padding: 0,
-        });
-    }
-    if (chart['y-limits']) {
-        axisOptions.y = $.extend(axisOptions.y, {
-            min: chart['y-limits'][0],
-            max: chart['y-limits'][1],
-            padding: 0,
-        });
-    }
-
-    // Spline Plo type
-    if (["cardinal", "basis", "step", "step-before", "step-after"].includes(chart['interpolation'])) {
-        spline_opts.interpolation.type = chart['interpolation'];
-    }
-
-    // convert x values and setup column datat
-    let columns = [];
-    let series = {};
-    const groups = {};
-    const types = {};
-    $.each(chart.groups, function (i, group) {
-        if (i === 0) {
-            axisOptions.x.label = chart["x-label"] || group.x;
-            axisOptions.y.label = chart["y-label"] || group.y;
-        }
-        columns.push([group.x, ...chart.data[group.x].map(xForward)]);
-        columns.push([group.y, ...chart.data[group.y]]);
-        series[group.y] = group.x;
-        groups[group.y] = group;
-        if (group.type) {
-            types[group.y] = group.type;
-        }
-    });
-
-    const getSize = function(d){
-        const group = groups[d.id];
-        if (group.type === 'line') {
-            return 0;
-        } else if (group.z) {
-            return zScale(chart.data[group.z][d.index] || 0.0);
-        } else {
-            return 2.5;
-        }
-    };
-
-    Object.entries(series).forEach(([key, value], index) => {
-        options.colors[key] = options.scheme[index % options.scheme.length];
-    });
-
-    // remove raw data from dom, not needed anymore
-    figure.removeData('chart').removeAttr('data-chart');
-    let c3chart = c3.generate({
-        bindto: `#${figure.attr('id')}`,
-        size: {width: options.width, height: options.height},
-        data: {
-            columns: columns,
-            types: types,
-            colors: options.colors,
-            xs: series,
-        },
-        spline: spline_opts,
-        point: {
-           r: getSize,
-        },
-        axis: axisOptions,
-        grid: {y: {show: true}, x: {show: true}},
-        onresize: function () {
-            this.api.resize({
-                width: figure.width(),
-                height: figure.width() * options.height / options.width
-            });
-        }
-    });
-    if (chart.annotations) {
-        c3chart.xgrids(chart.annotations)
-    }
-    figure.data('c3-chart', c3chart);
-}
-
-function migrateData(chart) {
-    // convert v2 data to v3 format
-    if (!Array.isArray(chart.data)) {
-        let data = chart.data;
-        for (let key in data) {
-            if (data.hasOwnProperty(key)) {
-                chart[key] = data[key];
-            }
-        }
-    }
-}
-
-function migrateXYData(chart) {
-    // convert v2 data to v3 format
-    if (!Array.isArray(chart.data)) {
-        let info = chart.data;
-        chart.data = [info.x, ...info.y1];
-        if (Array.isArray(info.y2)) {
-            chart.data.push(...info.y2);
-        }
-        chart.x = info.x[0];
-        chart.y1 = info.y1.map(item => item[0]);
-        chart.y2 = info.y2.map(item => item[0]);
-
-        delete info.x;
-        delete info.y1;
-        delete info.y2;
-
-        for (let key in info) {
-            if (info.hasOwnProperty(key)) {
-                chart[key] = info[key];
-            }
-        }
-    }
-}
-
-function drawBarChart(figure, chart, options, type = 'bar') {
-    let series = [];
-    let flavors = [];
-    let hidden = [];
-
-    // migrate data
-    migrateData(chart);
-
-    let color_func = function (color, d) {
-        return color;
-    };
-
-    // remove raw data from dom
-    figure.removeData('chart');
-    figure.removeAttr('data-chart');
-
-    // series names and alternate groupings
-    $.each(chart["data"][0], function (key, value) {
-        if (key === chart["color-by"]) {
-            // hide series since it will be used for coloring
-            hidden.push(key);
-        } else if (key === chart["x-label"]) {
-            // ignore x-axis series
-        } else {
-            // new series
-            series.push(key);
-        }
-    });
-
-    // names for coloring using "color-by" field
-    if (chart["color-by"]) {
-        let key = chart["color-by"];
-        $.each(chart["data"], function (i, item) {
-            if (!(flavors.includes(item[key]))) {
-                flavors.push(item[key])
-            }
-        });
-
-        // update color function for color-by
-        color_func = function (color, d) {
-            if (typeof d === "object") {
-                let flavor = chart['data'][d.index][key];
-                return options.colors[flavor];
-            } else {
-                return color;
-            }
-        }
-    }
-    // update color dictionary
-    let color_scale = d3.scaleOrdinal().domain(flavors.concat(series)).range(options.scheme);
-    $.each(series, function (i, key) {
-        if (!(key in options.colors)) {
-            options.colors[key] = color_scale(key);
-        }
-    });
-
-    function formatKilo(num) {
-        return num >= 1000 ? (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K' : num.toString();
-    }
-
-
-    let x_ticks = {
-        culling: {'max': chart["x-culling"] || false},
-        multiline: chart["wrap-x-labels"] || false,
-    };
-
-    let series_types = {};
-    if (chart['types']) {
-        series_types = chart['types'];
-    }
-
-    if (type === 'bar') {
-        options.horizontal = true;
-    } else if (type === 'column') {
-        type = 'bar';
-    }
     
-    let c3chart = c3.generate({
-        bindto: `#${figure.attr('id')}`,
-        size: {width: options.width, height: options.height},
-        data: {
-            type: type,
-            json: chart["data"],
-            hide: hidden,
-            color: color_func,  // used for color-by
-            colors: options.colors,
-            keys: {
-                x: chart["x-label"],
-                value: series
-            },
-            types: series_types,
-            groups: chart["stack"] || [],
-            order: null
-        },
-        grid: {y: {show: true}},
-        axis: {
-            x: {
-                type: 'category',
-                label: chart['x-label'],
-                tick: x_ticks,
-            },
-            y: {
-                tick: {format: formatKilo}
-            },
-            rotated: options.horizontal
-        },
-        legend: {hide: (series.length === 1)},
-        bar: {width: {ratio: .6}},
-        padding: {bottom: 20},
-        onresize: function () {
-            this.api.resize({
-                width: figure.width(),
-                height: figure.width() * options.height / options.width
-            });
+    // now fill the content with each section
+    target.querySelectorAll('figure').forEach(function (figure, index) {
+        const chart = decodeObj(figure.getAttribute('data-chart'));
+        let aspectRatio = chart.data['aspect-ratio'] || 16/9;
+        const options = {
+            uid: (index + Date.now()).toString(36),
+            // width: figure.offsetWidth,
+            // height: figure.offsetWidth / aspectRatio,
+            width: 650,
+            height: 650 / aspectRatio,
+            scheme: (ColorSchemes[chart.scheme] || d3[`scheme${chart.scheme}`]) || d3.Observable10,
+            aspectRatio: aspectRatio,
+            staticRoot: staticRoot,
+        };
+
+        switch (figure.dataset.type) {
+            case 'bars':
+            case 'columns':
+                drawBarChart(figure, chart, options);
+                break;
+            case 'pie':
+            case 'donut':
+                drawPieChart(figure, chart, options);
+                break;
+            case 'xyplot':
+                drawXYPlot(figure, chart, options);
+                break;
+            case 'histogram':
+                drawHistogram(figure, chart, options);
+                break;
+            case 'timeline':
+                drawTimeline(figure, chart, options);
+                break;
+            case 'geochart':
+                drawGeoChart(figure, chart, options);
+                break;
+        }
+
+        // Remove raw data from dom
+        figure.removeAttribute('data-chart');
+
+        // caption
+        if (chart.title) {
+            figure.insertAdjacentHTML('afterend', `<figcaption class="text-center">${chart.title}</figcaption>`);
+        } else {
+            figure.insertAdjacentHTML('afterend', `<figcaption class="text-center"></figcaption>`);
         }
     });
-    if (chart["annotations"]) {
-        if (options.horizontal) {
-            c3chart.ygrids(chart["annotations"])
+}
+
+function formatTick(value, i, ticksEvery = 1, ticksInterval = undefined) {
+    if (!(ticksInterval) && (i % ticksEvery)) {
+        return null; // Skip this tick
+    } else if (typeof(value) === 'string') {
+        return value; // Return string as it is
+    } else if (typeof(value) === 'number') {
+        if (Number.isInteger(value)) {
+            // Format integers with commas if they are larger than 10,000. This avoids
+            // messing up years which are < 1e4
+            return Math.abs(value) >= 1e4 ? value.toLocaleString() : value.toString();
         } else {
-            c3chart.xgrids(chart["annotations"])
+            return ""
         }
     }
-    figure.data('c3-chart', c3chart);
+}
+
+function addFigurePlot(figure, plot) {
+    // Fix the width and let CSS handle the height
+    let svg = plot.querySelector('.rc-chart');
+    if (plot.tagName === 'svg') {
+        svg = plot;
+    }
+    if (svg) {
+        svg.setAttribute('width', '100%');
+        svg.removeAttribute('height'); // Let CSS handle the height
+    }
+    let swatchStyle = plot.querySelector('.rc-chart-swatches > style');
+    if (swatchStyle) {
+        swatchStyle.remove(); // Remove the style added by Plot.swatches
+    }
+    if (plot.tagName === "FIGURE") {
+        // If the plot is a figure, we transfer its contents into the existing figure
+        // Add last first to place legend at the bottom
+        while (plot.lastChild) {
+            figure.appendChild(plot.lastChild);
+        }
+    } else {
+        // If the plot is not a figure, we add it to the figure
+        figure.appendChild(plot);
+    }
+
+}
+
+function setAxisScale(axisOptions, scale) {
+    switch (scale){
+        case 'linear':
+            break;
+        case 'time':
+        case 'log':
+        case 'symlog':
+            axisOptions.type = scale;
+            break;
+        case 'log2':
+            axisOptions.type = "log";
+            axisOptions.base = 2;
+            break;
+        case 'inverse':
+            axisOptions.transform = d => 1/d;
+            break;
+        case 'square':
+            axisOptions.type = "pow";
+            axisOptions.exponent = 2;
+            break;
+        case 'sqrt':
+            axisOptions.type = "pow";
+            axisOptions.exponent = 0.5;
+            break;
+        case 'cube':
+            axisOptions.type = "pow";
+            axisOptions.exponent = 3;
+            break;
+        case 'inv-square':
+            axisOptions.type = "pow";
+            axisOptions.exponent = -2;
+            axisOptions.reverse = true;
+            break;
+        case 'inv-cube':
+            axisOptions.type = "pow";
+            axisOptions.exponent = -3;
+            break;
+        case 'cube-root':
+            axisOptions.type = "pow";
+            axisOptions.exponent = 1/3;
+            break;
+    }
+}
+
+
+function radiusLegend(data, options) {
+    return new Plot.dot(data, {
+        ...options,
+        frameAnchor: "bottom-right",
+        strokeWidth: 0.8,
+        dx: -40,
+        dy: -3,
+        render: (i, s, v, d, c, next) => {
+            const g = next(i, s, v, d, c);
+            d3.select(g)
+                .selectAll("circle")
+                .each(function (i) {
+                    const r = +this.getAttribute("r");
+                    const x = +this.getAttribute("cx");
+                    const y = +this.getAttribute("cy");
+                    this.setAttribute("transform", `translate(0,${-r})`);
+                    const title = d3.select(this).select("title");
+                    d3.select(g)
+                        .append("text")
+                        .attr("x", x)
+                        .attr("y", y - 2 * r - 4)
+                        .attr("stroke", "none")
+                        .attr("fill", "currentColor")
+                        .text(title.text());
+                    title.remove();
+                });
+            return g;
+        }
+    });
+}
+
+function drawBarChart(figure, chart, options) {
+    let marks = [];
+    const markTypes = chart.features || [];
+    const valueAxis = (chart.kind === 'bars') ? 'x' : 'y';
+    const categoryAxis = (chart.kind === 'bars') ? 'y' : 'x';
+    const ticksEvery = chart["ticks-every"] || 1; // Default to every tick
+    const ticksInterval = chart["ticks-interval"] || undefined; // Default to 1 for bar charts
+    const fontSize = 10; //getFontSize();
+    const colorScale = d3.scaleOrdinal(options.scheme);
+    const valueScale = chart["scale"] || 'linear';
+    let maxLabelLength = 10;
+
+    const plotOptions = {
+        className: "rc-chart",
+        style: {
+          fontSize: "14px",
+        },
+        width: options.width || 800,
+        color: {
+            legend: true,
+            range: options.scheme,
+        },
+
+        [categoryAxis]: {
+            tickFormat: (d, i) => formatTick(d, i, ticksEvery, ticksInterval),
+            interval: ticksInterval,
+            label: null
+        },
+        [valueAxis]: {
+            grid: true,
+        },
+        marks: marks
+    };
+    setAxisScale(plotOptions[valueAxis], valueScale);
+    markTypes.forEach(function(mark, index){
+        const markOptions = {x: mark.x,  y: mark.y, sort: null, tip: categoryAxis};
+
+        maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[mark[categoryAxis]]}`.length || 0));
+        markOptions.fill = mark.colors || colorScale(index);
+        if (mark.groups) {
+            plotOptions[categoryAxis].axis = null;
+            if (chart.kind === 'bars') {
+                markOptions.fy = mark.groups;
+            } else {
+                markOptions.fx = mark.groups;
+            }
+        }
+        if (mark.sort) {
+            markOptions.sort = mark.sort.startsWith('-') ? {[categoryAxis]: `-${valueAxis}`}: {[categoryAxis]: valueAxis};
+        }
+
+        if (chart.kind === 'bars') {
+            plotOptions.marginLeft = Math.max(40, maxLabelLength * fontSize * 0.8);
+            marks.push(new Plot.ruleX([0]));
+            marks.push(new Plot.barX(chart.data, markOptions));
+        } else {    // columns
+            plotOptions.height = options.height || 400;
+            plotOptions.marginBottom = fontSize * 3;
+            marks.push(new Plot.ruleY([0]));
+            marks.push(new Plot.barY(chart.data, markOptions));
+        }
+    });
+
+    // Create the bar chart
+    const plot = Plot.plot(plotOptions);
+    addFigurePlot(figure, plot);
+}
+
+function drawXYPlot(figure, chart, options) {
+    let marks = [];
+    const markTypes = chart.features || [];
+    const colorScale = d3.scaleOrdinal(options.scheme);
+    const xScale = chart["x-scale"] || 'linear';
+    const yScale = chart["y-scale"] || 'linear';
+    let maxLabelLength = 10;
+    const colorDomain = [];
+    const colorRange = [];
+
+    const plotOptions = {
+        className: "rc-chart",
+        width: options.width || 800,
+        height: options.height || 600,
+        marginLeft: 40,
+        marginRight: 40,
+        marginTop: 40,
+        marginBottom: 40,
+        style: {
+          fontSize: "14px",
+        },
+        color: {
+            legend: true,
+            range: options.scheme,
+        },
+        x: {
+            grid: true,
+            label: chart["x-label"] || undefined,
+            tickFormat: (d, i) => formatTick(d, i),
+        },
+        y: {
+            grid: true,
+            label: chart["y-label"] || undefined,
+        },
+        r: {
+            transform: (r) => Math.pow(r, 2), // Square the radius so that area is proportional to value
+        },
+        marks: marks
+    };
+
+    // Set scales
+    setAxisScale(plotOptions.x, xScale);
+    setAxisScale(plotOptions.y, yScale);
+
+
+    markTypes.forEach(function(mark, index){
+        maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[mark.y]}`.length || 0));
+        const markOptions = {
+            x: mark.x,
+            y: mark.y,
+            r: mark.z || undefined,
+            curve: mark.curve || "linear",
+            tip: true,
+        };
+        let colorValue;
+        if (mark.colors) {
+            colorValue = mark.colors;
+        } else {
+            colorValue = colorScale(index);
+            colorDomain.push(mark.y);
+            colorRange.push(colorValue);
+        }
+        if (mark.type === 'line') {
+            markOptions.stroke = colorValue;
+            marks.push(new Plot.lineY(chart.data, markOptions));
+        } else if (mark.type === 'line-points') {
+            markOptions.stroke = colorValue;
+            markOptions.marker = mark.marker || 'circle-stroke';
+            marks.push(new Plot.lineY(chart.data, markOptions));
+        } else if (mark.type === 'points') {
+            markOptions.stroke = colorValue;
+            markOptions.strokeWidth = 1;
+            marks.push(new Plot.dot(chart.data, markOptions));
+        }else if (mark.type === 'points-filled') {
+            markOptions.fill = colorValue;
+            markOptions.stroke = "var(--bs-body-color)";
+            markOptions.strokeWidth = 0.5;
+        } else if (mark.type === 'area') {
+            markOptions.fill = colorValue;
+            marks.push(new Plot.areaY(chart.data, markOptions));
+        } else {
+            console.warn(`Unknown XY Plot: ${mark.type}`);
+        }
+        if (chart['cross-hair']) {
+            marks.push(new Plot.crosshair(chart.data, {'x': mark.x, 'y': mark.y}));
+        }
+    });
+    // Create chart
+    plotOptions.marginLeft = Math.max(40, maxLabelLength * 10);
+    if (colorDomain.length > 1) {
+        plotOptions.color = {
+            domain: colorDomain,
+            range: colorRange,
+            legend: true,
+        }
+    }
+    const plot = Plot.plot(plotOptions);
+    addFigurePlot(figure, plot);
 }
 
 
 function drawHistogram(figure, chart, options) {
-    migrateData(chart);
-    let yscale = chart['y-scale'];
-    let data = chart['data'];
-    let x_culling = chart['x-culling'] || null;
-
-    // remove raw data from dom
-    figure.removeData('chart');
-    figure.removeAttr('data-chart');
-
-    let c3chart = c3.generate({
-        bindto: `#${figure.attr('id')}`,
-        size: {width: options.width, height: options.height},
-        data: {
-            type: 'bar',
-            json: data,
-            colors: {
-                y: options.scheme[figure.parent().index()]
-            },
-            keys: {
-                x: 'x', value: ['y']
-            },
+    const binInput = {y: "count"};
+    const binOutput = {x: {value: chart.values, thresholds: chart.bins || 'auto' }};
+    const plotOptions = {
+        className: "rc-chart",
+        style: {
+          fontSize: "14px",
         },
-        axis: {
-            x: {
-                tick: {
-                    fit: false,
-                    culling: {max: x_culling},
-                    format: v => v.toFixed(1)
-                }
-            },
-            y: {
-                type: yscale
-            }
+        width: options.width || 800,
+        height: options.height || 600,
+        marginLeft: 40,
+        marginRight: 40,
+        marginTop: 40,
+        marginBottom: 40,
+        color: {
+            range: options.scheme,
         },
-        legend: {hide: true},
-        grid: {y: {show: true}},
-        bar: {width: {ratio: 0.5}},
-        onresize: function () {
-            this.api.resize({
-                width: figure.width(),
-                height: figure.width() * options.height / options.width
-            });
+        y: { grid: true},
+        marks: []
+    };
+    if (chart["groups"]) {
+        plotOptions.color.legend = true;
+        binOutput.fill = chart["groups"];
+        if (!(chart.stack)) {
+            binOutput.nudge = 1; // Avoid bars overlapping
+            binInput.y = undefined;
+            binInput.y2 = "count";
+            binOutput.mixBlendMode = "multiply";
         }
-    });
-    figure.data('c3-chart', c3chart);
-}
-
-function drawPieChart(figure, chart, options, type = 'pie') {
-    let data = {};
-    let series = [];
-    let colors = {};
-    // remove raw data from dom
-    figure.removeData('chart');
-    figure.removeAttr('data-chart');
-    migrateData(chart);
-    $.each(chart.data, function (i, item) {
-        data[item.label] = item.value;
-        series.push(item.label);
-        colors[item.label] = item.color || options.scheme[i];
-    });
-
-    let c3chart = c3.generate({
-        bindto: `#${figure.attr('id')}`,
-        size: {width: options.width, height: options.height},
-        data: {
-            type: type,
-            json: [data],
-            colors: colors,
-            keys: {
-                value: series
-            },
-        },
-        donut: {
-            title: chart.title || '',
-            width: chart['donut-width'] || null,
-        },
-        onresize: function () {
-            this.api.resize({
-                width: figure.width(),
-                height: figure.width() * options.height / options.width
-            });
-        }
-    });
-    figure.data('c3-chart', c3chart);
-}
-
-function callout(g, value, color) {
-    if (!value) return g.style("display", "none");
-
-    if (g.attr('data-label')) {
-        value = `${value} - ${g.attr('data-label')}`;
     }
-    g.attr('data-label');
+    plotOptions.marks = [
+        Plot.rectY(chart.data, Plot.binX(binInput, binOutput)),
+        Plot.ruleY([0])
+    ];
 
-    g.style("display", null)
-        .style("pointer-events", "none")
-        .style("font", "10px sans-serif");
+    // Create chart
+    const plot = Plot.plot(plotOptions);
+    addFigurePlot(figure, plot);
+}
 
-    const path = g.selectAll("path")
-        .data([null])
-        .join("path")
-        .attr("fill", "var(--warning)")
-        .attr("stroke", "black");
 
-    const text = g.selectAll("text")
-        .data([null])
-        .join("text")
-        .call(text => text
-            .selectAll("tspan")
-            .data((value + "").split(/\n/))
-            .join("tspan")
-            .attr("x", 0)
-            .attr("y", (d, i) => `${i * 1.1}rem`)
-            .style("font-weight", (_, i) => i ? null : "bold")
-            .text(d => d));
+function drawPieChart(figure, chart, options) {
+    // Placeholder for pie chart implementation
+    const uniqueLabels = [...d3.union(chart.data.map(d => d.label))];
+    const color = d3.scaleOrdinal(options.scheme);
+    const outerRadius = Math.min(options.width, options.height) / 2 - 15;
+    const innerRadius = (chart.kind === 'donut') ? outerRadius / 2 : 0;
 
-    const {x, y, width: w, height: h} = text.node().getBBox();
+    // Add chart
+    const svg = d3.select(figure)
+        .append("svg")
+        .attr("viewBox", `0 0 ${options.width} ${options.height}`)
+        .attr("class", "rc-chart")
+        .attr("width", "100%")
+        .append("g")
+        .attr("transform", `translate(${options.width / 2}, ${options.height / 2})`);
 
-    text.attr("transform", `translate(${-w / 2},${10 - y})`);
-    path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 10}h-${w + 20}z`);
+    const pie = d3.pie()
+        .value(d => d.value);
+    let dataReady = pie(chart.data);
+    let arcGenerator = d3.arc()
+        .innerRadius(innerRadius)
+        .outerRadius(outerRadius);
+
+    svg.selectAll("pieSlices")
+        .data(dataReady)
+        .enter()
+        .append("path")
+            .attr("d", arcGenerator)
+            .attr("fill", d => color(d.data.label))
+            .attr("stroke", "var(--bs-body-bg)")
+            .style("stroke-width", "1px")
+            .style("opacity", 1);
+
+    // Add legend
+    const legend = d3.select(figure)
+        .append("div")
+        .attr("class", `legend rc-chart-swatches rc-swatches-wrap`)
+        .style("min-height", "33px")
+        .style("display", "flex")
+        .style("flex-direction", "row")
+        .style("flex-wrap", "wrap")
+        .style("align-items", "center")
+        .style("justify-content", "center");
+
+    legend.selectAll("legendItem")
+        .data(uniqueLabels)
+        .enter()
+        .append("span")
+            .attr("class", "rc-chart-swatch")
+            .style("display", "inline-flex")
+            .style("align-items", "center")
+            .style("font-size", "14px")
+            .style("margin-right", "10px")
+            .style("margin-bottom", "5px")
+            .html(d => `<svg width="15" height="15" fill="${color(d)}">
+                        <rect width="100%" height="100%"></rect>
+                        </svg>${d}`);
+
 }
 
 
 function drawTimeline(figure, chart, options) {
+    const colorScale = d3.scaleOrdinal(options.scheme);
+    const plotOptions = {
+        className: "rc-chart",
+        style: {
+          fontSize: "14px",
+        },
+        width: options.width || 800,
+        height: options.height || 600,
+        marginLeft: 40,
+        marginRight: 40,
+        marginTop: 40,
+        marginBottom: 40,
+        color: {
+            range: options.scheme,
+        },
+        x: {
+            axis: "top",
+            grid: true,
+            tickFormat: (d, i) => formatTick(d, i),
+        },
+        y: {
+            axis: null,
+            label: null,
+        },
+    };
 
-    let types = [];
-    let margin = {top: 10, right: 10, bottom: 10, left: 10};
-    let width = options.width - margin.left - margin.right;
-    let height = 240;
-    let xcenter = width / 2;
-
-    // assign colors
-    $.each(chart.data, function (i, entry) {
-        if (!types.includes(entry.type)) {
-            types.push(entry.type);
-        }
-    });
-    types.sort();
-    let color_scheme = ColorSchemes[chart.colors] || ColorSchemes.Tableau10;
-    let colors = d3.scaleOrdinal().domain(types).range(color_scheme);
-    let timeline = d3.timeline()
-        .size([width, 150])
-        .extent([chart.start, chart.end])
-        .bandStart(d => d.start)
-        .bandEnd(d => d.end)
-        .padding(2);
-
-    let timelineBands = timeline(chart.data);
-    let x_scale = d3.scaleLinear()
-        .domain([chart.start, chart.end])
-        .range([0, width]);
-
-    let x_axis = d3.axisBottom()
-        .scale(x_scale)
-        .tickFormat(d3.timeFormat('%H:%M'));
-
-    let svg = d3.select(`#${figure.attr('id')}`)
-        .append('svg')
-        .attr('viewBox', `-${margin.left} -${margin.top} ${options.width} ${height}`)
-        .attr('class', 'w-100');
-
-    // add events
-    svg.selectAll("rect.event")
-        .data(timelineBands)
-        .enter()
-        .append("rect")
-        .attr('class', 'event')
-        .attr("x", function (d) {
-            return d.start
+    plotOptions.marks = [
+        Plot.barX(chart.data, {
+            x1: chart.start,
+            x2: chart.end,
+            y: chart.labels,
+            fill: chart.colors || colorScale(0),
+            sort: {y: "x1"}
+        }),
+        Plot.text(chart.data, {
+            x: chart.start,
+            y: chart.labels,
+            text: chart.labels,
+            textAnchor: "end",
+            dx: -3,
         })
-        .attr("x", function (d) {
-            return d.start
-        })
-        .attr("y", function (d) {
-            return d.y
-        })
-        .attr("height", function (d) {
-            return d.dy
-        })
-        .attr("width", function (d) {
-            return d.end - d.start
-        })
-        .attr("data-label", d => `${d.label}`)
-        .attr("data-type", d => d.type)
-        .attr('shape-rendering', 'geometricPrecision')
-        .style("fill", d => colors(d.type))
-        .style("stroke", d => colors(d.type))
-        .attr('pointer-events', 'all')
-        .on('mouseover', function () {
-            tooltip.attr('data-label', $(this).data("label"));
-        })
-        .on('mouseout', function () {
-            tooltip.attr('data-label', null);
-        });
-
-    // add x-axis
-    svg.append("g")
-        .call(x_axis)
-        .attr("transform", "translate(0, 160)");
-
-    // Add legend
-    let size = 10;
-    let left = 0;
-    let offset = 80;
-    let legend = svg.append("g");
-    let legends = legend.selectAll(".legend")
-        .data(types)
-        .enter()
-        .append("g")
-        .attr('class', "legend")
-        .attr('data-type', function (d, i) {
-            return d
-        })
-        .attr('transform', function (d, i) {
-            if (i === 0) {
-                left = d.length + offset;
-                return "translate(0,0)"
-            } else {
-                let curpos = left;
-                left += d.length + offset;
-                return `translate(${curpos}, 0)`;
-            }
-        })
-        .on('mouseover', function () {
-            let selector = $(this).data('type');
-            svg.selectAll(`rect.event:not([data-type="${selector}"])`)
-                .style('opacity', .1);
-        })
-        .on('mouseout', function () {
-            svg.selectAll('rect')
-                .style('opacity', 1);
-        });
-
-    legends.append('rect')
-        .attr('x', 0)
-        .attr('y', 0)
-        .attr('width', size)
-        .attr('height', size)
-        .style("fill", d => colors(d));
-    legends.append('text')
-        .attr('x', size + 10)
-        .attr('y', size)
-        .text(function (d, i) {
-            return d
-        })
-        .style('text-anchor', 'start')
-        .style('font-size', '10');
-
-    // center legend in position
-    let legendx = xcenter - left / 2;
-    let legendy = height - margin.bottom - 30;
-    legend.attr('transform', `translate(${legendx}, ${legendy})`);
-
-
-    // mouse cursor and tooltip
-    const tooltip = svg.append("g");
-    const cursor = svg.append("g")
-        .attr('class', 'mouse-cursor')
-        .append("path")
-        .attr('class', "mouse-line")
-        .style('stroke', "var(--warning)")
-        .style('stroke-width', '1px')
-        .style('opacity', "0")
-        .attr('pointer-events', 'none');
-
-    svg
-        .on('mouseleave', function () {
-            d3.select('.mouse-line').style('opacity', 0);
-            tooltip.call(callout, null);
-        })
-        .on('touchmove mousemove', function () {
-            const mouse = d3.mouse(this);
-            const info = d3.timeFormat('%H:%M %b %d, %Y')(x_scale.invert(mouse[0]));
-            if (mouse[1] < 165) {
-                d3.select('.mouse-line')
-                    .style("opacity", 1)
-                    .attr("d", function () {
-                        return `M ${mouse[0]}, 160, ${mouse[0]} 0`;
-                    });
-                tooltip
-                    .attr("transform", `translate(${mouse[0]}, 164)`)
-                    .call(callout, info);
-            } else {
-                d3.select('.mouse-line').style('opacity', 0);
-                tooltip.call(callout, null);
-            }
-        });
-
-    // remove raw data from dom
-    figure.removeData('chart').removeAttr('data-chart');
-
-    // adjust font-size on resize
-    window.onresize = function () {
-        let scale = width / figure.width();
-        svg.selectAll("text")
-            .attr('transform', `scale(${scale} ${scale})`);
-        svg.selectAll("line")
-            .attr('stroke-width', `${scale}px`);
+    ]
+    if (chart.colors) {
+        plotOptions.color.legend = true;
     }
+    plotOptions.marginLeft = 100;
+    // Create chart
+    const plot = Plot.plot(plotOptions);
+    addFigurePlot(figure, plot);
 }
+
 
 function drawGeoChart(figure, chart, options) {
-    google.charts.load('current', {
-        'packages': ['geochart'],
-    });
-    google.charts.setOnLoadCallback(function () {
-        let data = new google.visualization.DataTable();
-        let table = [];
+    const colorScale = d3.scaleOrdinal(options.scheme);
+    let colorLegend = false;
+    let showLand = chart.map === '001' ? false : (chart["show-land"] || true);
+    const plotOptions = {
+        className: "rc-chart",
+        style: {
+          fontSize: "12px",
+        },
+        width: options.width || 800,
+        height: options.height || 600,
+        color: {
+            type: "quantize",
+            //scheme: "greens",
+        },
+        projection: {},
+        marks: []
+    };
 
-        if (chart.mode === 'markers') {
-            data.addColumn('number', 'Latitude');
-            data.addColumn('number', 'Longitude');
-            data.addColumn('string', 'Name');
-            data.addColumn('number', 'Value');
-            $.each(chart.data, function (i, entry) {
-                table.push([entry.Lat, entry.Lon, entry.Name, entry.Value]);
-            });
+    Promise.all([
+        d3.json(`${options.staticRoot}/maps/${chart.map}.json`),
+        showLand ? d3.json(`${options.staticRoot}/maps/land.json`) : null,
+    ]).then(function([geoData, landData]) {
+        const map = topojson.feature(geoData, geoData.objects["subunits"] || geoData.objects["countries"]);
+        if (chart.map === '001') {  // World map, no need to show land
+            plotOptions.projection = {
+                type: "mercator",
+                rotate: [-11.6, 0],
+                domain: map,
+            }
         } else {
-            data.addColumn('string', 'Location');
-            data.addColumn('number', 'Value');
-            $.each(chart.data, function (i, entry) {
-                table.push([entry.Location, entry.Value]);
-            });
+            const centroid = d3.geoCentroid(map);
+            plotOptions.projection = {
+                type: "orthographic",
+                rotate: [-centroid[0], -centroid[1]],
+                domain: map,
+                inset: 5
+            }
         }
-        data.addRows(table);
-        let vis = new google.visualization.GeoChart(document.getElementById(`${figure.attr('id')}`));
-        vis.draw(data, {
-            region: chart.region,
-            displayMode: chart['mode'] || 'auto',
-            resolution: chart.resolution,
-            colorAxis: {colors: options.scheme},
-            backgroundColor: 'transparent',
-            //defaultColor: 'transparent',
-            legend: null,
-            //sizeAxis: {minValue: 0, maxValue: 100},
-            enableRegionInteractivity: true,
-            //keepAspectRatio: true,
-            height: options.height,
-            width: options.width,
-            tooltip: {isHtml: true}
+
+        // show land if needed
+        if (showLand && landData) {
+            const land = topojson.feature(landData, landData.objects.land);
+            plotOptions.marks.push(Plot.geo(land, {fill: "var(--bs-secondary)", fillOpacity: 0.1}));
+        }
+        plotOptions.marks.push(
+            Plot.geo(map, {stroke: "var(--bs-body-color)", strokeWidth: 1}),
+            Plot.graticule({strokeOpacity: 0.05}),
+        );
+
+        // add features now
+        chart.features.forEach(function(feature, index) {
+            switch (feature.type) {
+                case 'area':
+                    let locMap = new Map(chart.data.map(d => [d[chart.location], d[feature.value]]))
+                    plotOptions.marks.push(
+                        Plot.geo(map, {
+                            fill: d => locMap.get(d.id),
+                            stroke: "var(--bs-body-color)",
+                            strokeWidth: 0.5,
+                        }),
+                    )
+                    colorLegend = true;
+                    break;
+                case 'bubble':
+                    plotOptions.marks.push(
+                        new Plot.dot(chart.data, {
+                            x: chart.longitude,
+                            y: chart.latitude,
+                            r: feature.value,
+                            strokeWidth: 0.5,
+                            stroke: feature.value,
+                            opacity: 0.7
+                        })
+                    );
+                    break;
+                case 'density':
+                    plotOptions.marks.push(
+                        new Plot.density(chart.data, {
+                            x: chart.longitude,
+                            y: chart.latitude,
+                            weight: feature.value,
+                            opacity: 0.7,
+                        })
+                    )
+                    break;
+                case 'markers':
+                    plotOptions.marks.push(
+                        new Plot.text(chart.data, {
+                            x: chart.longitude,
+                            y: chart.latitude,
+                            text: feature.value,
+                            fill: "black",
+                            textAnchor: "middle",
+                        })
+                    )
+                    break;
+            }
         });
-        google.visualization.events.addListener(vis, 'ready', function () {
-            let svg = $(`#${figure.attr('id')} svg`);
-            svg.attr('viewBox', `0 0 ${svg.attr("width")} ${svg.attr("height")}`);
-            svg.removeAttr('width');
-            svg.removeAttr('height');
-            svg.parent().removeAttr('style').css('width', '100%');
-            svg.parent().parent().removeAttr('style').css('width', '100%');
-        });
+
+        switch (chart.labels) {
+            case 'names':
+            case 'codes':
+                const isCode = (chart.labels === 'codes') || false;
+                plotOptions.marks.push(
+                    Plot.text(
+                        map.features,
+                        Plot.centroid({
+                            text: (d) => isCode? d.id: d.properties.name,
+                            textAnchor: "middle",
+                            tip: true,
+                            fill: "var(--bs-body-color)",
+                            stroke: "white",
+                            strokeOpacity: 0.7,
+                            //strokeWidth: 0.5,
+                            paintOrder: "stroke",
+                            fontSize: "10",
+                            dy: 3
+                        })
+                    )
+                );
+                break;
+            case 'places':
+                if (geoData.objects.places) {
+                    const places = topojson.feature(geoData, geoData.objects.places);
+                    plotOptions.marks.push(
+                        Plot.dot(places, {
+                            filter: (d) => d.properties.scalerank < 5, // Show only major places
+                            x: (d) => d.geometry.coordinates[0],
+                            y: (d) => d.geometry.coordinates[1],
+                            fill: "currentColor",
+                            r: 1,
+                        }),
+                        Plot.text(places, {
+                            filter: (d) => d.properties.scalerank < 5, // Show only major places
+                            x: (d) => d.geometry.coordinates[0],
+                            y: (d) => d.geometry.coordinates[1],
+                            text: (d) => d.properties.name,
+                            textAnchor: "middle",
+                            tip: true,
+                            fill: "var(--bs-body-color)",
+                            stroke: "white",
+                            strokeOpacity: 0.7,
+                            //strokeWidth: 0.5,
+                            paintOrder: "stroke",
+                            fontSize: 10,
+                            dy: 3
+                        })
+                    );
+                }
+                break;
+        }
+
+        if (colorLegend) {
+            plotOptions.color.legend = true;
+        }
+
+        // Create chart
+        const plot = Plot.plot(plotOptions);
+        addFigurePlot(figure, plot);
     });
 }
-
-
-(function ($) {
-    $.fn.showReport = function (options) {
-        let target = $(this);
-        let defaults = {
-            data: {},
-        };
-        let settings = $.extend(defaults, options);
-
-        target.addClass('report-viewer');
-        $.each(settings.data.details, function (i, section) {
-            target.append(sectionTemplate({id: i, section: section}))
-        });
-
-        target.find('figure').each(function () {
-            let figure = $(this);
-            let chart = decodeObj(figure.attr('data-chart'));
-            let aspect_ratio = chart['aspect-ratio'] || 16 / 9;
-            let chart_colors = chart.colors;
-            if (typeof chart.data === 'object') {
-                aspect_ratio = chart.data['aspect-ratio'] || aspect_ratio;
-                chart_colors = chart.data.colors || chart_colors;
-            }
-            let options = {
-                width: figure.width(),
-                height: figure.width() / aspect_ratio,
-                colors: {}
-            };
-
-            // if chart.data.colors is an array use it as a color scheme, if it is an
-            // object, then assume it maps names to color values
-            // if it is a string then assume it is a named color scheme in ColorSchemes
-
-            if (Array.isArray(chart_colors)) {
-                options.scheme = chart_colors;
-            } else if (typeof chart_colors === 'object') {
-                options.scheme = ColorSchemes.Tableau10;
-                options.colors = chart_colors;
-            } else {
-                options.scheme = ColorSchemes[chart_colors] || ColorSchemes.Tableau10;
-            }
-
-            switch (figure.data('type')) {
-                case 'bars':
-                    drawBarChart(figure, chart, options, 'bar');
-                    break;
-                case 'columns':
-                    drawBarChart(figure, chart, options, 'column');
-                    break;
-                case 'area':
-                    drawBarChart(figure, chart, options, 'area');
-                    break;
-                case 'line':
-                    drawBarChart(figure, chart, options, 'line');
-                    break;
-                case 'plot':
-                    drawXYChart(figure, chart, options, 'line');
-                    break;
-                case 'xyplot':
-                    drawScatterPlot(figure, chart, options, 'line');
-                    break;
-                case 'histogram':
-                    drawHistogram(figure, chart, options);
-                    break;
-                case 'pie':
-                    drawPieChart(figure, chart, options, 'pie');
-                    break;
-                case 'donut':
-                    drawPieChart(figure, chart, options, 'donut');
-                    break;
-                case 'scatter':
-                    drawXYChart(figure, chart, options, 'scatter');
-                    break;
-                case 'timeline':
-                    drawTimeline(figure, chart, options);
-                    break;
-                case 'geochart':
-                    drawGeoChart(figure, chart, options);
-                    break;
-            }
-
-            // caption
-            if (chart.title) {
-                figure.after(`<figcaption class="text-center">${chart.title}</figcaption>`);
-            } else {
-                figure.after(`<figcaption class="text-center"></figcaption>`);
-            }
-
-        });
-    };
-}(jQuery));

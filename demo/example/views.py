@@ -11,7 +11,7 @@ from itemlist.filters import YearLimitFilterFactory, MonthFilterFactory, Quarter
 class FancyPersonList(ItemListView):
     model = Person
     template_name = 'list.html'
-    list_columns = ['first_name', 'last_name', 'age', 'type', 'institution', 'institution__country']
+    list_columns = ['first_name', 'last_name', 'age', 'type', 'institution']
     list_search = ['first_name', 'last_name', 'age', 'type', 'bio', 'institution__name']
     list_filters = [
         'type',
@@ -28,9 +28,9 @@ class FancyPersonList(ItemListView):
 class FancyInstitutionList(ItemListView):
     model = Institution
     template_name = 'list.html'
-    list_columns = ['id', 'name', 'city', 'province', 'country', 'parent']
-    list_search = ['name', 'city', 'country', 'parent__name', 'subjects__name']
-    list_filters = ['parent', 'created']
+    list_columns = ['id', 'name', 'city', 'province', 'country__name', 'parent']
+    list_search = ['name', 'city', 'parent__name', 'subjects__name']
+    list_filters = ['parent', 'created', 'country']
     list_title = 'Fancy Institutions'
     link_url = 'institution-edit'
     link_attr = 'data-modal-url'

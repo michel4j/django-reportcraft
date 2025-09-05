@@ -37,7 +37,7 @@ class PersonForm(ModalModelForm):
 class InstitutionForm(ModalModelForm):
     class Meta:
         model = models.Institution
-        fields = ['name', 'city', 'country', 'parent', 'subjects']
+        fields = ['name', 'city', 'country', 'parent', 'subjects', 'province']
         widgets = {
             'subjects': CheckboxSelectMultiple(),
         }
@@ -51,10 +51,10 @@ class InstitutionForm(ModalModelForm):
 
         self.body.append(
             Row(
-                HalfWidth('name'), HalfWidth('city'),
+                HalfWidth('name'), HalfWidth('parent'),
             ),
             Row(
-                HalfWidth('country'), HalfWidth('parent'),
+                ThirdWidth('city'), ThirdWidth('province'), ThirdWidth('country'),
             ),
             Row(
                 FullWidth('subjects'),

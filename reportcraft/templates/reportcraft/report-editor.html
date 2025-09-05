@@ -1,4 +1,4 @@
-{% extends "reportcraft/base.html" %}
+{% extends "reportcraft/editor.html" %}
 {% load reportcraft %}
 {% load static %}
 
@@ -10,21 +10,13 @@
     </style>
 {% endblock %}
 
-{% block page-pretitle %}Edit Report{% endblock %}
-{% block page-title %}
-    {% if report %}{{ report.title }}{% else %}Report Editor{% endif %}
-{% endblock %}
-{% block page-subtitle %}
+{% block editor-pretitle %}Edit Report{% endblock %}
+{% block editor-title %}{% if report %}{{ report.title }}{% else %}Report Editor{% endif %}{% endblock %}
+{% block editor-subtitle %}
     {% if report %}{{ object.description }}{% else %}Please select or add a new a report from the list{% endif %}
 {% endblock %}
 
-{% block page-tools %}
-    <a href="#rc-off-canvas" data-oc-url="{% url "editor-report-list" %}" data-bs-toggle="offcanvas">
-        {% tool_icon label='Reports' icon='list-details' %}
-    </a>
-    <a href="#rc-off-canvas" data-oc-url="{% url "data-source-list" %}" data-bs-toggle="offcanvas">
-        {% tool_icon label='Sources' icon='database' %}
-    </a>
+{% block editor-tools %}
     {% if report %}
     <a href="{% url "report-view" slug=report.slug %}">
         {% tool_icon label='Preview' icon='live-view' %}
@@ -41,49 +33,49 @@
     {% endif %}
 {% endblock %}
 
-{% block page-content %}
+{% block editor-content %}
     {% if report %}
-    <div class="row report-editor ">
-            <div class="col-12">
-            <div class="alert alert-info mb-4">
-                Add entries to the report and then configure them to select the fields to display. The entry position,
-                specifies the ordering of entries within the report. The entry style can be used to control the layout.
-            </div>
+        <div class="fluid-container m-3">
+        <div class="alert alert-info small mb-4">
+            Add entries to the report and then configure them to select the fields to display. The entry position,
+            specifies the ordering of entries within the report. The entry style can be used to control the layout.
         </div>
-        <div class="col-md-12">
-            <div class="row">
-            {% for entry in entries %}
-            <div class="entry pb-3 {{ entry.style|default:'col-12' }}">
-                <div class="card">
-                    <div class="card-header py-2 d-flex align-items-center">
-                        <span class="text-muted">{% svg_icon entry.kind stroke=1 size='lg' %}</span>&emsp;
-                        <div class="text-truncate">{{ entry.title }}</div>
-                        <div class="toolbox ms-auto pr-0">
-                            <a href="#!" data-modal-url="{% url 'configure-report-entry' report=report.pk pk=entry.pk %}" title="Configure">
-                                {% tool_icon icon='adjustments-horizontal' size='sm' %}
-                            </a>
-                            {% if entry.source %}
-                            <a href="{% url 'source-editor' pk=entry.source.pk %}" title="Edit Source">
-                                {% tool_icon icon='database' size='sm' %}
-                            </a>
-                            {% endif %}
-                            <a href="#!" data-modal-url="{% url 'edit-report-entry' report=report.pk pk=entry.pk %}" title="Edit Entry">
-                                {% tool_icon icon='pencil' size='sm' %}
-                            </a>
-                            <a href="#!" data-modal-url="{% url 'delete-report-entry' report=report.pk pk=entry.pk %}" title="Delete">
-                                {% tool_icon icon='trash-x' size='sm' %}
-                            </a>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        {{ entry | entry_html }}
+
+        <div class="row entry-container">
+        {% for entry in entries %}
+        <div class="entry mb-3 {{ entry.style|default:'col-12' }}"
+             id="entry-{{ entry.pk }}"
+             data-entry-id="{{ entry.pk }}">
+            <div class="card">
+                <div class="card-header ps-1 py-2 d-flex align-items-center">
+                    <div class="drag-handle text-body-secondary p-1">{% svg_icon 'grip' stroke=1 %}</div>&nbsp;&nbsp;
+                    <div>{% svg_icon entry.kind stroke=1 %}</div>&nbsp;
+                    <div class="text-truncate">{{ entry.title }}</div>
+                    <div class="toolbox ms-auto pr-0">
+                        <a href="#!" data-modal-url="{% url 'configure-report-entry' report=report.pk pk=entry.pk %}" title="Configure">
+                            {% tool_icon icon='adjustments-horizontal' size='sm' %}
+                        </a>
+                        {% if entry.source %}
+                        <a href="{% url 'source-editor' pk=entry.source.pk %}" title="Edit Source">
+                            {% tool_icon icon='database' size='sm' %}
+                        </a>
+                        {% endif %}
+                        <a href="#!" data-modal-url="{% url 'edit-report-entry' report=report.pk pk=entry.pk %}" title="Edit Entry">
+                            {% tool_icon icon='pencil' size='sm' %}
+                        </a>
+                        <a href="#!" data-modal-url="{% url 'delete-report-entry' report=report.pk pk=entry.pk %}" title="Delete">
+                            {% tool_icon icon='trash-x' size='sm' %}
+                        </a>
                     </div>
                 </div>
-            </div>
-            {% endfor %}
+                <div class="card-body">
+                    {{ entry | entry_html }}
+                </div>
             </div>
         </div>
-    </div>
+        {% endfor %}
+        </div>
+        </div>
     {% endif %}
 {% endblock %}
 {% block report-off-canvas %}

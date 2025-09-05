@@ -13,6 +13,7 @@ urlpatterns = [
     path('editor/<int:report>/edit/<int:pk>/', views.EditEntry.as_view(), name='edit-report-entry'),
     path('editor/<int:report>/delete/<int:pk>/', views.DeleteEntry.as_view(), name='delete-report-entry'),
     path('editor/<int:report>/add/', views.CreateEntry.as_view(), name='add-report-entry'),
+    path('editor/<int:report>/reorder/', views.ReorderEntries.as_view(), name='reorder-report-entries'),
     path('editor/<int:report>/config/<int:pk>/', views.ConfigureEntry.as_view(), name='configure-report-entry'),
 
     path('editor/sources/', views.DataSourceList.as_view(), name='data-source-list'),
@@ -34,4 +35,5 @@ urlpatterns = [
     path('view/<slug:slug>/', views.MainReportView.as_view(), name='report-view'),
     path('api/reports/<slug:slug>/', views.ReportData.as_view(), name='report-data'),
     path('api/sources/<int:pk>/', views.SourceData.as_view(), name='source-data'),
+    path('api/sources/<slug:format>/<int:pk>/', views.SourceData.as_view(), name='format-source-data'),
  ]

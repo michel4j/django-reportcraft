@@ -132,3 +132,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REPORTCRAFT_APPS = ['example']
 REPORTCRAFT_FUNCTIONS = ['demo.example.utils.MySqrt']
 SITE_THEME = 'bs5'  # 'bs5' or 'tabler'
+REPORTCRAFT_MIXINS = {
+    'VIEW': [],
+    'EDIT': [],
+}

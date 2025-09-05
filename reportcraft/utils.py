@@ -6,12 +6,14 @@ import io
 import json
 import re
 import threading
+from collections import defaultdict
 from datetime import datetime, timedelta
+from enum import Enum
 from functools import wraps, reduce
 from importlib import import_module
 from inspect import getframeinfo, stack
 from operator import or_
-from typing import Any, Sequence
+from typing import Any, Sequence, Iterable
 
 import pyparsing as pp
 import yaml
@@ -19,15 +21,49 @@ from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
 from django.db import models
-from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q, Case, When, CharField
+from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q
 from django.db.models.functions import (
     Greatest, Least, Concat, Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan,
     ATan2, Mod, Sign, Trunc, Radians, Degrees, Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
-    ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek
+    ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek,
+    JSONArray,
 )
 from django.http import HttpResponse
 from django.utils import timezone
 from pyparsing.exceptions import ParseException
+from . import countries
+from .functions import DisplayName, Hours, Minutes, ShiftStart, ShiftEnd, Interval, CumSum, CumCount
+
+FIELD_TYPES = {
+    'CharField': 'STRING',
+    'TextField': 'TEXT',
+    'SlugField': 'STRING',
+    'EmailField': 'STRING',
+    'URLField': 'STRING',
+    'UUIDField': 'STRING',
+    'FilePathField': 'STRING',
+    'IPAddressField': 'STRING',
+    'GenericIPAddressField': 'STRING',
+    'CommaSeparatedIntegerField': 'STRING',
+    'BinaryField': 'STRING',
+    'FileField': 'STRING',
+    'ImageField': 'STRING',
+    'IntegerField': 'INTEGER',
+    'BigIntegerField': 'INTEGER',
+    'SmallIntegerField': 'INTEGER',
+    'PositiveIntegerField': 'INTEGER',
+    'PositiveSmallIntegerField': 'INTEGER',
+    'FloatField': 'FLOAT',
+    'DecimalField': 'FLOAT',
+    'BooleanField': 'BOOLEAN',
+    'NullBooleanField': 'BOOLEAN',
+    'DateField': 'DATE',
+    'DateTimeField': 'DATETIME',
+    'TimeField': 'TIME',
+    'DurationField': 'TIME',
+    'JSONField': 'JSON',
+    'ArrayField': 'ARRAY',
+}
 
 
 def load_object(import_path):
@@ -55,140 +91,6 @@ def load_object(import_path):
     return getattr(module, object_name)
 
 
-class DisplayName(F):
-    """
-    Display Name Placeholder for a field that is used to display a human-readable name
-    """
-
-    def __init__(self, field_spec):
-        if isinstance(field_spec, F):
-            super().__init__(field_spec.name)
-        else:
-            super().__init__(field_spec)
-
-
-class ChoiceName(Case):
-    """
-    Queries display names for a Django choices field
-    """
-
-    def __init__(self, model_name: str, field_ref: str | F, condition=None, then=None, **lookups):
-        if isinstance(field_ref, F):
-            field_ref = field_ref.name
-
-        model = apps.get_model(model_name)
-        field_name = field_ref.split('__')[-1]
-        choices = dict(model._meta.get_field(field_name).flatchoices)
-        whens = [
-            When(**{field_ref: k, 'then': V(v)})
-            for k, v in choices.items()
-        ]
-        super().__init__(*whens, output_field=CharField(), default=V(''), condition=condition, then=then, **lookups)
-
-
-class Hours(models.Func):
-    function = 'HOUR'
-    template = '%(function)s(%(expressions)s)'
-    output_field = models.FloatField()
-
-    def as_postgresql(self, compiler, connection):
-        self.arg_joiner = " - "
-        return self.as_sql(
-            compiler, connection, function="EXTRACT",
-            template="%(function)s(epoch FROM %(expressions)s)/3600"
-        )
-
-    def as_mysql(self, compiler, connection):
-        self.arg_joiner = " , "
-        return self.as_sql(
-            compiler, connection, function="TIMESTAMPDIFF",
-            template="-%(function)s(HOUR,%(expressions)s)"
-        )
-
-    def as_sqlite(self, compiler, connection, **kwargs):
-        # the template string needs to escape '%Y' to make sure it ends up in the final SQL. Because two rounds of
-        # template parsing happen, it needs double-escaping ("%%%%").
-        return self.as_sql(
-            compiler, connection, function="strftime",
-            template="%(function)s(%%%%H,%(expressions)s)"
-        )
-
-
-class Minutes(models.Func):
-    function = 'MINUTE'
-    template = '%(function)s(%(expressions)s)'
-    output_field = models.FloatField()
-
-    def as_postgresql(self, compiler, connection):
-        self.arg_joiner = " - "
-        return self.as_sql(
-            compiler, connection, function="EXTRACT", template="%(function)s(epoch FROM %(expressions)s)/60"
-        )
-
-    def as_mysql(self, compiler, connection):
-        self.arg_joiner = " , "
-        return self.as_sql(
-            compiler, connection, function="TIMESTAMPDIFF",
-            template="-%(function)s(MINUTE,%(expressions)s)"
-        )
-
-    def as_sqlite(self, compiler, connection, **kwargs):
-        # the template string needs to escape '%Y' to make sure it ends up in the final SQL. Because two rounds of
-        # template parsing happen, it needs double-escaping ("%%%%").
-        return self.as_sql(
-            compiler, connection, function="strftime", template="%(function)s(%%%%M,%(expressions)s)"
-        )
-
-
-SHIFT = 8
-SHIFT_DURATION = '{:d} hour'.format(SHIFT)
-OFFSET = -timezone.make_aware(datetime.now(), timezone.get_default_timezone()).utcoffset().total_seconds()
-
-
-class ShiftStart(models.Func):
-    function = 'to_timestamp'
-    template = '%(function)s(%(expressions)s)'
-    output_field = models.DateTimeField()
-
-    def __init__(self, *expressions, size=SHIFT, **extra):
-        super().__init__(*expressions, **extra)
-        self.size = size
-
-    def as_postgresql(self, compiler, connection):
-        self.arg_joiner = " - "
-        return self.as_sql(
-            compiler, connection, function="to_timestamp",
-            template=(
-                "%(function)s("
-                "   floor((EXTRACT(epoch FROM %(expressions)s)) / EXTRACT(epoch FROM interval '{shift}'))"
-                "   * EXTRACT(epoch FROM interval '{shift}') {offset:+}"
-                ")"
-            ).format(shift=self.size, offset=OFFSET)
-        )
-
-
-class ShiftEnd(models.Func):
-    function = 'to_timestamp'
-    template = '%(function)s(%(expressions)s)'
-    output_field = models.DateTimeField()
-
-    def __init__(self, *expressions, size=SHIFT, **extra):
-        super().__init__(*expressions, **extra)
-        self.size = size
-
-    def as_postgresql(self, compiler, connection):
-        self.arg_joiner = " - "
-        return self.as_sql(
-            compiler, connection, function="to_timestamp",
-            template=(
-                "%(function)s("
-                "   ceil((EXTRACT(epoch FROM %(expressions)s)) / EXTRACT(epoch FROM interval '{shift}'))"
-                "   * EXTRACT(epoch FROM interval '{shift}') {offset:+}"
-                ")"
-            ).format(shift=self.size, offset=OFFSET)
-        )
-
-
 OPERATOR_FUNCTIONS = {
     '+': 'ADD()',
     '-': 'SUB()',
@@ -200,8 +102,10 @@ ALLOWED_FUNCTIONS = {
     Sum, Avg, Count, Max, Min, Concat, Greatest, Least,
     Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan, ATan2, Mod, Sign, Trunc,
     ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek,
-    Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
-    Radians, Degrees, Hours, Minutes, ShiftStart, ShiftEnd, Q, DisplayName
+    Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim, JSONArray, Radians, Degrees, Q,
+
+    # Custom functions
+    Interval, DisplayName, CumSum, Hours, Minutes, ShiftStart, ShiftEnd, CumCount
 }
 
 REPORTCRAFT_FUNCTIONS = getattr(settings, 'REPORTCRAFT_FUNCTIONS', [])  # list of string paths to importable functions
@@ -341,7 +245,7 @@ class ExpressionParser(Parser):
         )
         self.integer = pp.Combine(pp.Optional('-') + pp.Word(pp.nums)).setParseAction(self.parse_int)
         self.boolean = pp.oneOf('True False true false').setParseAction(self.parse_bool)
-        self.variable = pp.Word(pp.alphas + '.').setParseAction(self.parse_var)
+        self.variable = pp.Word(pp.alphanums + '.').setParseAction(self.parse_var)
         self.string = pp.quotedString.setParseAction(pp.removeQuotes)
 
         # Define the function call
@@ -620,6 +524,98 @@ def regroup_data(
     return data_list
 
 
+def _key_value(item, key_field):
+    value = item.get(key_field)
+    return str(value)
+
+
+def _make_key(item, keys):
+    return tuple(_key_value(item, k) for k in keys)
+
+
+def merge_data(
+        data: list[dict],
+        unique: list[str],
+) -> list[dict]:
+    """
+    Combine data from multiple models into neat key-value pairs .if multiple entries exist for the same unique set,
+    they are merged into a single entry with later duplicated values taking precedence.
+
+    :param data: list of dictionaries
+    :param unique: Names of unique axes
+    """
+
+    # make a dictionary mapping unique values to unique entries, these will be populated later
+    # convert to tuple of strings to make it hashable
+    unique_keys = sorted({_make_key(item, unique) for item in data})
+    raw_data = {key: {} for key in unique_keys}
+    # first pass to populate raw_data
+    for item in data:
+        key = _make_key(item, unique)
+        raw_data[key].update(item)
+
+    return list(raw_data.values())
+
+
+class ValueType(Enum):
+    """
+    Enum to represent a value that should be ignored in the data processing.
+    This is used to indicate that a field is not applicable or should not be included in the output.
+    """
+    IGNORE = 'ignore'
+
+
+def prepare_data(
+        data: list[dict],
+        select: Iterable[str] = None,
+        default: Any = ValueType.IGNORE,
+        labels: dict = None,
+        sort: str = '',
+        sort_desc: bool = False
+) -> list[dict]:
+    """
+    Prepare a dataset for plotting, label data according to the labels dictionary, if provided, and sort it by a field if specified.
+
+    :param data: list of dictionaries
+    :param select: an iterable of field names to select from the data, selects all fields if None
+    :param default: Default value for missing fields, missing fields are ignored by default
+    :param labels: Field labels dictionary
+    :param sort: Name of field to sort by or empty string to disable sorting
+    :param sort_desc: Sort in descending order
+    """
+
+    if select is None:
+        # if no fields are selected, select all fields from the data
+        select = {key for item in data for key in item.keys()}
+
+    data = [
+        {
+            k: item.get(k, default)
+            for k in select
+            if (k in select or default != ValueType.IGNORE) and item.get(k) != ValueType.IGNORE
+            # if default is not ValueType.IGNORE, include it
+        }
+        for item in data
+    ]
+
+    # sort the data if a sort field is provided
+    if sort:
+        sort_key = sort
+        data.sort(key=lambda item: item.get(sort_key, 0), reverse=sort_desc)
+
+    # translate the keys to labels if labels are provided
+    if labels:
+        data = [
+            {
+                labels.get(k, k): v
+                for k, v in item.items()
+            }
+            for item in data
+        ]
+
+    return data
+
+
 def split_data(
         data: list[dict],
         group_by: str,
@@ -717,6 +713,8 @@ def list_colors(specifier):
 CATEGORICAL_SCHEMES = {
     "Accent": list_colors("7fc97fbeaed4fdc086ffff99386cb0f0027fbf5b17666666"),
     "Dark2": list_colors("1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666"),
+    "Carbon": list_colors("6929c41192e8005d5d9f1853fa4d56570408198038002d9cee538bb2860009d9a0127498a3800a56eff"),
+    "CarbonDark": list_colors("8a3ffc33b1ff007d79ff7eb6fa4d56fff1f16fdc8c4589ffd12771d2a10608bdbabae6ffba4e00d4bbff"),
     "Live4": list_colors("8f9f9ac560529f6dbfa0b552"),
     "Live8": list_colors("073b4c06d6a0ffd166ef476f118ab27f7effafc76578c5e7"),
     "Live16": list_colors(
@@ -745,19 +743,16 @@ SEQUENTIAL_SCHEMES = {
     "GnBu": ["#edf8fb", "#2ca25f"],
     "OrRd": ["#fee8c8", "#e34a33"],
     "PuBu": ["#ece7f2", "#2b8cbe"],
-    # "PuBuGn": ["#ece2f0", "#1c9099"],
     "PuRd": ["#e7e1ef", "#dd1c77"],
     "RdPu": ["#fde0dd", "#c51b8a"],
     "YlGn": ["#f7fcb9", "#31a354"],
-    # "YlGnBu": ["#edf8b1", "#2c7fb8"],
-    # "YlOrBr": ["#fff7bc", "#8c2d04"],
-    # "YlOrRd": ["#ffeda0", "#b30000"],
-
 }
 
 CATEGORICAL_COLORS = [(scheme, scheme) for scheme in CATEGORICAL_SCHEMES.keys()]
 SEQUENTIAL_COLORS = [(scheme, scheme) for scheme in SEQUENTIAL_SCHEMES.keys()]
-AXIS_CHOICES = [('', 'Choose...'), ('y', 'Y1-Axis'), ('y2', 'Y2-Axis')]
+COLOR_SCHEMES = [('', 'Select...')] + CATEGORICAL_COLORS + SEQUENTIAL_COLORS
+
+AXIS_CHOICES = [('', 'Select...'), ('y', 'Y1-Axis'), ('y2', 'Y2-Axis')]
 
 
 def map_colors(data, scheme='Live16'):
@@ -847,374 +842,42 @@ class CsvResponse(HttpResponse):
         super().__init__(content=content, **kwargs)
 
 
-REGION_DATA = [
-    {
-        "002 - Africa": [
-            {
-                "015 - Northern Africa": [
-                    "DZ - Algeria",
-                    "EG - Egypt",
-                    "EH - Western Sahara",
-                    "LY - Libya",
-                    "MA - Morocco",
-                    "SD - Sudan",
-                    "SS - South Sudan",
-                    "TN - Tunisia"
-                ]
-            },
-            {
-                "011 - Western Africa": [
-                    "BF - Burkina Faso",
-                    "BJ - Benin",
-                    "CI - Côte d'Ivoire",
-                    "CV - Cabo Verde",
-                    "GH - Ghana",
-                    "GM - Gambia",
-                    "GN - Guinea",
-                    "GW - Guinea-Bissau",
-                    "LR - Liberia",
-                    "ML - Mali",
-                    "MR - Mauritania",
-                    "NE - Niger",
-                    "NG - Nigeria",
-                    "SH - Saint Helena, Ascension and Tristan da Cunha",
-                    "SL - Sierra Leone",
-                    "SN - Senegal",
-                    "TG - Togo"
-                ]
-            },
-            {
-                "017 - Middle Africa": [
-                    "AO - Angola",
-                    "CD - Congo, Democratic Republic of the",
-                    "CF - Central African Republic",
-                    "CG - Congo",
-                    "CM - Cameroon",
-                    "GA - Gabon",
-                    "GQ - Equatorial Guinea",
-                    "ST - Sao Tome and Principe",
-                    "TD - Chad"
-                ]
-            },
-            {
-                "014 - Eastern Africa": [
-                    "BI - Burundi",
-                    "DJ - Djibouti",
-                    "ER - Eritrea",
-                    "ET - Ethiopia",
-                    "KE - Kenya",
-                    "KM - Comoros",
-                    "MG - Madagascar",
-                    "MU - Mauritius",
-                    "MW - Malawi",
-                    "MZ - Mozambique",
-                    "RE - Réunion",
-                    "RW - Rwanda",
-                    "SC - Seychelles",
-                    "SO - Somalia",
-                    "TZ - Tanzania, United Republic of",
-                    "UG - Uganda",
-                    "YT - Mayotte",
-                    "ZM - Zambia",
-                    "ZW - Zimbabwe"
-                ]
-            },
-            {
-                "018 - Southern Africa": [
-                    "BW - Botswana",
-                    "LS - Lesotho",
-                    "NA - Namibia",
-                    "SZ - Eswatini",
-                    "ZA - South Africa"
-                ]
-            }
-        ]
-    },
-    {
-        "150 - Europe": [
-            {
-                "154 - Northern Europe": [
-                    "GG - Guernsey",
-                    "JE - Jersey",
-                    "AX - Åland Islands",
-                    "DK - Denmark",
-                    "EE - Estonia",
-                    "FI - Finland",
-                    "FO - Faroe Islands",
-                    "GB - United Kingdom of Great Britain and Northern Ireland",
-                    "IE - Ireland",
-                    "IM - Isle of Man",
-                    "IS - Iceland",
-                    "LT - Lithuania",
-                    "LV - Latvia",
-                    "NO - Norway",
-                    "SE - Sweden",
-                    "SJ - Svalbard and Jan Mayen"
-                ]
-            },
-            {
-                "155 - Western Europe": [
-                    "AT - Austria",
-                    "BE - Belgium",
-                    "CH - Switzerland",
-                    "DE - Germany",
-                    "FR - France",
-                    "LI - Liechtenstein",
-                    "LU - Luxembourg",
-                    "MC - Monaco",
-                    "NL - Netherlands"
-                ]
-            },
-            {
-                "151 - Eastern Europe": [
-                    "BG - Bulgaria",
-                    "BY - Belarus",
-                    "CZ - Czechia",
-                    "HU - Hungary",
-                    "MD - Moldova",
-                    "PL - Poland",
-                    "RO - Romania",
-                    "RU - Russian Federation",
-                    "SK - Slovakia",
-                    "UA - Ukraine"
-                ]
-            },
-            {
-                "039 - Southern Europe": [
-                    "AD - Andorra",
-                    "AL - Albania",
-                    "BA - Bosnia and Herzegovina",
-                    "ES - Spain",
-                    "GI - Gibraltar",
-                    "GR - Greece",
-                    "HR - Croatia",
-                    "IT - Italy",
-                    "ME - Montenegro",
-                    "MK - North Macedonia",
-                    "MT - Malta",
-                    "RS - Serbia",
-                    "PT - Portugal",
-                    "SI - Slovenia",
-                    "SM - San Marino",
-                    "VA - Holy See",
-                    "YU - Yugoslavia"
-                ]
-            }
-        ]
-    },
-    {
-        "019 - Americas": [
-            {
-                "021 - Northern America": [
-                    "BM - Bermuda",
-                    "CA - Canada",
-                    "GL - Greenland",
-                    "PM - Saint Pierre and Miquelon",
-                    "US - United States of America"
-                ]
-            },
-            {
-                "029 - Caribbean": [
-                    "AG - Antigua and Barbuda",
-                    "AI - Anguilla",
-                    "AN - Netherlands Antilles",
-                    "AW - Aruba",
-                    "BB - Barbados",
-                    "BL - Saint Barthélemy",
-                    "BS - Bahamas",
-                    "CU - Cuba",
-                    "DM - Dominica",
-                    "DO - Dominican Republic",
-                    "GD - Grenada",
-                    "GP - Guadeloupe",
-                    "HT - Haiti",
-                    "JM - Jamaica",
-                    "KN - Saint Kitts and Nevis",
-                    "KY - Cayman Islands",
-                    "LC - Saint Lucia",
-                    "MF - Saint Martin (French part)",
-                    "MQ - Martinique",
-                    "MS - Montserrat",
-                    "PR - Puerto Rico",
-                    "TC - Turks and Caicos Islands",
-                    "TT - Trinidad and Tobago",
-                    "VC - Saint Vincent and the Grenadines",
-                    "VG - Virgin Islands (British)",
-                    "VI - Virgin Islands (U.S.)"
-                ]
-            },
-            {
-                "013 - Central America": [
-                    "BZ - Belize",
-                    "CR - Costa Rica",
-                    "GT - Guatemala",
-                    "HN - Honduras",
-                    "MX - Mexico",
-                    "NI - Nicaragua",
-                    "PA - Panama",
-                    "SV - El Salvador"
-                ]
-            },
-            {
-                "005 - South America": [
-                    "AR - Argentina",
-                    "BO - Bolivia",
-                    "BR - Brazil",
-                    "CL - Chile",
-                    "CO - Colombia",
-                    "EC - Ecuador",
-                    "FK - Falkland Islands",
-                    "GF - French Guiana",
-                    "GY - Guyana",
-                    "PE - Peru",
-                    "PY - Paraguay",
-                    "SR - Suriname",
-                    "UY - Uruguay",
-                    "VE - Venezuela"
-                ]
-            }
-        ]
-    },
-    {
-        "142 - Asia": [
-            {
-                "143 - Central Asia": [
-                    "TM - Turkmenistan",
-                    "TJ - Tajikistan",
-                    "KG - Kyrgyzstan",
-                    "KZ - Kazakhstan",
-                    "UZ - Uzbekistan"
-                ]
-            },
-            {
-                "030 - Eastern Asia": [
-                    "CN - China",
-                    "HK - Hong Kong",
-                    "JP - Japan",
-                    "KP - North Korea",
-                    "KR - South Korea",
-                    "MN - Mongolia",
-                    "MO - Macao",
-                    "TW - Taiwan"
-                ]
-            },
-            {
-                "034 - Southern Asia": [
-                    "AF - Afghanistan",
-                    "BD - Bangladesh",
-                    "BT - Bhutan",
-                    "IN - India",
-                    "IR - Iran",
-                    "LK - Sri Lanka",
-                    "MV - Maldives",
-                    "NP - Nepal",
-                    "PK - Pakistan"
-                ]
-            },
-            {
-                "035 - South-Eastern Asia": [
-                    "BN - Brunei Darussalam",
-                    "ID - Indonesia",
-                    "KH - Cambodia",
-                    "LA - Lao People's Democratic Republic",
-                    "MM - Myanmar",
-                    "MY - Malaysia",
-                    "BU - Burma",
-                    "PH - Philippines",
-                    "SG - Singapore",
-                    "TH - Thailand",
-                    "TL - Timor-Leste",
-                    "VN - Viet Nam",
-                    "TP - East Timor"
-                ]
-            },
-            {
-                "145 - Western Asia": [
-                    "AE - United Arab Emirates",
-                    "AM - Armenia",
-                    "AZ - Azerbaijan",
-                    "BH - Bahrain",
-                    "CY - Cyprus",
-                    "GE - Georgia",
-                    "IL - Israel",
-                    "IQ - Iraq",
-                    "JO - Jordan",
-                    "KW - Kuwait",
-                    "LB - Lebanon",
-                    "OM - Oman",
-                    "PS - Palestine, State of",
-                    "QA - Qatar",
-                    "SA - Saudi Arabia",
-                    "SY - Syrian Arab Republic",
-                    "TR - Turkey",
-                    "YE - Yemen",
-                ]
-            }
-        ]
-    },
-    {
-        "009 - Oceania": [
-            {
-                "053 - Australia and New Zealand": [
-                    "AU - Australia",
-                    "NF - Norfolk Island",
-                    "NZ - New Zealand"
-                ]
-            },
-            {
-                "054 - Melanesia": [
-                    "FJ - Fiji",
-                    "NC - New Caledonia",
-                    "PG - Papua New Guinea",
-                    "SB - Solomon Islands",
-                    "VU - Vanuatu"
-                ]
-            },
-            {
-                "057 - Micronesia": [
-                    "FM - Micronesia",
-                    "GU - Guam",
-                    "KI - Kiribati",
-                    "MH - Marshall Islands",
-                    "MP - Northern Mariana Islands",
-                    "NR - Nauru",
-                    "PW - Palau"
-                ]
-            },
-            {
-                "061 - Polynesia": [
-                    "AS - American Samoa",
-                    "CK - Cook Islands",
-                    "NU - Niue",
-                    "PF - French Polynesia",
-                    "PN - Pitcairn",
-                    "TK - Tokelau",
-                    "TO - Tonga",
-                    "TV - Tuvalu",
-                    "WF - Wallis and Futuna",
-                    "WS - Samoa"
-                ]
-            }
-        ]
-    }
-]
+def get_map_choices():
+    """
+    Get grouped list of choices for continent, subregions and countries
+    :return: A sorted list of tuples of (code, name)
+    """
+
+    choices = defaultdict(list)
+
+    choices['Continents'] = [
+        (r[0], f"{r[0]} - {r[1]}")
+        for r in
+        sorted([
+            (k, v['name']) for k, v in countries.REGIONS.items() if v.get('parent') == '001'
+        ])
+    ]
+    choices['Regions'] = [
+        (r[0], f"{r[0]} - {r[1]}")
+        for r in
+        sorted(
+            [
+                (k, v['name'], countries.REGIONS[v['parent']]['name'])
+                for k, v in countries.REGIONS.items()
+                if 'parent' in v and v['parent'] != '001'
+            ], key=lambda x: x[2] + x[1]
+        )
+    ]
+
+    for country in sorted(countries.COUNTRIES.values(), key=lambda x: x['name']):
+        choices['Countries'].append((country['alpha3'], f"{country['alpha3']} - {country['name']}"))
+
+    return [('001', '001 - World')] + [
+        (key, value) for key, value in choices.items()
+    ]
 
 
-def region_choices(data):
-    if isinstance(data, list):
-        for v in data:
-            yield from region_choices(v)
-    elif isinstance(data, dict):
-        for k, v in data.items():
-            code, name = re.split(r'\s+-\s+', k, maxsplit=1)
-            yield code, f'{code} - {name}'
-            yield from region_choices(v)
-    else:
-        code, name = re.split(r'\s+-\s+', data, maxsplit=1)
-        yield code, f'{code} - {name}'
-
-
-REGION_CHOICES = sorted([('world', '001 - World')] + list(region_choices(REGION_DATA)), key=lambda x: x[1])
+MAP_CHOICES = get_map_choices()
 
 
 def camel_case(snake_str: str) -> str:
@@ -1249,3 +912,31 @@ def debug_value(value, name=None):
     print(yaml.dump(value))
     print('=' * 80)
     print('\n')
+
+
+def wrap_table(table: list[list], max_cols: int) -> list[list[list]]:
+    """
+    Splits a table into multiple tables based on a maximum number of columns.
+
+    The first column of the original table (row headers) is repeated in each new table.
+    :param table: The original table, where each inner list is a row.
+    :param max_cols: The maximum number of columns each new table can have.
+                        This value must be 2 or greater to include the header and at least one data column
+    :return: A list of new tables. Returns an empty list if the input table is
+    """
+
+    if max_cols < 2:
+        return [table]
+
+    if not table or not table[0]:
+        return []
+
+    num_cols = len(table[0])
+    cols_per_table = max_cols - 1
+
+    # repeat the row header for each new table
+    return [
+        [[row[0]] + row[start:start + cols_per_table] for row in table]
+        for start in range(1, num_cols, cols_per_table)
+    ]
+

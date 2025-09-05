@@ -42,16 +42,10 @@ $max_font: 16px;
 
 body, .tooltip, .popover {
   font-family: var(--bs-font-sans-serif), sans-serif !important;
-  font-weight: 400;
 }
 
 pre, code, kbd, samp {
   font-family: var(--bs-font-monospace), monospace;
-  font-weight: 300;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 200;
 }
 
 caption, figcaption {
@@ -89,16 +83,19 @@ caption, figcaption {
   text-align: left;
 }
 
-section {
-  padding: 2em 0;
+section:not(:first-child) {
+  margin-top: 1.5em;
 }
 
 .report-viewer {
   counter-reset: figures tables;
 
   .section-title {
-    font-weight: 200;
-    font-size: calc(0.75rem + 1.5vw);;
+    h2 {
+      font-size: calc(0.75rem + 1.5vw);
+      border-bottom: 1px dotted var(--bs-border-color-translucent);
+      margin-bottom: 1em;
+    }
   }
 
   .description {
@@ -106,29 +103,49 @@ section {
   }
 
   .table {
-    counter-increment: tables;
+    --bs-border-color: var(--bs-border-color-translucent);
+
+    caption {
+      counter-increment: tables;
+    }
 
     tbody {
       td {
         text-align: right;
       }
-
-      border-bottom: 1px solid var(--bs-border-color-translucent);
-      border-top: 1px solid var(--bs-border-color-translucent);
     }
 
     thead {
       th {
         text-align: right;
+        border-bottom: 2px solid var(--bs-border-color-translucent);
+        vertical-align: bottom;
+        border-top: 1px solid var(--bs-border-color-translucent);
 
         &:first-child {
           text-align: left;
         }
       }
+
+      td {
+        border-top: 1px solid var(--bs-border-color-translucent);
+      }
     }
+
+    > tr {
+      > td {
+        border-top: 1px solid var(--bs-border-color-translucent);
+      }
+
+      > th {
+        border-top: 1px solid var(--bs-border-color-translucent);
+      }
+    }
+
   }
 
   .notes {
+    font-size: 0.85em;
     background: var(--bs-tertiary-bg);
     padding: 1rem;
     color: var(--bs-body-color);
@@ -144,36 +161,50 @@ section {
       margin-block-end: 1rem;
       padding-inline-start: 2rem;
     }
+
     li {
       background-color: inherit;
     }
-
   }
 }
 
-g.tick {
-  text {
-    font-size: 0.9rem;
-  }
-
-  line {
-    fill: none !important;
-    stroke: var(--bs-secondary);
+.table-nowrap-headers {
+  table th {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
   }
 }
 
-path {
-  &.domain {
-    fill: none !important;
-    stroke: var(--bs-secondary);
-  }
-
-  &.line {
+.table-flip-headers {
+  table > thead th:not(:first-child) {
+    writing-mode: sideways-lr;
+    white-space: nowrap;
+    padding-top: var(--bs-table-cell-padding-y, 0.5em);
+    padding-bottom: var(--bs-table-cell-padding-y, 0.5em);
   }
 }
 
-g.axis {
-  font-size: 0.95rem;
+.entry {
+  &.drag-placeholder {
+    min-height: 15em;
+    max-height: 100%;
+
+    .card {
+      border: 2px dashed var(--bs-border-color-translucent);
+      border-radius: var(--bs-border-radius);
+      min-height: 100%;
+    }
+  }
+
+  &.dragging {
+    display: none;
+  }
+}
+
+.drag-handle {
+  cursor: grab;
+  user-select: none
 }
 
 .table-heading {
@@ -206,10 +237,6 @@ table {
   .c3-axis-y-label, .c3-axis-y2-label, .c3-axis-x-label {
     font-size: 1rem;
   }
-}
-
-.c3-line {
-  stroke-width: 1.5px;
 }
 
 .report-viewer table.table tbody td {
@@ -370,6 +397,7 @@ svg {
   + .swatches {
     border-top: 1px solid var(--bs-border-color-translucent);
   }
+
   .swatches-name {
     display: inline-block;
     font-family: var(--bs-font-monospace), monospace;
@@ -390,11 +418,89 @@ svg {
   }
 }
 
+.rc-chart-swatches {
+  margin-bottom: 0.5em;
+  font-size: 90%;
+
+  .rc-chart-swatch > svg {
+    margin-right: 0.5em;
+    overflow: visible;
+  }
+  &.rc-chart-swatches-wrap {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    .rc-chart-swatch {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 1em;
+    }
+  }
+
+}
+
+html.report-editor, body.report-editor {
+  height: 100vh;
+}
+
+#rc-editor {
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  height: 100%;
+  max-height: 100%;
+  display: grid;
+  overflow: hidden;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+		"header header"
+		"work-area sidebar";
+}
+
+#rc-header {
+  grid-area: header;
+  padding: 0.75em;
+}
+
+#rc-editor-content {
+  height: 100%;
+  max-height: 100%;
+  grid-area: work-area;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+#rc-editor-sidebar {
+  height: 100%;
+  max-height: 100%;
+  grid-area: sidebar;
+  overflow: hidden;
+}
+
+.rc-data-preview {
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: auto;
+  font-size: 0.9em;
+  min-height: 0;
+}
+
+.flex-scrollable {
+  min-height: 0;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.rc-snippet-table {
+  th {
+    line-height: 1;
+  }
+}
+
 .report-editor {
   .entry .card-body {
     min-height: 15em;
     max-height: 15em;
-    overflow: auto;
+    overflow: hidden;
 
     pre {
       overflow: unset;
@@ -407,7 +513,7 @@ svg {
 }
 
 div.google-visualization-tooltip > ul > li > span {
-    font-family: var(--bs-font-sans-serif), sans-serif !important;
+  font-family: var(--bs-font-sans-serif), sans-serif !important;
 }
 
 
@@ -424,9 +530,9 @@ div.google-visualization-tooltip > ul > li > span {
   //}
 }
 
-svg circle {
-  opacity: 0.75;
-}
+//svg circle {
+//  opacity: 0.75;
+//}
 
 $list-columns: (1, 2, 3, 4, 6);
 $grid-breakpoints: (
@@ -443,9 +549,10 @@ $grid-breakpoints: (
       .#{$breakpoint}-#{$num}-cols {
         column-count: $num;
         column-gap: var(--bs-column-gap);
+
         li {
-            break-inside: avoid;
-            page-break-inside: avoid;
+          break-inside: avoid;
+          page-break-inside: avoid;
         }
       }
     }
@@ -462,7 +569,8 @@ $grid-breakpoints: (
   --bs-list-group-item-padding-y: 0.5rem;
   --bs-list-group-disabled-color: var(--bs-secondary-color);
   --bs-list-group-disabled-bg: var(--bs-body-bg);
-  .list-group-item{
+
+  .list-group-item {
     border-width: 0 0 var(--bs-border-width);
     color: var(--bs-body-color);
     background: var(--bs-body-bg);
@@ -497,7 +605,16 @@ ul.nav-tabs.nav-tabs-sm {
 
 .section-entry.xyplot-entry {
   svg circle {
-    stroke: var(--bs-body-color);
-    //opacity: 1 !important;
+    //stroke: var(--bs-border-transluscent);
+    //stroke-width: 0.75px;
   }
+}
+
+g {
+  --plot-background: var(--bs-body-bg, #fff) !important;
+}
+
+figure > div { // legend fix
+  display: flex;
+  justify-content: center;
 }

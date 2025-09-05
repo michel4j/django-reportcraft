@@ -1,6 +1,9 @@
 from collections import defaultdict
 from typing import Any, Literal
-from .utils import regroup_data, MinMax, epoch, map_colors, get_histogram_points, split_data, debug_value
+from .utils import (
+    regroup_data, MinMax, epoch, get_histogram_points, wrap_table,
+    prepare_data
+)
 
 
 def generate_table(entry, *args, **kwargs) -> dict:
@@ -10,13 +13,16 @@ def generate_table(entry, *args, **kwargs) -> dict:
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
 
-    rows = entry.attrs.get('rows', [])
+    rows = list(entry.source.fields.filter(name__in=entry.attrs.get('rows', [])).values_list('name', flat=True))
     columns = entry.attrs.get('columns', [])
     values = entry.attrs.get('values', '')
     total_column = entry.attrs.get('total_column', False)
     total_row = entry.attrs.get('total_row', False)
     force_strings = entry.attrs.get('force_strings', False)
+    flip_headers = entry.attrs.get('flip_headers', False)
+    wrap_headers = entry.attrs.get('wrap_headers', False)
     transpose = entry.attrs.get('transpose', False)
+    max_cols = entry.attrs.get('max_cols', None)
     labels = entry.source.get_labels()
 
     if not columns or not rows:
@@ -62,11 +68,21 @@ def generate_table(entry, *args, **kwargs) -> dict:
     if transpose:
         table_data = list(map(list, zip(*table_data)))
 
+    if max_cols and len(table_data[0]) > max_cols:
+        # Split the table into multiple parts if it exceeds max_cols
+        data_parts = wrap_table(table_data, max_cols=max_cols)
+    else:
+        data_parts = [table_data]
+
+    styles = entry.style or ""
+    styles += " table-flip-headers" if flip_headers else ""
+    styles += " table-nowrap-headers" if not wrap_headers else ""
+
     return {
         'title': entry.title,
         'kind': 'table',
-        'data': table_data,
-        'style': entry.style,
+        'data': data_parts,
+        'style': styles,
         'header': "column row",
         'description': entry.description,
         'notes': entry.notes
@@ -81,109 +97,87 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
     labels = entry.source.get_labels()
-    vertical = entry.attrs.get('vertical', True)
-    x_axis = entry.attrs.get('x_axis', '')
-    y_axis = entry.attrs.get('y_axis', [])
+
+    categories = entry.attrs.get('categories', '')
+    values = entry.attrs.get('values', [])
+    color_by = entry.attrs.get('color_by', None)
+    grouped = entry.attrs.get('grouped', False)
     sort_by = entry.attrs.get('sort_by', None)
     sort_desc = entry.attrs.get('sort_desc', False)
-    stack = entry.attrs.get('stack', [])
-    y_value = entry.attrs.get('y_value', '')
-    colors = entry.attrs.get('colors', 'Live16')
-    color_field = entry.attrs.get('color_field', None)
-    aspect_ratio = entry.attrs.get('aspect_ratio', None)
-    wrap_x_labels = entry.attrs.get('wrap_x_labels', False)
-    x_culling = entry.attrs.get('x_culling', 15)
+    ticks_every = entry.attrs.get('ticks_every', 1)
     limit = entry.attrs.get('limit', None)
+    scheme = entry.attrs.get('scheme', 'Live8')
+    vertical = (kind == "columns")
+    scale = entry.attrs.get('scale', 'linear')
 
-    # For compatibility with older reports, convert 'bars' to 'columns' and vice versa if vertical is True
-    if vertical and kind == 'bars':
-        kind = 'columns'
-        vertical = False
-    elif vertical and kind == 'columns':
-        kind = 'bars'
-        vertical = False
-
-    areas = entry.attrs.get('areas', [])
-    lines = entry.attrs.get('lines', [])
-    bars = entry.attrs.get('bars', [])
-
-    if not x_axis or not y_axis:
+    if not categories or not values:
         return {}
 
-    x_label = labels.get(x_axis, x_axis.title())
+    features = []
+    category_name = labels.get(categories, categories)
+    color_name = labels.get(color_by, color_by) if color_by else None
+    group_name = None
+    if grouped and color_name:
+        category_name, group_name = color_name, category_name
+
+    category_axis = 'x' if vertical else 'y'
+    value_axis = 'y' if vertical else 'x'
+    data_fields = [categories] + values
+    for value in values:
+        mark = {
+            category_axis: category_name,
+            value_axis: labels.get(value, value),
+            'type': kind,
+        }
+        # Add color channel
+        if color_name:
+            mark['colors'] = color_name
+            data_fields.append(color_by)
+
+        # Add facet channel
+        if group_name:
+            mark['groups'] = group_name
+
+        # Add sort channel
+        if sort_by:
+            sort = labels.get(sort_by, sort_by)
+            mark['sort'] = f'-{sort}' if sort_desc else sort
+
+        features.append(mark)
+
     raw_data = entry.source.get_data(*args, **kwargs)
-    if len(y_axis) == 1 and y_value:
-        y_axis = y_axis[0]
-        y_labels = list(filter(None, dict.fromkeys(item[y_axis] for item in raw_data)))
-        y_stack = [y_labels for group in stack for y in group if y == y_axis]
-        types = {
-            **{y: 'bar' for y in y_labels if kind in ['bars', 'columns']},
-            **{y: 'line' for y in y_labels if kind == 'line'},
-            **{y: 'area' for y in y_labels if kind == 'area'},
-        }
-
-    else:
-        y_stack = [[labels.get(y, y.title()) for y in group] for group in stack]
-        types = {
-            **{labels.get(field, field.title()): 'area' for field in areas},
-            **{labels.get(field, field.title()): 'line' for field in lines},
-            **{labels.get(field, field.title()): 'bar' for field in bars},
-        }
-        if not types:
-            types = {
-                **{labels.get(y, y.title()): 'bar' for y in y_axis if kind in ['bars', 'columns']},
-                **{labels.get(y, y.title()): 'line' for y in y_axis if kind == 'line'},
-                **{labels.get(y, y.title()): 'area' for y in y_axis if kind == 'area'},
-            }
-
-    data = regroup_data(
-        raw_data, x_axis=x_axis, y_axis=y_axis, y_value=y_value, labels=labels,
-        sort=sort_by, sort_desc=sort_desc, default=0,
-    )
+    data = prepare_data(raw_data, select=data_fields, labels=labels, sort=sort_by, sort_desc=sort_desc)
+    if limit:
+        data = data[:limit]
 
     info = {
         'title': entry.title,
         'description': entry.description,
         'kind': kind,
-        'types': types,
-        'y-ticks': None if vertical else 5,
+        'features': features,
         'style': entry.style,
+        'ticks-every': ticks_every,
+        'scheme': scheme,
+        'scale': scale,
         'notes': entry.notes,
-        'x-label': x_label,
+        'data': data,
     }
+    if data and isinstance(data[0].get(category_name), (int, float)):
+        info["ticks-interval"] = 1
 
-    if aspect_ratio:
-        info['aspect-ratio'] = aspect_ratio
-    if y_stack:
-        info['stack'] = y_stack
-    if color_field:
-        color_key = labels.get(color_field)
-        info['color-by'] = color_key
-        color_keys = list(dict.fromkeys([item.get(color_field) for item in raw_data if color_field in item]))
-        info['colors'] = map_colors(color_keys, colors)
-    elif colors:
-        info['colors'] = colors
-    if x_culling:
-        info['x-culling'] = x_culling
-    if wrap_x_labels:
-        info['wrap-x-labels'] = wrap_x_labels
-
-    if limit:
-        data = data[limit:] if limit < 0 else data[:limit]
-    info['data'] = data
     return info
-
-
-def generate_area(entry, *args, **kwargs):
-    return generate_bars(entry, *args, kind='area', **kwargs)
-
-
-def generate_line(entry, *args, **kwargs):
-    return generate_bars(entry, *args, kind='line', **kwargs)
 
 
 def generate_columns(entry, *args, **kwargs):
     return generate_bars(entry, *args, kind='columns', **kwargs)
+
+
+def generate_area(entry, *args, **kwargs):
+    return generate_plot(entry, *args, **kwargs)
+
+
+def generate_line(entry, *args, **kwargs):
+    return generate_plot(entry, *args, **kwargs)
 
 
 def generate_list(entry, *args, **kwargs):
@@ -192,8 +186,11 @@ def generate_list(entry, *args, **kwargs):
     :param entry: The report entry containing the configuration for the table
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
-    columns = entry.attrs.get('columns', [])
+    columns = list(
+        entry.source.fields.filter(name__in=entry.attrs.get('columns', [])).values_list('name', flat=True)
+    )
     order_by = entry.attrs.get('order_by', None)
+    order_desc = entry.attrs.get('order_desc', False)
     limit = entry.attrs.get('limit', None)
 
     if not columns:
@@ -203,7 +200,7 @@ def generate_list(entry, *args, **kwargs):
     labels = entry.source.get_labels()
 
     if order_by:
-        sort_key, reverse = (order_by[1:], True) if order_by.startswith('-') else (order_by, False)
+        sort_key, reverse = (order_by[1:], True) if order_by.startswith('-') else (order_by, order_desc)
         data = list(sorted(data, key=lambda x: x.get(sort_key, 0), reverse=reverse))
 
     if limit:
@@ -219,7 +216,7 @@ def generate_list(entry, *args, **kwargs):
     return {
         'title': entry.title,
         'kind': 'table',
-        'data': table_data,
+        'data': [table_data],
         'style': f"{entry.style} first-col-left",
         'header': "row",
         'description': entry.description,
@@ -231,111 +228,50 @@ def generate_plot(entry, *args, **kwargs):
     """
     Generate an XY plot from the data source
     :param entry: The report entry containing the configuration for the table
+    :param kind: The type of plot to generate ('scatter', 'area', 'line')
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
-    labels = entry.source.get_labels()
 
+    labels = entry.source.get_labels()
     groups = entry.attrs.get('groups', [])
     x_label = entry.attrs.get('x_label', '')
     y_label = entry.attrs.get('y_label', '')
     x_value = entry.attrs.get('x_value', '')
+    x_scale = entry.attrs.get('x_scale', 'linear')
+    y_scale = entry.attrs.get('y_scale', 'linear')
     group_by = entry.attrs.get('group_by', None)
-    colors = entry.attrs.get('colors', 'Live16')
-    precision = entry.attrs.get('precision', 0)
+    scheme = entry.attrs.get('scheme', 'Live8')
 
-    valid_groups = [
+    if not (x_value and groups):
+        return {}
+
+    raw_data = entry.source.get_data(*args, **kwargs)
+    features = [
         {
-            'x': x_value,       # All groups share the same x-value
-            **group
+            'type': group.pop('type', 'points'),
+            'x': labels.get(x_value, x_value),                                      # All plots share the same x-value
+            **{key: labels.get(field, field) for key, field in group.items()},      # Add y-values, z
+            **{'colors': labels.get(group_by, group_by) for i in [1] if group_by},  # Add color channel
         }
         for group in groups if 'y' in group
     ]
 
-    if not valid_groups:
-        return {}
-
-    y_fields = [group['y'] for group in valid_groups]
-    z_fields = [group.get('z') for group in valid_groups if 'z' in group]
-
-    raw_data = entry.source.get_data(*args, **kwargs)
-
-    if len(valid_groups) == 1 and group_by:
-        internal_groups = True
-        data = regroup_data(raw_data, x_axis=x_value, y_axis=y_fields, others=[group_by] + z_fields)
-        grouped_data = split_data(data, group_by)
-        internal_groups = list(grouped_data.keys())
-    else:
-        internal_groups = False
-        grouped_data = {}
-        data = regroup_data(raw_data, x_axis=x_value, y_axis=y_fields, others=z_fields)
-
-    # sort data
-    types = {group.get('type') for group in valid_groups}
-    sort_keys = [x_value]
-    reverse_sort = False
-    if z_fields and types == {'scatter'}:
-        sort_keys = z_fields
-        reverse_sort = True
-
-    data.sort(key=lambda x: tuple(x.get(f) for f in sort_keys), reverse=reverse_sort)
-
-    # get data groups
-    group_info = []
-    report_data = {}
-    if internal_groups:
-        group = valid_groups[0]
-        for group_name, group_data in grouped_data.items():
-            x_name = f'{group_name}_{group["x"]}'
-            z_name = f'{group_name}_{group.get("z", "")}' if "z" in group else ''
-            y_name = group_name.title()
-            new_group = {
-                'x': x_name,
-                'y': y_name,
-                'z': z_name,
-                'type': group.get('type', ''),
-            }
-            # sort to show bigger bubbles first
-            if group.get('type') == 'scatter' and group.get('z'):
-                group_data.sort(key=lambda x: x.get(group['z'], 0), reverse=True)
-
-            group_info.append({k: v for k, v in new_group.items() if v})
-            sub_data = {
-                x_name: [item[group['x']] for item in group_data if group['x'] in item],
-                y_name: [item[group['y']] for item in group_data if group['y'] in item],
-            }
-            if 'z' in group:
-                sub_data[z_name] = [item[group['z']] for item in group_data if group['z'] in item]
-            report_data.update(sub_data)
-    else:
-        for group in valid_groups:
-            x_name = labels.get(group['x'], group['x'].title())
-            y_name = labels.get(group['y'], group['y'].title())
-            z_name = labels.get(group.get('z', ''), group.get('z', '').title())
-            new_group = {
-                'x': x_name,
-                'y': y_name,
-                'z': z_name,
-                'type': group.get('type', ''),
-            }
-            group_info.append({k: v for k, v in new_group.items() if v})
-
-        report_data.update({
-            labels.get(field_name, field_name.title()): [item[field_name] for item in data if field_name in item]
-            for field_name in [x_value] + y_fields + z_fields
-        })
+    select_fields = {x_value} | ({group_by} if group_by else set())
+    select_fields |= {group[k] for group in groups for k in ['y', 'z'] if k in group}
+    data = prepare_data(raw_data, select=select_fields, labels=labels, sort=x_value, sort_desc=False)
 
     return {
         'title': entry.title,
         'description': entry.description,
         'kind': 'xyplot',
         'style': entry.style,
-        'colors': colors,
-        'max-radius': 20,
-        'groups': group_info,
+        'scheme': scheme,
+        'x-scale': x_scale,
+        'y-scale': y_scale,
         'x-label': x_label,
         'y-label': y_label,
-        'x-tick-precision': precision,
-        'data': report_data,
+        'features': features,
+        'data': data,
         'notes': entry.notes
     }
 
@@ -363,8 +299,8 @@ def generate_pie(entry, kind: Literal['pie', 'donut'] = 'pie', *args, **kwargs):
         'description': entry.description,
         'kind': kind,
         'style': entry.style,
-        'colors': colors,
-        'data': [{'label': labels.get(label, label.title()), 'value': value} for label, value in data.items()],
+        'scheme': colors,
+        'data': [{'label': labels.get(label, label), 'value': value} for label, value in data.items()],
         'notes': entry.notes
     }
 
@@ -384,28 +320,39 @@ def generate_histogram(entry, *args, **kwargs):
     :param entry: The report entry containing the configuration for the table
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
+    labels = entry.source.get_labels()
     bins = entry.attrs.get('bins', None)
-    value_field = entry.attrs.get('values', '')
-    colors = entry.attrs.get('colors', None)
-    if not value_field:
+    values = entry.attrs.get('values', '')
+    scheme = entry.attrs.get('scheme', None)
+    group_by = entry.attrs.get('group_by', None)
+    binning = entry.attrs.get('binning', 'auto')
+    stack = entry.attrs.get('stack', True)
+    scale = entry.attrs.get('scale', 'linear')
+
+    if not values:
         return {}
 
     raw_data = entry.source.get_data(*args, **kwargs)
-    labels = entry.source.get_labels()
-    values = [float(item.get(value_field)) for item in raw_data if item.get(value_field) is not None]
-    data = get_histogram_points(values, bins=bins)
-    x_culling = min(len(data), 15)
-    return {
+    select_fields = [values, group_by]
+    data = prepare_data(raw_data, select=select_fields, labels=labels)
+
+    info = {
         'title': entry.title,
         'description': entry.description,
         'kind': 'histogram',
         'style': entry.style,
-        'colors': colors,
-        'x-label': labels.get(value_field, value_field.title()),
-        'x-culling': x_culling,
+        'scheme': scheme,
+        'scale': scale,
+        'stack': stack,
+        'values': labels.get(values, values),
         'data': data,
         'notes': entry.notes
     }
+    if group_by:
+        info['groups'] = labels.get(group_by, group_by)
+
+    info['bins'] = bins if binning == 'manual' else binning
+    return info
 
 
 def generate_timeline(entry, *args, **kwargs):
@@ -415,37 +362,30 @@ def generate_timeline(entry, *args, **kwargs):
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
 
-    type_field = entry.attrs.get('type_field', '')
-    start_field = entry.attrs.get('start_field', [])
-    end_field = entry.attrs.get('end_field', '')
-    label_field = entry.attrs.get('label_field', '')
-    colors = entry.attrs.get('colors', None)
+    labels = entry.source.get_labels()
+    start_value = entry.attrs.get('start_value', None)
+    end_value = entry.attrs.get('end_value', None)
+    label_value = entry.attrs.get('labels', None)
+    color_by = entry.attrs.get('color_by', None)
+    scheme = entry.attrs.get('scheme', 'Live8')
 
-    if not type_field or not start_field or not end_field:
+    if not start_value or not end_value:
         return {}
 
-    min_max = MinMax()
+    select_fields = [field for field in [start_value, end_value, label_value, color_by] if field]
     raw_data = entry.source.get_data(*args, **kwargs)
-    data = [
-        {
-            'type': item.get(type_field, ''),
-            'start': min_max.check(epoch(item[start_field])),
-            'end': min_max.check(epoch(item[end_field])),
-            'label': item.get(label_field, '')
-        } for item in raw_data if start_field in item and end_field in item
-    ]
-
-    min_time = entry.attrs.get('min_time', min_max.min)
-    max_time = entry.attrs.get('max_time', min_max.max)
+    data = prepare_data(raw_data, select=select_fields, labels=labels, sort=start_value, sort_desc=False)
 
     return {
         'title': entry.title,
         'description': entry.description,
         'kind': 'timeline',
-        'colors': colors,
-        'start': min_time,
-        'end': max_time,
+        'colors': labels.get(color_by, color_by),
+        'labels': labels.get(label_value, label_value),
+        'start': labels.get(start_value, start_value),
+        'end': labels.get(end_value, end_value),
         'style': entry.style,
+        'scheme': scheme,
         'notes': entry.notes,
         'data': data
     }
@@ -472,41 +412,47 @@ def generate_geochart(entry, *args, **kwargs):
     """
     Generate a geo chart from the data source
     :param entry: The report entry containing the configuration for the table
-    returns: A dictionary containing the table data and metadata suitable for rendering
+    returns: A dictionary containing the data and metadata suitable for rendering
     """
-    all_columns = {
-        'Lat': entry.attrs.get('latitude'),
-        'Lon': entry.attrs.get('longitude'),
-        'Location': entry.attrs.get('location'),
-        'Name': entry.attrs.get('name'),
-        'Value': entry.attrs.get('value'),
-        'Color': entry.attrs.get('color_by'),
-    }
-    columns = {key: value for key, value in all_columns.items() if value}
 
-    region = entry.attrs.get('region', 'world')
-    resolution = entry.attrs.get('resolution', 'countries')
-    mode = entry.attrs.get('mode', 'regions')
-    colors = entry.attrs.get('colors', 'YlOrRd')
+    labels = entry.source.get_labels()
+    groups = entry.attrs.get('groups', [])
+    map_id = entry.attrs.get('map', '001')
+    mode = entry.attrs.get('mode', 'area')
+    location = entry.attrs.get('location', None)
+    latitude = entry.attrs.get('latitude', None)
+    longitude = entry.attrs.get('longitude', None)
+    map_labels = entry.attrs.get('map_labels', None)
+    scheme = entry.attrs.get('scheme', 'Live8')
 
     raw_data = entry.source.get_data(*args, **kwargs)
-    data = [
-        {k: item.get(v) for k, v in columns.items()}
-        for item in raw_data
+    features = [
+        {
+            'type': group.get('type', 'area'),
+            'value': labels.get(group['value'], group['value']),
+            'scheme': group.get('scheme', scheme),
+        }
+        for group in groups if 'value' in group
     ]
+
+    select_fields = {field for field in [location, latitude, longitude] if field}
+    select_fields |= {group['value'] for group in groups if 'value' in group}
+    data = prepare_data(raw_data, select=select_fields, labels=labels)
 
     return {
         'title': entry.title,
         'description': entry.description,
         'kind': 'geochart',
         'mode': mode,
-        'region': region,
-        'resolution': resolution,
-        'colors': colors,
-        'show-legend': False,
+        'map': map_id,
+        'labels': map_labels,
+        'latitude': labels.get(latitude, latitude),
+        'longitude': labels.get(longitude, longitude),
+        'location': labels.get(location, location),
+        'scheme': scheme,
+        'features': features,
         'style': entry.style,
         'notes': entry.notes,
-        'map': 'canada',
         'data': data
     }
 
