@@ -12,6 +12,7 @@ from django.db.models import QuerySet, Q
 from django.db.models.functions import Round, Abs, Sign
 from django.utils.text import slugify, gettext_lazy as _
 
+import reportcraft.functions
 from . import utils, entries
 
 
@@ -309,8 +310,8 @@ class DataField(models.Model):
         parser = utils.ExpressionParser()
         if self.expression:
             db_expression = parser.parse(self.expression)
-            if isinstance(db_expression, utils.DisplayName):
-                db_expression = utils.ChoiceName(self.model.name, db_expression.name)
+            if isinstance(db_expression, reportcraft.functions.DisplayName):
+                db_expression = reportcraft.functions.ChoiceName(self.model.name, db_expression.name)
             if self.precision is not None:
                 db_expression = Round(db_expression, self.precision)
             return db_expression

@@ -119,7 +119,7 @@ class SourceData(*VIEW_MIXINS, View):
             data = source.get_data(filters=params)
         except Exception:
             data = []
-        content_type = request.GET.get('type', 'json')
+        content_type = self.kwargs.get('format', 'json').lower()
         if content_type == 'csv':
             return CsvResponse(data, headers=source.get_labels().keys())
         else:

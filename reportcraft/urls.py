@@ -35,4 +35,5 @@ urlpatterns = [
     path('view/<slug:slug>/', views.MainReportView.as_view(), name='report-view'),
     path('api/reports/<slug:slug>/', views.ReportData.as_view(), name='report-data'),
     path('api/sources/<int:pk>/', views.SourceData.as_view(), name='source-data'),
+    path('api/sources/<slug:format>/<int:pk>/', views.SourceData.as_view(), name='format-source-data'),
  ]

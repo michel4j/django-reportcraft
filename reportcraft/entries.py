@@ -13,7 +13,7 @@ def generate_table(entry, *args, **kwargs) -> dict:
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
 
-    rows = entry.attrs.get('rows', [])
+    rows = list(entry.source.fields.filter(name__in=entry.attrs.get('rows', [])).values_list('name', flat=True))
     columns = entry.attrs.get('columns', [])
     values = entry.attrs.get('values', '')
     total_column = entry.attrs.get('total_column', False)
@@ -186,7 +186,9 @@ def generate_list(entry, *args, **kwargs):
     :param entry: The report entry containing the configuration for the table
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
-    columns = entry.attrs.get('columns', [])
+    columns = list(
+        entry.source.fields.filter(name__in=entry.attrs.get('columns', [])).values_list('name', flat=True)
+    )
     order_by = entry.attrs.get('order_by', None)
     order_desc = entry.attrs.get('order_desc', False)
     limit = entry.attrs.get('limit', None)
@@ -239,6 +241,9 @@ def generate_plot(entry, *args, **kwargs):
     y_scale = entry.attrs.get('y_scale', 'linear')
     group_by = entry.attrs.get('group_by', None)
     scheme = entry.attrs.get('scheme', 'Live8')
+
+    if not (x_value and groups):
+        return {}
 
     raw_data = entry.source.get_data(*args, **kwargs)
     features = [

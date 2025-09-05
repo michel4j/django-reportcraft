@@ -143,11 +143,11 @@
                     <h5 class="my-0"><span class="text-muted">Data</span></h5>
                     <div class="toolbox ms-auto pr-0">
                         <a download="{{ source.name_slug }}.csv"
-                           href="{% url 'source-data' pk=source.pk %}?type=csv" title="Download CSV">
+                           href="{% url 'format-source-data' format="csv" pk=source.pk %}" title="Download CSV">
                             {% tool_icon icon='file-type-csv' size='sm' %}
                         </a>
                         <a download="{{ source.name_slug }}.json"
-                           href="{% url 'source-data' pk=source.pk %}" title="Download JSON">
+                           href="{% url 'format-source-data' format="json" pk=source.pk %}" title="Download JSON">
                             {% tool_icon icon='file-type-js' size='sm' %}
                         </a>
                     </div>

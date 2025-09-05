@@ -421,6 +421,9 @@ function drawXYPlot(figure, chart, options) {
     const colorScale = d3.scaleOrdinal(options.scheme);
     const xScale = chart["x-scale"] || 'linear';
     const yScale = chart["y-scale"] || 'linear';
+    let maxLabelLength = 10;
+    const colorDomain = [];
+    const colorRange = [];
 
     const plotOptions = {
         className: "rc-chart",
@@ -456,7 +459,9 @@ function drawXYPlot(figure, chart, options) {
     setAxisScale(plotOptions.x, xScale);
     setAxisScale(plotOptions.y, yScale);
 
+
     markTypes.forEach(function(mark, index){
+        maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[mark.y]}`.length || 0));
         const markOptions = {
             x: mark.x,
             y: mark.y,
@@ -464,23 +469,31 @@ function drawXYPlot(figure, chart, options) {
             curve: mark.curve || "linear",
             tip: true,
         };
+        let colorValue;
+        if (mark.colors) {
+            colorValue = mark.colors;
+        } else {
+            colorValue = colorScale(index);
+            colorDomain.push(mark.y);
+            colorRange.push(colorValue);
+        }
         if (mark.type === 'line') {
-            markOptions.stroke = mark.colors || colorScale(index);
+            markOptions.stroke = colorValue;
             marks.push(new Plot.lineY(chart.data, markOptions));
         } else if (mark.type === 'line-points') {
-            markOptions.stroke = mark.colors || colorScale(index);
+            markOptions.stroke = colorValue;
             markOptions.marker = mark.marker || 'circle-stroke';
             marks.push(new Plot.lineY(chart.data, markOptions));
         } else if (mark.type === 'points') {
-            markOptions.stroke = mark.colors || colorScale(index);
+            markOptions.stroke = colorValue;
             markOptions.strokeWidth = 1;
             marks.push(new Plot.dot(chart.data, markOptions));
         }else if (mark.type === 'points-filled') {
-            markOptions.fill = mark.colors || colorScale(index);
+            markOptions.fill = colorValue;
             markOptions.stroke = "var(--bs-body-color)";
             markOptions.strokeWidth = 0.5;
         } else if (mark.type === 'area') {
-            markOptions.fill = mark.colors || colorScale(index);
+            markOptions.fill = colorValue;
             marks.push(new Plot.areaY(chart.data, markOptions));
         } else {
             console.warn(`Unknown XY Plot: ${mark.type}`);
@@ -490,6 +503,14 @@ function drawXYPlot(figure, chart, options) {
         }
     });
     // Create chart
+    plotOptions.marginLeft = Math.max(40, maxLabelLength * 10);
+    if (colorDomain.length > 1) {
+        plotOptions.color = {
+            domain: colorDomain,
+            range: colorRange,
+            legend: true,
+        }
+    }
     const plot = Plot.plot(plotOptions);
     addFigurePlot(figure, plot);
 }
