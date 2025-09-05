@@ -129,7 +129,7 @@ for more information:
         ExtractSecond, ExtractWeekDay, ExtractWeek,
         Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
         Radians, Degrees, Q, ArrayAgg, DisplayName, Interval
-        ShiftStart, ShiftEnd, Hours, Minutes
+        ShiftStart, ShiftEnd, Hours, Minutes, CumSum, CumCount
     ]
 
 Additionally, the following custom functions functions are supported:
@@ -144,6 +144,13 @@ Additionally, the following custom functions functions are supported:
   `separator` keyword argument, which defaults to a comma (`,`). For example, `Join(Authors, separator=', ')` would
   join the authors into a single string separated by commas.
 - `DisplayName`: Gets the display name for of Django choice fields
+- `CumSum`: Calculate the cumulative sum of a numeric field over an ordered set of rows. Takes two parameters. The
+  first is the field to sum, and the second is the order. For example, `CumSum(Sales, Date)` would calculate the cumulative
+  sum of the `Sales` field ordered by the `Date` field.
+- `CumCount`: Calculate the cumulative count of rows over an ordered set of rows. Takes two parameters. The
+  first is the field to count, and the second is the order. For example, `CumCount(Item, Date)` would calculate the
+  cumulative count of items ordered by the `Date` field.
+  sum of the `Sales` field ordered by the `Date` field.
 - `Interval`:  categorize a numeric field's value into dynamically generated intervals. For example:
 
 .. code-block:: python
