@@ -588,12 +588,15 @@ def prepare_data(
         # if no fields are selected, select all fields from the data
         select = {key for item in data for key in item.keys()}
 
+    fill_missing = default != ValueType.IGNORE
+
     data = [
         {
             k: item.get(k, default)
             for k in select
-            if (k in select or default != ValueType.IGNORE) and item.get(k) != ValueType.IGNORE
             # if default is not ValueType.IGNORE, include it
+            if (k in select or fill_missing) and (item.get(k, default) != ValueType.IGNORE)
+
         }
         for item in data
     ]
