@@ -326,7 +326,10 @@ class EntryConfigForm(ModalModelForm):
         """
         attrs = self.instance.attrs
         if self.instance.source:
-            field_queryset = self.instance.source.fields.all()
+            field_names = {
+                field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')
+            }
+            field_queryset = self.instance.source.fields.order_by('name').filter(pk__in=field_names.values())
         else:
             field_queryset = DataSource.objects.none()
 
