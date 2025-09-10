@@ -430,7 +430,6 @@ def generate_geochart(entry, *args, **kwargs):
         {
             'type': group.get('type', 'area'),
             'value': labels.get(group['value'], group['value']),
-            'scheme': group.get('scheme', scheme),
         }
         for group in groups if 'value' in group
     ]

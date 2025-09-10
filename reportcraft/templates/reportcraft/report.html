@@ -10,7 +10,7 @@
 {% block page-title %}<span id="report-title">{{ report.title }}</span>{% endblock %}
 {% block page-subtitle %}<span id="report-subtitle">{{ report.description }}</span>{% endblock %}
 {% block page-content %}
-    <div id="report-entry"></div>
+    <div id="report-entry" class="report-{{ report.theme }}"></div>
 {% endblock %}
 
 {% block page-scripts %}

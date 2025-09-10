@@ -2,7 +2,7 @@
 {% load reportcraft %}
 
 <link href="{% static "reportcraft/reportcraft.min.css" %}" rel="stylesheet">
-<div id="report-entry"></div>
+<div id="report-entry" class="report-{{ report.theme }}"></div>
 <script type="module">
     import { showReport } from '{% static "reportcraft/reportcraft.min.js" %}';
     document.addEventListener('DOMContentLoaded', function() {

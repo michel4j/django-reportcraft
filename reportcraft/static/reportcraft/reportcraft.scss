@@ -3,6 +3,9 @@ $max_width: 1200px;
 $min_font: 9px;
 $max_font: 16px;
 
+
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
+//@import url('https://fonts.googleapis.com/css2?family=Single+Day&display=swap');
 :root {
   --rc-max-font-size: $max_font;
   --rc-min-font-size: $min_font;
@@ -36,10 +39,6 @@ $max_font: 16px;
   @include fluid-type($min_width, $max_width, $min_font, $max_font);
 }
 
-.c3 svg {
-  font-family: var(--bs-font-sans-serif), sans-serif;
-}
-
 body, .tooltip, .popover {
   font-family: var(--bs-font-sans-serif), sans-serif !important;
 }
@@ -68,10 +67,6 @@ caption, figcaption {
 
 .report-viewer .table caption:before {
   content: 'Table ' counter(tables) ' - ';
-}
-
-.report-viewer svg * {
-  font-family: var(--bs-font-sans-serif), sans-serif !important;
 }
 
 #report-builder {
@@ -241,7 +236,7 @@ table {
 
 .report-viewer table.table tbody td {
   font-family: var(--bs-font-monospace), sans-serif;
-  font-size: 0.85rem;
+  //font-size: 0.85rem;
 }
 
 .report-viewer {
@@ -437,6 +432,15 @@ svg {
     }
   }
 
+}
+
+svg.rc-chart-ramp {
+  font-size: 1em !important;
+}
+.report-sketch {
+  --bs-font-sans-serif: Nanum Pen Script;
+  --bs-font-monospace: Nanum Pen Script;
+    font-family: var(--bs-font-sans-serif), cursive !important;
 }
 
 html.report-editor, body.report-editor {

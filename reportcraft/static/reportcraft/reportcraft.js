@@ -3,6 +3,7 @@ import _ from "https://cdn.jsdelivr.net/npm/underscore@1.13.7/+esm";
 import showdown from "https://cdn.jsdelivr.net/npm/showdown@1.9.1/+esm";
 import * as topojson from "https://cdn.jsdelivr.net/npm/topojson@3.0.2/+esm";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import { Svg2Roughjs, OutputType } from "https://cdn.jsdelivr.net/npm/svg2roughjs@3.2.1/+esm";
 
 export const figureTypes = [
     "bars",
@@ -61,7 +62,8 @@ const contentTemplate = _.template(
     '       <%= tableTemplate({id: id, entry: entry, table: table, showCaption: (t == entry.data.length -1)}) %>' +
     '       <% }); %>' +
     '   <% } else if (figureTypes.includes(entry.kind)) { %>' +
-    '       <figure id="figure-<%= entry.id || id %>" data-type="<%= entry.kind %>" data-chart="<%= encodeObj(entry) %>" >' +
+    '       <figure id="figure-<%= entry.id || id %>" data-type="<%= entry.kind %>" ' +
+    '           data-rc-theme="<%= theme || null %>" data-chart="<%= encodeObj(entry) %>" >' +
     '       </figure>' +
     '   <% }%>' +
     '   <% if (entry.notes) { %>' +
@@ -71,11 +73,13 @@ const contentTemplate = _.template(
 );
 const sectionTemplate = _.template(
     '<section id="section-<%= id %>" <% let style = section.style || "row"; %>' +
-    '       class="<%= style %>">' +
-    '       <%  if (section.title)  {%>' +
-    '           <div class="section-title col-12"><h2><%= section.title %></h2></div>' +
-    '       <% } %>' +
-    '     <% _.each(section.content, function(entry, j){ %><%= renderContent({id: id+"-"+j, entry: entry}) %><% }); %>' +
+    '     class="<%= style %>">' +
+    '     <%  if (section.title)  {%>' +
+    '         <div class="section-title col-12"><h2><%= section.title %></h2></div>' +
+    '     <% } %>' +
+    '     <% _.each(section.content, function(entry, j){ %>' +
+    '         <%= renderContent({id: id+"-"+j, entry: entry, theme: section.theme }) %>' +
+    '     <% }); %>' +
     '</section>'
 );
 
@@ -123,6 +127,7 @@ function renderContent(options) {
         renderMarkdown: renderMarkdown,
         tableTemplate: tableTemplate,
         figureTypes: figureTypes,
+        theme: options.theme,
         encodeObj: encodeObj,
         decodeObj: decodeObj
     });
@@ -182,13 +187,22 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
     target.querySelectorAll('figure').forEach(function (figure, index) {
         const chart = decodeObj(figure.getAttribute('data-chart'));
         let aspectRatio = chart.data['aspect-ratio'] || 16/9;
+        let scheme;
+
+        if (chart.scheme in ColorSchemes) {
+            scheme = ColorSchemes[chart.scheme];
+        } else if (`scheme${chart.scheme}` in d3) {
+            scheme = d3[`scheme${chart.scheme}`];
+        } else {
+            scheme = d3.Observable10;
+        }
+
         const options = {
             uid: (index + Date.now()).toString(36),
-            // width: figure.offsetWidth,
-            // height: figure.offsetWidth / aspectRatio,
-            width: 650,
-            height: 650 / aspectRatio,
-            scheme: (ColorSchemes[chart.scheme] || d3[`scheme${chart.scheme}`]) || d3.Observable10,
+            width: figure.offsetWidth,
+            height: figure.offsetWidth / aspectRatio,
+            scheme: scheme,
+            theme: chart.theme || 'default',
             aspectRatio: aspectRatio,
             staticRoot: staticRoot,
         };
@@ -244,20 +258,48 @@ function formatTick(value, i, ticksEvery = 1, ticksInterval = undefined) {
     }
 }
 
+function roughenSVG(svg, scalable = false) {
+    const container = document.createElement('div');
+    const svgConverter = new Svg2Roughjs(container, OutputType.SVG);
+    svgConverter.svg = svg;
+    svgConverter.fontFamily ='Nanum Pen Script, cursive';
+    svgConverter.roughConfig = {
+        roughness: 2.0, bowing: 1, fill: 'cross-hatch', fillWeight: 0.25
+    };
+    svgConverter.sketch();
+
+    // transfer svg attributes
+    const newSvg = container.querySelector('svg');
+    for (const attr of svg.attributes) {
+        newSvg.setAttribute(attr.name, attr.value);
+    }
+    if (scalable) {
+        newSvg.removeAttribute('height'); // Let CSS handle the height
+        newSvg.setAttribute('width', '100%');
+        newSvg.setAttribute('font-size', '14');
+    }
+    return newSvg;
+}
+
 function addFigurePlot(figure, plot) {
-    // Fix the width and let CSS handle the height
+
     let svg = plot.querySelector('.rc-chart');
     if (plot.tagName === 'svg') {
         svg = plot;
     }
+
+    // remove styles added ty Plot.swatches
+    let swatchStyle = plot.querySelector('.rc-chart-swatches > style');
+    if (swatchStyle) {
+        swatchStyle.remove();
+    }
+
+    // Fix the width and let CSS handle the height
     if (svg) {
         svg.setAttribute('width', '100%');
         svg.removeAttribute('height'); // Let CSS handle the height
     }
-    let swatchStyle = plot.querySelector('.rc-chart-swatches > style');
-    if (swatchStyle) {
-        swatchStyle.remove(); // Remove the style added by Plot.swatches
-    }
+
     if (plot.tagName === "FIGURE") {
         // If the plot is a figure, we transfer its contents into the existing figure
         // Add last first to place legend at the bottom
@@ -268,6 +310,17 @@ function addFigurePlot(figure, plot) {
         // If the plot is not a figure, we add it to the figure
         figure.appendChild(plot);
     }
+    if (figure.getAttribute('data-rc-theme') === 'sketch') {
+        figure.querySelectorAll('svg').forEach(function (svg) {
+            // roughen the svg
+            svg.replaceWith(roughenSVG(svg, svg.classList.contains('rc-chart')));
+        });
+        figure.style.fontFamily = 'Nanum Pen Script, cursive';
+        figure.style.fontSize = '1.25em';
+    } else {
+        figure.style.fontFamily = 'var(--bs-font-sans-serif)'
+    }
+
 
 }
 
@@ -373,6 +426,7 @@ function drawBarChart(figure, chart, options) {
         [categoryAxis]: {
             tickFormat: (d, i) => formatTick(d, i, ticksEvery, ticksInterval),
             interval: ticksInterval,
+            type: 'band',
             label: null
         },
         [valueAxis]: {
@@ -564,34 +618,11 @@ function drawPieChart(figure, chart, options) {
     const outerRadius = Math.min(options.width, options.height) / 2 - 15;
     const innerRadius = (chart.kind === 'donut') ? outerRadius / 2 : 0;
 
-    // Add chart
-    const svg = d3.select(figure)
-        .append("svg")
-        .attr("viewBox", `0 0 ${options.width} ${options.height}`)
-        .attr("class", "rc-chart")
-        .attr("width", "100%")
-        .append("g")
-        .attr("transform", `translate(${options.width / 2}, ${options.height / 2})`);
-
-    const pie = d3.pie()
-        .value(d => d.value);
-    let dataReady = pie(chart.data);
-    let arcGenerator = d3.arc()
-        .innerRadius(innerRadius)
-        .outerRadius(outerRadius);
-
-    svg.selectAll("pieSlices")
-        .data(dataReady)
-        .enter()
-        .append("path")
-            .attr("d", arcGenerator)
-            .attr("fill", d => color(d.data.label))
-            .attr("stroke", "var(--bs-body-bg)")
-            .style("stroke-width", "1px")
-            .style("opacity", 1);
+    // Add plot
+    const plot = document.createElement("figure");
 
     // Add legend
-    const legend = d3.select(figure)
+    const legend = d3.select(plot)
         .append("div")
         .attr("class", `legend rc-chart-swatches rc-swatches-wrap`)
         .style("min-height", "33px")
@@ -615,6 +646,34 @@ function drawPieChart(figure, chart, options) {
                         <rect width="100%" height="100%"></rect>
                         </svg>${d}`);
 
+    // Add svg
+    const svg = d3.select(plot)
+        .append("svg")
+        .attr("viewBox", `0 0 ${options.width} ${options.height}`)
+        .attr("class", "rc-chart")
+        .attr("width", "100%")
+        .append("g")
+        .attr("transform", `translate(${options.width / 2}, ${options.height / 2})`);
+
+    const pie = d3.pie()
+        .value(d => d.value);
+
+    let dataReady = pie(chart.data);
+    let arcGenerator = d3.arc()
+        .innerRadius(innerRadius)
+        .outerRadius(outerRadius);
+
+    svg.selectAll("pieSlices")
+        .data(dataReady)
+        .enter()
+        .append("path")
+            .attr("d", arcGenerator)
+            .attr("fill", d => color(d.data.label))
+            .attr("stroke", "var(--bs-body-bg)")
+            .style("stroke-width", "1px")
+            .style("opacity", 1);
+
+    addFigurePlot(figure, plot);
 }
 
 
@@ -684,7 +743,7 @@ function drawGeoChart(figure, chart, options) {
         height: options.height || 600,
         color: {
             type: "quantize",
-            //scheme: "greens",
+            scheme: chart.scheme,
         },
         projection: {},
         marks: []
@@ -718,7 +777,7 @@ function drawGeoChart(figure, chart, options) {
         }
         plotOptions.marks.push(
             Plot.geo(map, {stroke: "var(--bs-body-color)", strokeWidth: 1}),
-            Plot.graticule({strokeOpacity: 0.05}),
+            //Plot.graticule({strokeOpacity: 0.05}),
         );
 
         // add features now
@@ -785,7 +844,6 @@ function drawGeoChart(figure, chart, options) {
                             fill: "var(--bs-body-color)",
                             stroke: "white",
                             strokeOpacity: 0.7,
-                            //strokeWidth: 0.5,
                             paintOrder: "stroke",
                             fontSize: "10",
                             dy: 3
@@ -814,7 +872,6 @@ function drawGeoChart(figure, chart, options) {
                             fill: "var(--bs-body-color)",
                             stroke: "white",
                             strokeOpacity: 0.7,
-                            //strokeWidth: 0.5,
                             paintOrder: "stroke",
                             fontSize: 10,
                             dy: 3

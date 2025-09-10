@@ -41,7 +41,7 @@ class AutoPopulatedSlugField(forms.TextInput):
 class ReportForm(ModalModelForm):
     class Meta:
         model = models.Report
-        fields = ('title', 'section', 'slug', 'description', 'style', 'notes')
+        fields = ('title', 'section', 'slug', 'description', 'theme', 'notes')
         widgets = {
             'title': forms.TextInput,
             'description': forms.Textarea(attrs={'rows': "2"}),
@@ -56,7 +56,7 @@ class ReportForm(ModalModelForm):
                 FullWidth('title'),
             ),
             Row(
-                QuarterWidth('section'), HalfWidth('slug'), QuarterWidth('style'),
+                QuarterWidth('section'), HalfWidth('slug'), QuarterWidth('theme'),
             ),
             Row(
                 FullWidth('description'),
@@ -364,6 +364,8 @@ class EntryConfigForm(ModalModelForm):
             for k, v in g.items()
         }
         for field, (key, value) in flat_groups.items():
+            if field not in self.fields:
+                continue
             if key in group_fields:
                 self.fields[field].initial = queryset.filter(name=value).first()
             else:
@@ -832,9 +834,10 @@ class GeoCharForm(EntryConfigForm):
     location = forms.ModelChoiceField(label='Location', required=False, queryset=models.DataField.objects.none())
     map = forms.ChoiceField(label='Map', choices=MAP_CHOICES, initial='001')
     map_labels = forms.ChoiceField(label='Labels', choices=MAP_LABELS, initial='', required=False)
+    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=COLOR_SCHEMES, initial='Blues')
 
     SINGLE_FIELDS = ['latitude', 'longitude', 'location']
-    OTHER_FIELDS = ['map', 'map_labels']
+    OTHER_FIELDS = ['map', 'map_labels', 'scheme']
 
     class Meta:
         model = models.Entry
@@ -849,8 +852,9 @@ class GeoCharForm(EntryConfigForm):
         super().__init__(*args, **kwargs)
         self.body.append(
             Row(
-                TwoThirdWidth(Field('map', css_class='selectize')),
+                ThirdWidth(Field('map', css_class='selectize')),
                 ThirdWidth('map_labels'),
+                ThirdWidth('scheme'),
             ),
             Row(
                 ThirdWidth('location'),
@@ -863,9 +867,8 @@ class GeoCharForm(EntryConfigForm):
         for i in range(PLOT_SERIES):
             self.body.append(
                 Row(
-                    ThirdWidth(f'groups__{i}__type'),
-                    ThirdWidth(f'groups__{i}__value'),
-                    ThirdWidth(f'groups__{i}__scheme'),
+                    HalfWidth(f'groups__{i}__type'),
+                    HalfWidth(f'groups__{i}__value'),
                 ),
             )
 
@@ -874,9 +877,6 @@ class GeoCharForm(EntryConfigForm):
             self.fields[f'groups__{i}__type'] = forms.ChoiceField(label="Type", required=False, choices=MODE_CHOICES)
             self.fields[f'groups__{i}__value'] = forms.ModelChoiceField(
                 label=f'Value', required=False, queryset=models.DataField.objects.none()
-            )
-            self.fields[f'groups__{i}__scheme'] = forms.ChoiceField(
-                label='Color Scheme', required=False, choices=COLOR_SCHEMES, initial='Blues'
             )
 
     def update_initial(self):

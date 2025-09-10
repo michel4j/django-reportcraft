@@ -26,7 +26,7 @@ from django.db.models.functions import (
     Greatest, Least, Concat, Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan,
     ATan2, Mod, Sign, Trunc, Radians, Degrees, Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
     ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek,
-    JSONArray,
+    JSONArray, ExtractQuarter,
 )
 from django.http import HttpResponse
 from django.utils import timezone
@@ -100,8 +100,10 @@ OPERATOR_FUNCTIONS = {
 
 ALLOWED_FUNCTIONS = {
     Sum, Avg, Count, Max, Min, Concat, Greatest, Least,
-    Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan, ATan2, Mod, Sign, Trunc,
-    ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute, ExtractSecond, ExtractWeekDay, ExtractWeek,
+    Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos,
+    Tan, ASin, ACos, ATan, ATan2, Mod, Sign, Trunc,
+    ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute,
+    ExtractSecond, ExtractWeekDay, ExtractWeek, ExtractQuarter,
     Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim, JSONArray, Radians, Degrees, Q,
 
     # Custom functions

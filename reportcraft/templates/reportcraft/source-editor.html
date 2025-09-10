@@ -49,8 +49,8 @@
                     <tr>
                         <th>Model</th>
                         {% for group_field in source.group_by %}
-                            <th>{{ group_field|title }}<span
-                                    class="hidden-xs text-muted">&nbsp;&middot;&nbsp;Group</span>
+                            <th>{{ group_field|human_title }}<span
+                                    class="hidden-xs text-body-secondary">&nbsp;&middot;&nbsp;Group</span>
                             </th>
                         {% endfor %}
                         <th>&nbsp;</th>
@@ -140,7 +140,7 @@
             </div>
             <div class="card flex-scrollable d-flex flex-column">
                 <div class="card-header d-flex align-items-center">
-                    <h5 class="my-0"><span class="text-muted">Data</span></h5>
+                    <h5 class="my-0"><span class="text-body-secondary">Data</span></h5>
                     <div class="toolbox ms-auto pr-0">
                         <a download="{{ source.name_slug }}.csv"
                            href="{% url 'format-source-data' format="csv" pk=source.pk %}" title="Download CSV">
@@ -166,7 +166,7 @@
     <div class="d-flex flex-column py-3 pe-3 h-100">
     <div class="card mb-3">
         <div class="card-header">
-            <h5 class="my-0"><span class="text-muted">Related Reports</span></h5>
+            <h5 class="my-0"><span class="text-body-secondary">Related Reports</span></h5>
         </div>
         <ul class="list-group list-group-flush">
             {% for report in source.reports %}
@@ -180,7 +180,7 @@
     </div>
     <div class="card flex-scrollable d-flex flex-column" >
         <div class="card-header">
-            <h5 class="my-0"><span class="text-muted">Records</span></h5>
+            <h5 class="my-0"><span class="text-body-secondary">Records</span></h5>
         </div>
         <div class="flex-scrollable">
         <ul class="list-group-flush list-group text-condensed">

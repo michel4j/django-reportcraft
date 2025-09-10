@@ -82,7 +82,8 @@ class DataView(View):
 
         filters = dict(self.request.GET.items())
         section = {
-            'style': f"row {report.style}",
+            'style': f"row",
+            'theme': report.theme,
             'content': [block.generate(filters=filters) for block in report.entries.all()],
             'notes': report.notes
         }

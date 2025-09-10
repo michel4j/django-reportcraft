@@ -45,6 +45,11 @@ def yaml_html(data):
     return mark_safe(highlighted_data)
 
 
+@register.filter
+def human_title(text):
+    return text.replace('_', ' ').title()
+
+
 @register.simple_tag
 def data_snippet(source):
 

@@ -319,12 +319,15 @@ class DataField(models.Model):
 
 
 class Report(models.Model):
+    class Themes(models.TextChoices):
+        DEFAULT = 'default', _('Default')
+        SKETCH = 'sketch', _('Sketch')
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     slug = models.SlugField(max_length=128, unique=True)
     title = models.TextField()
     description = models.TextField(default='', blank=True)
-    style = models.CharField(max_length=100, default='', blank=True)
+    theme = models.CharField(max_length=20, choices=Themes.choices, default=Themes.DEFAULT)
     notes = models.TextField(default='', blank=True)
     section = models.SlugField(max_length=100, default='', blank=True, null=True)
 
