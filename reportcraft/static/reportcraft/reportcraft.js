@@ -196,13 +196,14 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
         } else {
             scheme = d3.Observable10;
         }
-
+        const targetWidth = figure.offsetWidth;
         const options = {
             uid: (index + Date.now()).toString(36),
-            width: figure.offsetWidth,
-            height: figure.offsetWidth / aspectRatio,
+            width: targetWidth,
+            fontSize: scaleFontSize(targetWidth, 0.75, 2, 400, 1200),
+            height: targetWidth / aspectRatio,
             scheme: scheme,
-            theme: chart.theme || 'default',
+            theme: figure.getAttribute('data-rc-theme') || 'default',
             aspectRatio: aspectRatio,
             staticRoot: staticRoot,
         };
@@ -258,14 +259,29 @@ function formatTick(value, i, ticksEvery = 1, ticksInterval = undefined) {
     }
 }
 
+function scaleFontSize(width, minFontSize, maxFontSize, minWidth, maxWidth) {
+  const clampedWidth = Math.max(minWidth, Math.min(maxWidth, width));
+  const widthRange = maxWidth - minWidth;
+  const fontSizeRange = maxFontSize - minFontSize;
+
+  let scaledFontSize;
+
+  if (widthRange === 0) { // Handle cases where minDivWidth and maxDivWidth are the same
+    scaledFontSize = minFontSize;
+  } else {
+    const scaleFactor = (clampedWidth - minWidth) / widthRange;
+    scaledFontSize = minFontSize + (fontSizeRange * scaleFactor);
+  }
+  return scaledFontSize;
+}
+
 function roughenSVG(svg, scalable = false) {
     const container = document.createElement('div');
-    const svgConverter = new Svg2Roughjs(container, OutputType.SVG);
-    svgConverter.svg = svg;
-    svgConverter.fontFamily ='Nanum Pen Script, cursive';
-    svgConverter.roughConfig = {
+    const svgConverter = new Svg2Roughjs(container, OutputType.SVG, {
         roughness: 2.0, bowing: 1, fill: 'cross-hatch', fillWeight: 0.25
-    };
+    });
+    svgConverter.svg = svg;
+    svgConverter.fontFamily ='var(--rc-script-font)';
     svgConverter.sketch();
 
     // transfer svg attributes
@@ -276,7 +292,6 @@ function roughenSVG(svg, scalable = false) {
     if (scalable) {
         newSvg.removeAttribute('height'); // Let CSS handle the height
         newSvg.setAttribute('width', '100%');
-        newSvg.setAttribute('font-size', '14');
     }
     return newSvg;
 }
@@ -315,7 +330,7 @@ function addFigurePlot(figure, plot) {
             // roughen the svg
             svg.replaceWith(roughenSVG(svg, svg.classList.contains('rc-chart')));
         });
-        figure.style.fontFamily = 'Nanum Pen Script, cursive';
+        figure.style.fontFamily = 'var(--rc-script-font)';
         figure.style.fontSize = '1.25em';
     } else {
         figure.style.fontFamily = 'var(--bs-font-sans-serif)'
@@ -407,7 +422,6 @@ function drawBarChart(figure, chart, options) {
     const categoryAxis = (chart.kind === 'bars') ? 'y' : 'x';
     const ticksEvery = chart["ticks-every"] || 1; // Default to every tick
     const ticksInterval = chart["ticks-interval"] || undefined; // Default to 1 for bar charts
-    const fontSize = 10; //getFontSize();
     const colorScale = d3.scaleOrdinal(options.scheme);
     const valueScale = chart["scale"] || 'linear';
     let maxLabelLength = 10;
@@ -415,9 +429,9 @@ function drawBarChart(figure, chart, options) {
     const plotOptions = {
         className: "rc-chart",
         style: {
-          fontSize: "14px",
+            fontSize: '1em',
         },
-        width: options.width || 800,
+        width: options.width,
         color: {
             legend: true,
             range: options.scheme,
@@ -453,12 +467,12 @@ function drawBarChart(figure, chart, options) {
         }
 
         if (chart.kind === 'bars') {
-            plotOptions.marginLeft = Math.max(40, maxLabelLength * fontSize * 0.8);
+            plotOptions.marginLeft = Math.max(40, maxLabelLength * options.fontSize * 0.5);
             marks.push(new Plot.ruleX([0]));
             marks.push(new Plot.barX(chart.data, markOptions));
         } else {    // columns
             plotOptions.height = options.height || 400;
-            plotOptions.marginBottom = fontSize * 3;
+            plotOptions.marginBottom = options.fontSize * 3;
             marks.push(new Plot.ruleY([0]));
             marks.push(new Plot.barY(chart.data, markOptions));
         }
@@ -488,7 +502,7 @@ function drawXYPlot(figure, chart, options) {
         marginTop: 40,
         marginBottom: 40,
         style: {
-          fontSize: "14px",
+            fontSize: '1em',
         },
         color: {
             legend: true,
@@ -576,7 +590,7 @@ function drawHistogram(figure, chart, options) {
     const plotOptions = {
         className: "rc-chart",
         style: {
-          fontSize: "14px",
+            fontSize: '1em',
         },
         width: options.width || 800,
         height: options.height || 600,
@@ -617,6 +631,7 @@ function drawPieChart(figure, chart, options) {
     const color = d3.scaleOrdinal(options.scheme);
     const outerRadius = Math.min(options.width, options.height) / 2 - 15;
     const innerRadius = (chart.kind === 'donut') ? outerRadius / 2 : 0;
+    const total = d3.sum(chart.data, d => d.value);
 
     // Add plot
     const plot = document.createElement("figure");
@@ -639,7 +654,7 @@ function drawPieChart(figure, chart, options) {
             .attr("class", "rc-chart-swatch")
             .style("display", "inline-flex")
             .style("align-items", "center")
-            .style("font-size", "14px")
+            .style("font-size", '1em')
             .style("margin-right", "10px")
             .style("margin-bottom", "5px")
             .html(d => `<svg width="15" height="15" fill="${color(d)}">
@@ -672,6 +687,18 @@ function drawPieChart(figure, chart, options) {
             .attr("stroke", "var(--bs-body-bg)")
             .style("stroke-width", "1px")
             .style("opacity", 1);
+        // .append("text")
+        // .attr("class", "pie-label")
+        // .attr("transform", function(d) {
+        //     const centroid = arcGenerator.centroid(d);
+        //     return `translate(${centroid[0]}, ${centroid[1]})`;
+        // })
+        // .attr("text-anchor", "middle")
+        // .attr("stroke", "var(--bs-body-color)")
+        // .text(function(d) {
+        //     const percent = (100 * d.value / total );
+        //     return d3.format(".1f")(percent) + "%";
+        // });
 
     addFigurePlot(figure, plot);
 }
@@ -682,7 +709,7 @@ function drawTimeline(figure, chart, options) {
     const plotOptions = {
         className: "rc-chart",
         style: {
-          fontSize: "14px",
+            fontSize: '1em',
         },
         width: options.width || 800,
         height: options.height || 600,
@@ -737,7 +764,7 @@ function drawGeoChart(figure, chart, options) {
     const plotOptions = {
         className: "rc-chart",
         style: {
-          fontSize: "12px",
+          fontSize: '1em',
         },
         width: options.width || 800,
         height: options.height || 600,
@@ -842,10 +869,6 @@ function drawGeoChart(figure, chart, options) {
                             textAnchor: "middle",
                             tip: true,
                             fill: "var(--bs-body-color)",
-                            stroke: "white",
-                            strokeOpacity: 0.7,
-                            paintOrder: "stroke",
-                            fontSize: "10",
                             dy: 3
                         })
                     )
@@ -873,7 +896,6 @@ function drawGeoChart(figure, chart, options) {
                             stroke: "white",
                             strokeOpacity: 0.7,
                             paintOrder: "stroke",
-                            fontSize: 10,
                             dy: 3
                         })
                     );

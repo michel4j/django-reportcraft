@@ -3,12 +3,19 @@ $max_width: 1200px;
 $min_font: 9px;
 $max_font: 16px;
 
+@import url('https://fonts.googleapis.com/css2?family=Mynerve&display=swap');
 
-@import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
-//@import url('https://fonts.googleapis.com/css2?family=Single+Day&display=swap');
+//@import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
+//@import url('https://fonts.googleapis.com/css2?family=Gaegu&display=swap');
+//@import url('https://fonts.googleapis.com/css2?family=Grape+Nuts&display=swap');
+//@import url('https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap');
+//@import url('https://fonts.googleapis.com/css2?family=Shadows+Into+Light+Two&display=swap');
+
+
 :root {
   --rc-max-font-size: $max_font;
   --rc-min-font-size: $min_font;
+  --rc-script-font: 'Mynerve';
 }
 
 
@@ -438,9 +445,9 @@ svg.rc-chart-ramp {
   font-size: 1em !important;
 }
 .report-sketch {
-  --bs-font-sans-serif: Nanum Pen Script;
-  --bs-font-monospace: Nanum Pen Script;
-    font-family: var(--bs-font-sans-serif), cursive !important;
+  --bs-font-sans-serif: var(--rc-script-font);
+  --bs-font-monospace: var(--rc-script-monospace);
+    font-family: var(--rc-script-font), cursive !important;
 }
 
 html.report-editor, body.report-editor {
@@ -621,4 +628,13 @@ g {
 figure > div { // legend fix
   display: flex;
   justify-content: center;
+}
+
+.text-container {
+  text {
+    text-shadow:
+            0 0 5px var(--bs-body-bg),
+            0 0 5px var(--bs-body-bg),
+            0 0 5px var(--bs-body-bg);
+  }
 }
