@@ -332,7 +332,7 @@ class Report(models.Model):
     section = models.SlugField(max_length=100, default='', blank=True, null=True)
 
     def __str__(self):
-        return self.title
+        return self.title if not self.section else f'{self.section} / {self.title}'
 
 
 class Entry(models.Model):
