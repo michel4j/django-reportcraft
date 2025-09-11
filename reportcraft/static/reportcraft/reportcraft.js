@@ -3,7 +3,7 @@ import _ from "https://cdn.jsdelivr.net/npm/underscore@1.13.7/+esm";
 import showdown from "https://cdn.jsdelivr.net/npm/showdown@1.9.1/+esm";
 import * as topojson from "https://cdn.jsdelivr.net/npm/topojson@3.0.2/+esm";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
-import { Svg2Roughjs, OutputType } from "https://cdn.jsdelivr.net/npm/svg2roughjs@3.2.1/+esm";
+import {OutputType, Svg2Roughjs} from "https://cdn.jsdelivr.net/npm/svg2roughjs@3.2.1/+esm";
 
 export const figureTypes = [
     "bars",
@@ -259,6 +259,17 @@ function formatTick(value, i, ticksEvery = 1, ticksInterval = undefined) {
     }
 }
 
+function getFontSize(element) {
+  if (!element || !(element instanceof Element)) {
+    console.error("Invalid input: Please provide a valid DOM element.");
+    return 12; // Default font size
+  }
+
+  const computedStyle = window.getComputedStyle(element);
+  const fontSizeString = computedStyle.getPropertyValue('font-size');
+    return parseFloat(fontSizeString);
+}
+
 function scaleFontSize(width, minFontSize, maxFontSize, minWidth, maxWidth) {
   const clampedWidth = Math.max(minWidth, Math.min(maxWidth, width));
   const widthRange = maxWidth - minWidth;
@@ -465,14 +476,14 @@ function drawBarChart(figure, chart, options) {
         if (mark.sort) {
             markOptions.sort = mark.sort.startsWith('-') ? {[categoryAxis]: `-${valueAxis}`}: {[categoryAxis]: valueAxis};
         }
-
+        const fontSizePix = getFontSize(figure);
         if (chart.kind === 'bars') {
-            plotOptions.marginLeft = Math.max(40, maxLabelLength * options.fontSize * 0.5);
+            plotOptions.marginLeft = Math.max(40, maxLabelLength * fontSizePix * 0.5);
             marks.push(new Plot.ruleX([0]));
             marks.push(new Plot.barX(chart.data, markOptions));
         } else {    // columns
             plotOptions.height = options.height || 400;
-            plotOptions.marginBottom = options.fontSize * 3;
+            plotOptions.marginBottom = fontSizePix * 3;
             marks.push(new Plot.ruleY([0]));
             marks.push(new Plot.barY(chart.data, markOptions));
         }
