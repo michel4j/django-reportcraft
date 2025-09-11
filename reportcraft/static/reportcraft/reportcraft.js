@@ -869,6 +869,8 @@ function drawGeoChart(figure, chart, options) {
                             textAnchor: "middle",
                             tip: true,
                             fill: "var(--bs-body-color)",
+                            stroke: options.theme === 'default' ? "var(--bs-body-bg)" : null,
+                            strokeOpacity: 0.7,
                             dy: 3
                         })
                     )
