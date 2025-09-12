@@ -78,7 +78,7 @@ class DataSource(models.Model):
     def get_filters(self):
         parser = utils.FilterParser()
         if self.filters:
-            return  parser.parse(self.filters, silent=True)
+            return parser.parse(self.filters, silent=True)
         else:
             return Q()
 
@@ -97,11 +97,18 @@ class DataSource(models.Model):
             if k.split('__')[0] in valid_fields and k.count('__') < 2       # Only allow one level of lookups
         }
 
-    def get_queryset(self, model_name, filters: dict = None, order_by: list = None) -> QuerySet:
+    def get_queryset(
+            self,
+            model_name,
+            filters: dict = None,
+            select: Q = None,
+            order_by: list = None
+    ) -> QuerySet:
         """
         Generate a queryset for the given model name with the specified filters and order by fields.
         :param model_name: the name of the model to query
         :param filters: dynamic filters to apply
+        :param select: additional Q object to apply as filter to select a subset of data
         :param order_by: order by fields
         :return: a queryset for the specified model with applied annotations, filters and ordering
         """
@@ -136,7 +143,9 @@ class DataSource(models.Model):
 
         # Apply static filters
         static_filters = self.get_filters()
+        select_filters = (select if select else Q())
         dynamic_filters = Q(**self.clean_filters(filters))
+
 
         # generate the queryset
         queryset = model.objects.annotate(
@@ -144,7 +153,7 @@ class DataSource(models.Model):
         ).values(*group_by).annotate(
             **aggregations
         ).order_by(*order_by).filter(
-            static_filters & dynamic_filters
+            static_filters & dynamic_filters & select_filters
         )
         # Apply limit
         if self.limit:
@@ -152,10 +161,11 @@ class DataSource(models.Model):
 
         return queryset
 
-    def get_source_data(self, filters=None, order_by=None) -> list[dict]:
+    def get_source_data(self, filters=None, select=None, order_by=None) -> list[dict]:
         """
         Generate data for this data source
         :param filters: dynamic filters
+        :param select: additional Q object to apply as filter to select a subset of data
         :param order_by: order by fields
 
         """
@@ -163,7 +173,7 @@ class DataSource(models.Model):
         data = []
         model_names = set(self.fields.values_list('model__name', flat=True))
         for model_name in model_names:
-            queryset = self.get_queryset(model_name, filters=filters, order_by=order_by)
+            queryset = self.get_queryset(model_name, filters=filters, select=select, order_by=order_by)
             field_names = [field.name for field in self.fields.filter(model__name=model_name).all()]
             data.extend(list(queryset.values(*field_names)))
 
@@ -173,13 +183,14 @@ class DataSource(models.Model):
         return data
 
     @utils.cached_model_method(duration=1)
-    def get_data(self, filters=None, order_by=None) -> list[dict]:
+    def get_data(self, filters=None, select=None, order_by=None) -> list[dict]:
         """
         Cached wrapper of get_source_data.
         :param filters: dynamic filters
+        :param select: additional Q object to apply as filter to select a subset of data
         :param order_by: order by fields
         """
-        return self.get_source_data(filters=filters, order_by=order_by)
+        return self.get_source_data(filters=filters, select=select, order_by=order_by)
 
     def get_precision(self, field_name: str) -> int:
         """
@@ -367,6 +378,7 @@ class Entry(models.Model):
     source = models.ForeignKey(DataSource, on_delete=models.CASCADE, related_name='entries', null=True, blank=True)
     report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name='entries')
     position = models.IntegerField(default=0)
+    filters = models.TextField(default="", blank=True)
     attrs = models.JSONField(default=dict, blank=True)
 
     class Meta:
@@ -390,12 +402,19 @@ class Entry(models.Model):
         Types.COLUMNS: entries.generate_columns,
     }
 
-    def generate(self, *args, **kwargs):
+    def get_filters(self):
+        parser = utils.FilterParser()
+        if self.filters:
+            return parser.parse(self.filters, silent=True)
+        else:
+            return Q()
+
+    def generate(self, **kwargs):
         try:
             generator = self.GENERATORS.get(self.kind, None)
             if not generator:
                 raise ValueError(f"Unsupported entry type: {self.kind}")
-            return generator(self, *args, **kwargs)
+            return generator(self, **kwargs)
         except Exception as e:
             logger.exception(e)
             return {

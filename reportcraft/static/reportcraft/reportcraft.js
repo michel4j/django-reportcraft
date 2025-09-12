@@ -324,6 +324,7 @@ function addFigurePlot(figure, plot) {
     if (svg) {
         svg.setAttribute('width', '100%');
         svg.removeAttribute('height'); // Let CSS handle the height
+        svg.setAttribute('font-family', 'var(--bs-font-sans-serif)');
     }
 
     if (plot.tagName === "FIGURE") {

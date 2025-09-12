@@ -659,7 +659,7 @@ def cached_model_method(duration: int = 30):
                 'args': args,
                 'kwargs': kwargs
             }
-            key_string = json.dumps(key_data, sort_keys=True)
+            key_string = yaml.dump(key_data, sort_keys=True)
             cache_key = f"cache:{hashlib.md5(key_string.encode()).hexdigest()}"
             cache_expiry_key = f"{cache_key}:expiry"
             try:

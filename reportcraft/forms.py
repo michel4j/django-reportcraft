@@ -228,12 +228,14 @@ class EntryForm(ModalModelForm):
     class Meta:
         model = models.Entry
         fields = (
-            'title', 'description', 'notes', 'style', 'kind', 'source', 'report', 'position'
+            'title', 'description', 'notes', 'style', 'kind', 'source', 'report', 'position',
+            'filters'
         )
         widgets = {
             'title': forms.TextInput(),
             'description': forms.TextInput(),
-            'notes': forms.Textarea(attrs={'rows': "4"}),
+            'notes': forms.Textarea(attrs={'rows': "2"}),
+            'filters': forms.Textarea(attrs={'rows': "2"}),
             'report': forms.HiddenInput(),
         }
 
@@ -259,6 +261,7 @@ class EntryForm(ModalModelForm):
             ),
             Div(
                 Div('notes', css_class='col-12'),
+                Div(Field('filters', css_class="font-monospace"), css_class='col-12'),
                 Field('report'),
                 css_class='row'
             ),
@@ -270,6 +273,17 @@ class EntryForm(ModalModelForm):
         source = cleaned_data.get('source')
         if kind != models.Entry.Types.TEXT and not source:
             self.add_error('source', _("This field is required for the selected entry type"))
+
+        filters = cleaned_data.get('filters')
+        if filters.strip() and source:
+            source_fields = set(source.fields.values_list('name', flat=True))
+            print(source_fields)
+            try:
+                parser = utils.FilterParser(identifiers=source_fields)
+                parser.parse(filters)
+            except ValueError as e:
+                self.add_error('filters', _(f"Invalid filter: {e}"))
+
         return cleaned_data
 
 

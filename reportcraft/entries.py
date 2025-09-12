@@ -6,7 +6,7 @@ from .utils import (
 )
 
 
-def generate_table(entry, *args, **kwargs) -> dict:
+def generate_table(entry, **kwargs) -> dict:
     """
     Generate a table from the data source
     :param entry: The report entry containing the configuration for the table
@@ -33,7 +33,7 @@ def generate_table(entry, *args, **kwargs) -> dict:
         transpose = True
     first_row_name = labels.get(columns, columns)
 
-    raw_data = entry.source.get_data(*args, **kwargs)
+    raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     num_columns = len(set(item[columns] for item in raw_data))
     if len(rows) == 1 and values:
         rows = rows[0]
@@ -89,7 +89,7 @@ def generate_table(entry, *args, **kwargs) -> dict:
     }
 
 
-def generate_bars(entry, kind='bars', *args, **kwargs):
+def generate_bars(entry, kind='bars', **kwargs):
     """
     Generate a bar or column chart from the data source
     :param entry: The report entry containing the configuration for the table
@@ -145,7 +145,7 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
 
         features.append(mark)
 
-    raw_data = entry.source.get_data(*args, **kwargs)
+    raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     data = prepare_data(raw_data, select=data_fields, labels=labels, sort=sort_by, sort_desc=sort_desc)
     if limit:
         data = data[:limit]
@@ -168,19 +168,19 @@ def generate_bars(entry, kind='bars', *args, **kwargs):
     return info
 
 
-def generate_columns(entry, *args, **kwargs):
-    return generate_bars(entry, *args, kind='columns', **kwargs)
+def generate_columns(entry, **kwargs):
+    return generate_bars(entry, kind='columns', **kwargs)
 
 
-def generate_area(entry, *args, **kwargs):
-    return generate_plot(entry, *args, **kwargs)
+def generate_area(entry, **kwargs):
+    return generate_plot(entry, **kwargs)
 
 
-def generate_line(entry, *args, **kwargs):
-    return generate_plot(entry, *args, **kwargs)
+def generate_line(entry, **kwargs):
+    return generate_plot(entry, **kwargs)
 
 
-def generate_list(entry, *args, **kwargs):
+def generate_list(entry, **kwargs):
     """
     Generate a list from the data source
     :param entry: The report entry containing the configuration for the table
@@ -196,7 +196,7 @@ def generate_list(entry, *args, **kwargs):
     if not columns:
         return {}
 
-    data = entry.source.get_data(*args, **kwargs)
+    data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     labels = entry.source.get_labels()
 
     if order_by:
@@ -224,7 +224,7 @@ def generate_list(entry, *args, **kwargs):
     }
 
 
-def generate_plot(entry, *args, **kwargs):
+def generate_plot(entry, **kwargs):
     """
     Generate an XY plot from the data source
     :param entry: The report entry containing the configuration for the table
@@ -245,7 +245,7 @@ def generate_plot(entry, *args, **kwargs):
     if not (x_value and groups):
         return {}
 
-    raw_data = entry.source.get_data(*args, **kwargs)
+    raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     features = [
         {
             'type': group.pop('type', 'points'),
@@ -276,7 +276,7 @@ def generate_plot(entry, *args, **kwargs):
     }
 
 
-def generate_pie(entry, kind: Literal['pie', 'donut'] = 'pie', *args, **kwargs):
+def generate_pie(entry, kind: Literal['pie', 'donut'] = 'pie', **kwargs):
     """
     Generate a pie or donut from the data source
     :param entry: The report entry containing the configuration for the table
@@ -289,7 +289,7 @@ def generate_pie(entry, kind: Literal['pie', 'donut'] = 'pie', *args, **kwargs):
     label_field = entry.attrs.get('label', '')
     labels = entry.source.get_labels()
 
-    raw_data = entry.source.get_data(*args, **kwargs)
+    raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     data = defaultdict(int)
     for item in raw_data:
         data[item.get(label_field)] += item.get(value_field, 0)
@@ -305,16 +305,16 @@ def generate_pie(entry, kind: Literal['pie', 'donut'] = 'pie', *args, **kwargs):
     }
 
 
-def generate_donut(entry, *args, **kwargs):
+def generate_donut(entry, **kwargs):
     """
     Generate a donut chart from the data source
     :param entry: The report entry containing the configuration for the table
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
-    return generate_pie(entry, kind='donut', *args, **kwargs)
+    return generate_pie(entry, kind='donut', **kwargs)
 
 
-def generate_histogram(entry, *args, **kwargs):
+def generate_histogram(entry, **kwargs):
     """
     Generate a histogram from the data source
     :param entry: The report entry containing the configuration for the table
@@ -332,7 +332,7 @@ def generate_histogram(entry, *args, **kwargs):
     if not values:
         return {}
 
-    raw_data = entry.source.get_data(*args, **kwargs)
+    raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     select_fields = [values, group_by]
     data = prepare_data(raw_data, select=select_fields, labels=labels)
 
@@ -355,7 +355,7 @@ def generate_histogram(entry, *args, **kwargs):
     return info
 
 
-def generate_timeline(entry, *args, **kwargs):
+def generate_timeline(entry, **kwargs):
     """
     Generate a timeline from the data source
     :param entry: The report entry containing the configuration for the table
@@ -373,7 +373,7 @@ def generate_timeline(entry, *args, **kwargs):
         return {}
 
     select_fields = [field for field in [start_value, end_value, label_value, color_by] if field]
-    raw_data = entry.source.get_data(*args, **kwargs)
+    raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     data = prepare_data(raw_data, select=select_fields, labels=labels, sort=start_value, sort_desc=False)
 
     return {
@@ -391,7 +391,7 @@ def generate_timeline(entry, *args, **kwargs):
     }
 
 
-def generate_text(entry, *args, **kwargs):
+def generate_text(entry, **kwargs):
     """
     Generate a rich text entry from the data source
     :param entry: The report entry containing the configuration for the table
@@ -408,7 +408,7 @@ def generate_text(entry, *args, **kwargs):
     }
 
 
-def generate_geochart(entry, *args, **kwargs):
+def generate_geochart(entry, **kwargs):
     """
     Generate a geo chart from the data source
     :param entry: The report entry containing the configuration for the table
@@ -425,7 +425,7 @@ def generate_geochart(entry, *args, **kwargs):
     map_labels = entry.attrs.get('map_labels', None)
     scheme = entry.attrs.get('scheme', 'Live8')
 
-    raw_data = entry.source.get_data(*args, **kwargs)
+    raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     features = [
         {
             'type': group.get('type', 'area'),
