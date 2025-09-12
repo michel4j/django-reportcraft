@@ -3,19 +3,14 @@ $max_width: 1200px;
 $min_font: 9px;
 $max_font: 16px;
 
-//@import url('https://fonts.googleapis.com/css2?family=Mynerve&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Mynerve&display=swap');
 //@import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Gaegu&display=swap');
-//@import url('https://fonts.googleapis.com/css2?family=Grape+Nuts&display=swap');
-//@import url('https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap');
-//@import url('https://fonts.googleapis.com/css2?family=Shadows+Into+Light+Two&display=swap');
-
+//@import url('https://fonts.googleapis.com/css2?family=Single+Day&display=swap');
 
 :root {
   --rc-max-font-size: $max_font;
   --rc-min-font-size: $min_font;
-  --rc-script-font: 'Gaegu';
+  --rc-script-font: 'Mynerve';
 }
 
 
@@ -62,13 +57,16 @@ caption, figcaption {
   caption-side: bottom;
 }
 
-.report-viewer figure {
-  width: 100%;
-  counter-increment: figures;
-  margin-bottom: 0;
-  font-size-adjust: cap-height 0.65;
-  svg {
-    font-size-adjust: cap-height 0.55;
+.report-viewer {
+  font-size-adjust: ch-width 0.5;
+  figure {
+    width: 100%;
+    counter-increment: figures;
+    margin-bottom: 0;
+
+    svg {
+      //font-size-adjust: ch-width 0.5;
+    }
   }
 }
 
@@ -160,7 +158,6 @@ section:not(:first-child) {
   }
 
   .notes {
-    font-size: 0.85em;
     background: var(--bs-tertiary-bg);
     padding: 1rem;
     color: var(--bs-body-color);

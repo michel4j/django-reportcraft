@@ -1,5 +1,6 @@
 import re
 from collections import defaultdict
+from random import choices
 from typing import Any
 
 from crispy_forms.layout import Div, Field
@@ -925,3 +926,45 @@ class GeoCharForm(EntryConfigForm):
 
         return cleaned_data
 
+
+class LikertForm(EntryConfigForm):
+    questions = forms.ModelChoiceField(label='Questions', required=True, queryset=models.DataField.objects.none())
+    answers = forms.ModelChoiceField(label='Answers', required=True, queryset=models.DataField.objects.none())
+    counts = forms.ModelChoiceField(label='Counts', required=False, queryset=models.DataField.objects.none())
+    scores = forms.ModelChoiceField(label='Scores', required=False, queryset=models.DataField.objects.none())
+
+    facets = forms.ModelChoiceField(label='Facets', required=False, queryset=models.DataField.objects.none())
+    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=SEQUENTIAL_COLORS, initial='RdBu')
+    normalize = forms.BooleanField(
+        label='Normalize', required=False, initial=True, widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
+    )
+
+    SINGLE_FIELDS = ['questions', 'answers', 'counts', 'scores', 'facets']
+    OTHER_FIELDS = [
+        'scheme',
+    ]
+
+    class Meta:
+        model = models.Entry
+        fields = (
+            'attrs',
+        )
+        widgets = {
+            'attrs': forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.body.append(
+            Row(
+                HalfWidth('questions'), HalfWidth('answers'),
+                HalfWidth('counts'), HalfWidth('scores'),
+            ),
+            Row(
+
+                ThirdWidth('facets'), ThirdWidth('scheme'), ThirdWidth('normalize'),
+            ),
+            Div(
+                Field('attrs'),
+            ),
+        )

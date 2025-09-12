@@ -1,5 +1,9 @@
+import math
 from collections import defaultdict
 from typing import Any, Literal
+
+import numpy
+
 from .utils import (
     regroup_data, MinMax, epoch, get_histogram_points, wrap_table,
     prepare_data
@@ -455,3 +459,31 @@ def generate_geochart(entry, **kwargs):
         'data': data
     }
 
+
+def generate_likert(entry, **kwargs):
+    """
+    Generate a liker scale Bar charts
+    :param entry: The report entry containing the configuration for the table
+    returns: A dictionary containing the table data and metadata suitable for rendering
+    """
+    labels = entry.source.get_labels()
+    scheme = entry.attrs.get('scheme', 'Live8')
+
+
+    settings = {
+        key: entry.attrs.get(key, '')
+        for key in ['questions', 'answers', 'counts', 'scores', 'facets']
+    }
+    raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
+    data = prepare_data(raw_data, select=list(settings.values()), labels=labels)
+    info = {
+        'title': entry.title,
+        'description': entry.description,
+        'kind': 'likert',
+        'style': entry.style,
+        **{key: labels.get(value, value) for key, value in settings.items()},
+        'scheme': scheme,
+        'notes': entry.notes,
+        'data': data,
+    }
+    return info

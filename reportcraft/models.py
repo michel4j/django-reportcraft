@@ -363,6 +363,7 @@ class Entry(models.Model):
         TABLE = 'table', _('Table')
         TIMELINE = 'timeline', _('Timeline')
         PLOT = 'plot', _('XY Plot')
+        LIKERT = 'likert', _('Likert Scale')
 
     class Widths(models.TextChoices):
         QUARTER = "col-md-3", _("One Quarter")
@@ -404,6 +405,7 @@ class Entry(models.Model):
         Types.TEXT: entries.generate_text,
         Types.MAP: entries.generate_geochart,
         Types.COLUMNS: entries.generate_columns,
+        Types.LIKERT: entries.generate_likert,
     }
 
     def get_filters(self):

@@ -14,7 +14,7 @@ export const figureTypes = [
     "histogram",
     "timeline",
     'geochart',
-
+    'likert',
 ];
 
 // Define custom color schemes
@@ -164,6 +164,23 @@ function decodeObj(base64Str) {
     return JSON.parse(decodeURIComponent(percentEncodedStr));
 }
 
+function Likert(responses) {
+  const map = new Map(responses);
+  return {
+    order: Array.from(map.keys()),
+    offset(I, X1, X2, Z) {
+      for (const stacks of I) {
+        for (const stack of stacks) {
+          const k = d3.sum(stack, (i) => (X2[i] - X1[i]) * (1 - map.get(Z[i]))) / 2;
+          for (const i of stack) {
+            X1[i] -= k;
+            X2[i] -= k;
+          }
+        }
+      }
+    }
+  };
+}
 
 export function showReport(selector, sections, staticRoot = "/static/reportcraft/") {
     const target = document.querySelector(selector);
@@ -228,6 +245,9 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
                 break;
             case 'geochart':
                 drawGeoChart(figure, chart, options);
+                break;
+            case 'likert':
+                drawLikertChart(figure, chart, options);
                 break;
         }
 
@@ -926,4 +946,39 @@ function drawGeoChart(figure, chart, options) {
         const plot = Plot.plot(plotOptions);
         addFigurePlot(figure, plot);
     });
+}
+
+function drawLikertChart(figure, chart, options) {
+    let maxLabelLength = 10;
+
+    maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[chart.questions]}`.length || 0));
+    const plotOptions = {
+        className: "rc-chart",
+        style: {
+            fontSize: '1em',
+        },
+        width: options.width,
+        color: {
+            legend: true,
+            scheme: "RdYlGn",
+        },
+        marks: [
+            Plot.barX(
+                chart.data,
+                {
+                    x: chart.scores,
+                    y: chart.questions,
+                    sort: chart.scores,
+                    fill: chart.scores,
+                }
+            )
+
+        ]
+    };
+    const fontSizePix = getFontSize(figure);
+    plotOptions.marginLeft = Math.max(40, maxLabelLength * fontSizePix * 0.6);
+
+    // Create the bar chart
+    const plot = Plot.plot(plotOptions);
+    addFigurePlot(figure, plot);
 }
