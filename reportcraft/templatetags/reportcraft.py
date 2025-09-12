@@ -53,7 +53,7 @@ def human_title(text):
 @register.simple_tag
 def data_snippet(source):
 
-    data = source.snippet()
+    data, count = source.snippet()
     labels = source.get_labels()
     if not data:
         return mark_safe('<p>No data</p>')
@@ -74,7 +74,7 @@ def data_snippet(source):
             table_html += f'<td class="text-nowrap">{row.get(header, "")}</td>'
         table_html += '</tr>'
 
-    table_html += '</tbody></table>'
+    table_html += f'</tbody></table><code>... of {count} items</code>'
     return mark_safe(table_html)
 
 

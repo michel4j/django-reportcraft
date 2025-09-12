@@ -203,20 +203,24 @@ class DataSource(models.Model):
         except DataField.DoesNotExist:
             return 0
 
-    def snippet(self, filters=None, order_by=None, size=50) -> list[dict]:
+    def snippet(self, filters=None, order_by=None, size=50) -> tuple[list[dict], int]:
         """
         Generate a snippet of data for this data source
         :param filters: dynamic filters to apply
         :param order_by: order by fields
         :param size: number of items to return
-
+        :return: a tuple of (data snippet, total number of items)
         """
         try:
-            result = self.get_source_data(filters=filters, order_by=order_by)[:size]
+
+            data = self.get_source_data(filters=filters, order_by=order_by)
+            total = len(data)
+            result = data[:size]
         except Exception as e:
             logger.exception(e)
             result = DATA_ERROR_TEMPLATE.format(error=traceback.format_exc(), error_type=type(e).__name__)
-        return result
+            total = 0
+        return result, total
 
 
 class DataModel(models.Model):
@@ -343,7 +347,7 @@ class Report(models.Model):
     section = models.SlugField(max_length=100, default='', blank=True, null=True)
 
     def __str__(self):
-        return self.title if not self.section else f'{self.section} / {self.title}'
+        return self.title if not self.section else f'{self.section.upper()} / {self.title}'
 
 
 class Entry(models.Model):

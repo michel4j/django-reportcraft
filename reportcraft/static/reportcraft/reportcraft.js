@@ -103,7 +103,7 @@ const tableTemplate = _.template(
     '           <% if (entry.header.includes("column") && (i==0)) { %>' +
     '               <th><%= cell %></th>' +
     '           <% } else { %>' +
-    '               <td><%= cell %></td>' +
+    '               <td class="table-cell-<%= typeof cell %>" ><%= cell %></td>' +
     '           <% } %>' +
     '       <% }); %>' +
     '       </tr>' +
@@ -324,7 +324,8 @@ function addFigurePlot(figure, plot) {
     if (svg) {
         svg.setAttribute('width', '100%');
         svg.removeAttribute('height'); // Let CSS handle the height
-        svg.setAttribute('font-family', 'var(--bs-font-sans-serif)');
+        svg.removeAttribute('font-size'); // Let CSS handle the font size
+        svg.removeAttribute('font-family'); // Let CSS handle the font family
     }
 
     if (plot.tagName === "FIGURE") {
@@ -337,13 +338,13 @@ function addFigurePlot(figure, plot) {
         // If the plot is not a figure, we add it to the figure
         figure.appendChild(plot);
     }
+    figure.style.fontSize = '0.95rem'; // Set a base font size for the figure
     if (figure.getAttribute('data-rc-theme') === 'sketch') {
         figure.querySelectorAll('svg').forEach(function (svg) {
             // roughen the svg
             svg.replaceWith(roughenSVG(svg, svg.classList.contains('rc-chart')));
         });
         figure.style.fontFamily = 'var(--rc-script-font)';
-        figure.style.fontSize = '1.25em';
     } else {
         figure.style.fontFamily = 'var(--bs-font-sans-serif)'
     }

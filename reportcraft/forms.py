@@ -183,8 +183,9 @@ class DataModelForm(ModalModelForm):
     def __init__(self, *args, source=None, **kwargs):
         self.source = source
         super().__init__(*args, **kwargs)
-
-        self.fields['model'].queryset = ContentType.objects.filter(app_label__in=settings.REPORTCRAFT_APPS)
+        self.fields['model'].queryset = ContentType.objects.filter(
+            app_label__in=settings.REPORTCRAFT_APPS
+        ).order_by('app_label', 'model')
 
         self.extra_fields = {}
         if self.instance.model:

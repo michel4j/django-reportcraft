@@ -3,10 +3,10 @@ $max_width: 1200px;
 $min_font: 9px;
 $max_font: 16px;
 
-@import url('https://fonts.googleapis.com/css2?family=Mynerve&display=swap');
+//@import url('https://fonts.googleapis.com/css2?family=Mynerve&display=swap');
 
 //@import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
-//@import url('https://fonts.googleapis.com/css2?family=Gaegu&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Gaegu&display=swap');
 //@import url('https://fonts.googleapis.com/css2?family=Grape+Nuts&display=swap');
 //@import url('https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap');
 //@import url('https://fonts.googleapis.com/css2?family=Shadows+Into+Light+Two&display=swap');
@@ -15,7 +15,7 @@ $max_font: 16px;
 :root {
   --rc-max-font-size: $max_font;
   --rc-min-font-size: $min_font;
-  --rc-script-font: 'Mynerve';
+  --rc-script-font: 'Gaegu';
 }
 
 
@@ -66,6 +66,10 @@ caption, figcaption {
   width: 100%;
   counter-increment: figures;
   margin-bottom: 0;
+  font-size-adjust: cap-height 0.65;
+  svg {
+    font-size-adjust: cap-height 0.55;
+  }
 }
 
 .report-viewer figcaption:before {
@@ -115,6 +119,15 @@ section:not(:first-child) {
       td {
         text-align: right;
       }
+    }
+
+    .table-cell-string {
+      text-align: left;
+
+    }
+    .table-cell-number {
+      text-align: right;
+      font-family: var(--bs-font-monospace), monospace;
     }
 
     thead {
@@ -233,17 +246,6 @@ table {
       box-shadow: 2px 2px 10px var(--bs-border-color-translucent);
     }
   }
-}
-
-.report-viewer {
-  .c3-axis-y-label, .c3-axis-y2-label, .c3-axis-x-label {
-    font-size: 1rem;
-  }
-}
-
-.report-viewer table.table tbody td {
-  font-family: var(--bs-font-monospace), sans-serif;
-  //font-size: 0.85rem;
 }
 
 .report-viewer {
