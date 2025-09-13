@@ -950,8 +950,8 @@ function drawGeoChart(figure, chart, options) {
 
 function drawLikertChart(figure, chart, options) {
     let maxLabelLength = 10;
-
     maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[chart.questions]}`.length || 0));
+    const likert = Likert(chart.domain);
     const plotOptions = {
         className: "rc-chart",
         style: {
@@ -960,19 +960,24 @@ function drawLikertChart(figure, chart, options) {
         width: options.width,
         color: {
             legend: true,
-            scheme: "RdYlGn",
+            scheme: 'RdBu',
+            domain: likert.order,
+        },
+        x: {
+          tickFormat: Math.abs
         },
         marks: [
             Plot.barX(
                 chart.data,
-                {
-                    x: chart.scores,
+                Plot.stackX({
+                    x: chart.counts,
                     y: chart.questions,
                     sort: chart.scores,
-                    fill: chart.scores,
-                }
-            )
-
+                    fill: chart.answers,
+                    ...likert
+                })
+            ),
+            Plot.ruleX([0])
         ]
     };
     const fontSizePix = getFontSize(figure);

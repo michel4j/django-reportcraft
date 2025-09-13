@@ -469,12 +469,15 @@ def generate_likert(entry, **kwargs):
     labels = entry.source.get_labels()
     scheme = entry.attrs.get('scheme', 'Live8')
 
-
     settings = {
         key: entry.attrs.get(key, '')
         for key in ['questions', 'answers', 'counts', 'scores', 'facets']
     }
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
+    domain = sorted({
+        (item.get(settings['answers']), item.get(settings['scores']))
+        for item in raw_data}, key=lambda x: x[1]
+    )
     data = prepare_data(raw_data, select=list(settings.values()), labels=labels)
     info = {
         'title': entry.title,
@@ -482,6 +485,7 @@ def generate_likert(entry, **kwargs):
         'kind': 'likert',
         'style': entry.style,
         **{key: labels.get(value, value) for key, value in settings.items()},
+        'domain': domain,
         'scheme': scheme,
         'notes': entry.notes,
         'data': data,
