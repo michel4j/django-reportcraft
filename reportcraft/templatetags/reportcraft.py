@@ -223,6 +223,10 @@ ICONS = {
         '<path d="m19 9a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-14a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z"/>'
         '<path d="m4 4v14"/>'
     ),
+    'likert': (
+        '<path d="M3 18l14 0" /><path d="M9 9l3 3l-3 3" /><path d="M14 15l3 3l-3 3" /><path d="M3 3l0 18" />'
+        '<path d="M3 12l9 0" /><path d="M18 3l3 3l-3 3" /><path d="M3 6l18 0" />'
+    ),
     'grip': (
         '<path d="M9 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />'
         '<path d="M9 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />'
