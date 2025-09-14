@@ -6,7 +6,7 @@ import numpy
 
 from .utils import (
     regroup_data, MinMax, epoch, get_histogram_points, wrap_table,
-    prepare_data
+    prepare_data, debug_value
 )
 
 
@@ -117,48 +117,55 @@ def generate_bars(entry, kind='bars', **kwargs):
     if not categories or not values:
         return {}
 
-    features = []
     category_name = labels.get(categories, categories)
     color_name = labels.get(color_by, color_by) if color_by else None
-    group_name = None
-    if grouped and color_name:
-        category_name, group_name = color_name, category_name
+    sort_name = labels.get(sort_by, sort_by) if sort_by else None
 
     category_axis = 'x' if vertical else 'y'
     value_axis = 'y' if vertical else 'x'
     data_fields = [categories] + values
-    for value in values:
-        mark = {
-            category_axis: category_name,
-            value_axis: labels.get(value, value),
-            'type': kind,
-        }
-        # Add color channel
-        if color_name:
-            mark['colors'] = color_name
-            data_fields.append(color_by)
 
-        # Add facet channel
-        if group_name:
-            mark['groups'] = group_name
-
-        # Add sort channel
-        if sort_by:
-            sort = labels.get(sort_by, sort_by)
-            mark['sort'] = f'-{sort}' if sort_desc else sort
-
-        features.append(mark)
+    if color_name:
+        data_fields.append(color_by)
+    if sort_name:
+        data_fields.append(sort_by)
 
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     data = prepare_data(raw_data, select=data_fields, labels=labels, sort=sort_by, sort_desc=sort_desc)
     if limit:
         data = data[:limit]
 
+    # If plotting multiple values, expand data to include all combinations of category and values
+    if len(values) > 1:
+        expanded_data = []
+        value_keys = [labels.get(v, v) for v in values]
+        for item in data:
+            for key in value_keys:
+                new_item = {k: v for k, v in item.items() if k not in value_keys}
+                new_item['Value'] = item.get(key, 0)
+                new_item['Variable'] = key
+                expanded_data.append(new_item)
+        data = expanded_data
+        value_name = 'Value'
+        color_axis = 'Variable'
+
+    else:
+        value_name = labels.get(values[0], values[0])
+        color_axis = color_name
+
+    features = {
+        category_axis: category_name,
+        value_axis: value_name,
+        'grouped': grouped,
+        **({'colors': color_axis} if color_axis else {}),
+        **({'sort': f'-{sort_name}' if sort_desc else sort_name} if sort_by else {}),
+    }
+
     info = {
         'title': entry.title,
         'description': entry.description,
         'kind': kind,
-        'features': features,
+        **features,
         'style': entry.style,
         'ticks-every': ticks_every,
         'scheme': scheme,
@@ -166,6 +173,7 @@ def generate_bars(entry, kind='bars', **kwargs):
         'notes': entry.notes,
         'data': data,
     }
+
     if data and isinstance(data[0].get(category_name), (int, float)):
         info["ticks-interval"] = 1
 

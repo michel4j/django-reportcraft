@@ -15,7 +15,7 @@ from crisp_modals.forms import (
 
 from . import models, utils
 from .models import DataSource
-from .utils import CATEGORICAL_COLORS, SEQUENTIAL_COLORS, MAP_CHOICES, AXIS_CHOICES, COLOR_SCHEMES
+from .utils import MAP_CHOICES, AXIS_CHOICES, COLOR_SCHEMES
 
 disabled_widget = forms.HiddenInput(attrs={'readonly': True})
 
@@ -494,7 +494,7 @@ class BarsForm(EntryConfigForm):
         label='Type', required=False, initial=False,
         widget=forms.Select(choices=((True, 'Grouped'), (False, 'Stacked'))),
     )
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
+    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
     ticks_every = forms.IntegerField(label='Ticks Every', required=False, initial=1)
     sort_desc = forms.BooleanField(
         label="Sort Order", required=False, widget=forms.Select(choices=((True, 'Descending'), (False, 'Ascending'))),
@@ -547,7 +547,7 @@ class PlotForm(EntryConfigForm):
     x_label = forms.CharField(label='X Label', required=False)
     y_label = forms.CharField(label='Y Label', required=False)
     x_value = forms.ModelChoiceField(label='X-Value', required=True, queryset=models.DataField.objects.none())
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
+    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
     group_by = forms.ModelChoiceField(label='Group By', required=False, queryset=models.DataField.objects.none())
     precision = forms.IntegerField(label="Precision", required=False)
     x_scale = forms.ChoiceField(label='X Scale', required=False, choices=SCALE_CHOICES, initial='linear')
@@ -652,7 +652,7 @@ class ListForm(EntryConfigForm):
 class PieForm(ModalModelForm):
     value = forms.ModelChoiceField(label='Value', required=True, queryset=models.DataField.objects.none())
     label = forms.ModelChoiceField(label='Label', required=True, queryset=models.DataField.objects.none())
-    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
+    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
 
     class Meta:
         model = models.Entry
@@ -712,7 +712,7 @@ class TimelineForm(EntryConfigForm):
     end_value = forms.ModelChoiceField(label='Event End', required=True, queryset=models.DataField.objects.none())
     labels = forms.ModelChoiceField(label='Labels', required=False, queryset=models.DataField.objects.none())
     color_by = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
+    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
 
     SINGLE_FIELDS = ['start_value', 'end_value', 'labels', 'color_by',]
     OTHER_FIELDS = ['min_time', 'max_time', 'scheme']
@@ -778,7 +778,7 @@ class HistogramForm(EntryConfigForm):
         label='Stack Groups', required=False, initial=True,
         widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
     )
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=CATEGORICAL_COLORS, initial='Live8')
+    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
     bins = forms.IntegerField(label='Bins', required=False)
     scale = forms.ChoiceField(label='Y-Scale', required=False, choices=SCALE_CHOICES, initial='linear')
     binning = forms.ChoiceField(
@@ -934,7 +934,7 @@ class LikertForm(EntryConfigForm):
     scores = forms.ModelChoiceField(label='Scores', required=False, queryset=models.DataField.objects.none())
 
     facets = forms.ModelChoiceField(label='Facets', required=False, queryset=models.DataField.objects.none())
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=SEQUENTIAL_COLORS, initial='RdBu')
+    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.DIVERGENT_SCHEMES, initial='RdBu')
     normalize = forms.BooleanField(
         label='Normalize', required=False, initial=True, widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
     )

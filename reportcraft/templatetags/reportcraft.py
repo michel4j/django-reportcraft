@@ -6,7 +6,7 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import YamlLexer, PythonLexer
 
-from reportcraft.utils import CATEGORICAL_SCHEMES
+from reportcraft.utils import CATEGORICAL_COLORS
 
 register = template.Library()
 
@@ -371,7 +371,7 @@ def swatches():
         '</div>'
     )
     all_swatches = []
-    for name, colors in CATEGORICAL_SCHEMES.items():
+    for name, colors in CATEGORICAL_COLORS.items():
         swatches_entry = ''.join([f'<div class="swatch" style="background-color: {color};"></div>' for color in colors])
         all_swatches.append(swatches_template.format(name=name, colors=swatches_entry))
 

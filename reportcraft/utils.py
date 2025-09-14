@@ -662,6 +662,7 @@ def cached_model_method(duration: int = 30):
             key_string = yaml.dump(key_data, sort_keys=True)
             cache_key = f"cache:{hashlib.md5(key_string.encode()).hexdigest()}"
             cache_expiry_key = f"{cache_key}:expiry"
+
             try:
                 results = cache.get_many((cache_key, cache_expiry_key))
                 cached_result = results.get(cache_key)
@@ -669,7 +670,8 @@ def cached_model_method(duration: int = 30):
                 expiry = results.get(cache_expiry_key, now)
                 if cached_result is not None:
                     if now - expiry > timedelta(seconds=duration):
-                        # Asynchronously replace cache value if it is about to expire, next request will get the fresh value
+                        # Asynchronously replace cache value if it is about to expire,
+                        # next request will get the fresh value
                         threading.Thread(
                             target=_update_cache, args=(self, func, cache_key, args, kwargs, duration)
                         ).start()
@@ -715,7 +717,7 @@ def list_colors(specifier):
     ]
 
 
-CATEGORICAL_SCHEMES = {
+CATEGORICAL_COLORS = {
     "Accent": list_colors("7fc97fbeaed4fdc086ffff99386cb0f0027fbf5b17666666"),
     "Dark2": list_colors("1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666"),
     "Carbon": list_colors("6929c41192e8005d5d9f1853fa4d56570408198038002d9cee538bb2860009d9a0127498a3800a56eff"),
@@ -735,40 +737,43 @@ CATEGORICAL_SCHEMES = {
     "Category10": list_colors("1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf"),
     "Observable10": list_colors("4269d0efb118ff725c6cc5b03ca951ff8ab7a463f297bbf59c6b4e9498a0")
 }
+CATEGORICAL = [
+    'Accent', 'Dark2', 'Carbon', 'CarbonDark', 'Live4', 'Live8', 'Live16', 'Paired',
+    'Pastel1', 'Pastel2', 'Set1', 'Set2', 'Set3', 'Tableau10', 'Category10', 'Observable10'
+]
+SEQUENTIAL_SINGLE = ['Blues', 'Greens', 'Greys', 'Oranges', 'Purples', 'Reds']
+SEQUENTIAL_MULTI = [
+    'BuGn', 'BuPu', 'GnBu', 'OrRd', 'PuBuGn', 'PuBu', 'PuRd', 'RdPu', 'YlGnBu',
+    'YlGn', 'YlOrBr', 'YlOrRd', 'Cividis', 'Viridis', 'Inferno', 'Magma', 'Plasma', 'Warm', 'Cool',
+    'Cubehelix', 'Turbo',
+]
+DIVERGENT_SCHEME_NAMES = [
+    'BrBG', 'BuRd', 'BuYlRd', 'PRGn', 'PiYG', 'PuOr', 'RdBu', 'RdGy', 'RdYlBu', 'RdYlGn', 'Spectral',
+]
+CYCLICAL_SCHEME_NAMES = ['Rainbow', 'Sinebow']
 
-SEQUENTIAL_SCHEMES = {
-    "Blues": ["#f7fbff", "#08306b"],
-    "Greens": ["#f7fcf5", "#00441b"],
-    "Greys": ["#fbfbfb", "#252525"],
-    "Oranges": ["#fff5eb", "#7f2704"],
-    "Purples": ["#fcfbfd", "#49006a"],
-    "Reds": ["#fff5f0", "#67000d"],
-    "BuGn": ["#e5f5f9", "#2ca25f"],
-    "BuPu": ["#e0ecf4", "#8856a7"],
-    "GnBu": ["#edf8fb", "#2ca25f"],
-    "OrRd": ["#fee8c8", "#e34a33"],
-    "PuBu": ["#ece7f2", "#2b8cbe"],
-    "PuRd": ["#e7e1ef", "#dd1c77"],
-    "RdPu": ["#fde0dd", "#c51b8a"],
-    "YlGn": ["#f7fcb9", "#31a354"],
-}
 
-CATEGORICAL_COLORS = [(scheme, scheme) for scheme in CATEGORICAL_SCHEMES.keys()]
-SEQUENTIAL_COLORS = [(scheme, scheme) for scheme in SEQUENTIAL_SCHEMES.keys()]
-COLOR_SCHEMES = [('', 'Select...')] + CATEGORICAL_COLORS + SEQUENTIAL_COLORS
+def _make_scheme_choices(schemes):
+    return [(scheme, scheme) for scheme in schemes]
+
+
+CATEGORICAL_SCHEMES = _make_scheme_choices(CATEGORICAL)
+DIVERGENT_SCHEMES = _make_scheme_choices(DIVERGENT_SCHEME_NAMES)
+CYCLICAL_SCHEMES = _make_scheme_choices(CYCLICAL_SCHEME_NAMES)
+SEQUENTIAL_SCHEMES = [
+    ('Single Hue', _make_scheme_choices(SEQUENTIAL_SINGLE)),
+    ('Multi Hue', _make_scheme_choices(SEQUENTIAL_MULTI)),
+    ('Diverging', DIVERGENT_SCHEMES),
+    ('Cyclical', CYCLICAL_SCHEMES),
+]
+
+COLOR_SCHEMES = [
+    ('', 'Select...'),
+    ('Categorical', CATEGORICAL_SCHEMES),
+    *SEQUENTIAL_SCHEMES
+]
 
 AXIS_CHOICES = [('', 'Select...'), ('y', 'Y1-Axis'), ('y2', 'Y2-Axis')]
-
-
-def map_colors(data, scheme='Live16'):
-    """
-    Map colors to data wrapping around the color list.
-    :param data: List of data items
-    :param scheme: List of colors
-    :return: Dictionary of data items mapped to colors
-    """
-    colors = CATEGORICAL_SCHEMES.get(scheme, CATEGORICAL_SCHEMES['Live16'])
-    return {item: colors[i % len(colors)] for i, item in enumerate(data)}
 
 
 def get_model_name(model: type(models.Model)) -> str:

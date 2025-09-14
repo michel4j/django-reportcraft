@@ -209,7 +209,9 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
         if (chart.scheme in ColorSchemes) {
             scheme = ColorSchemes[chart.scheme];
         } else if (`scheme${chart.scheme}` in d3) {
-            scheme = d3[`scheme${chart.scheme}`];
+            scheme = chart.scheme;
+        } else if (`interpolate${chart.scheme}` in d3) {
+            scheme = d3[`interpolate${chart.scheme}`];
         } else {
             scheme = d3.Observable10;
         }
@@ -450,7 +452,6 @@ function radiusLegend(data, options) {
 
 function drawBarChart(figure, chart, options) {
     let marks = [];
-    const markTypes = chart.features || [];
     const valueAxis = (chart.kind === 'bars') ? 'x' : 'y';
     const categoryAxis = (chart.kind === 'bars') ? 'y' : 'x';
     const ticksEvery = chart["ticks-every"] || 1; // Default to every tick
@@ -482,34 +483,42 @@ function drawBarChart(figure, chart, options) {
         marks: marks
     };
     setAxisScale(plotOptions[valueAxis], valueScale);
-    markTypes.forEach(function(mark, index){
-        const markOptions = {x: mark.x,  y: mark.y, sort: null, tip: categoryAxis};
 
-        maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[mark[categoryAxis]]}`.length || 0));
-        markOptions.fill = mark.colors || colorScale(index);
-        if (mark.groups) {
-            plotOptions[categoryAxis].axis = null;
-            if (chart.kind === 'bars') {
-                markOptions.fy = mark.groups;
-            } else {
-                markOptions.fx = mark.groups;
-            }
-        }
-        if (mark.sort) {
-            markOptions.sort = mark.sort.startsWith('-') ? {[categoryAxis]: `-${valueAxis}`}: {[categoryAxis]: valueAxis};
-        }
-        const fontSizePix = getFontSize(figure);
+    const markOptions = {x: chart.x,  y: chart.y, sort: null, tip: categoryAxis};
+
+    maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[chart[categoryAxis]]}`.length || 0));
+    markOptions.fill = chart.colors || colorScale(0);
+
+    if (chart.grouped) {
+        plotOptions[categoryAxis].axis = null;
+        markOptions[categoryAxis] = chart.colors;
         if (chart.kind === 'bars') {
-            plotOptions.marginLeft = Math.max(40, maxLabelLength * fontSizePix * 0.5);
-            marks.push(new Plot.ruleX([0]));
-            marks.push(new Plot.barX(chart.data, markOptions));
-        } else {    // columns
-            plotOptions.height = options.height || 400;
-            plotOptions.marginBottom = fontSizePix * 3;
-            marks.push(new Plot.ruleY([0]));
-            marks.push(new Plot.barY(chart.data, markOptions));
+            markOptions.fy = chart[categoryAxis];
+        } else {
+            markOptions.fx = chart[categoryAxis];
         }
-    });
+    }
+
+    if (chart.sort) {
+        markOptions.sort = chart.sort.startsWith('-') ? {[categoryAxis]: `-${valueAxis}`}: {[categoryAxis]: valueAxis};
+    }
+    const fontSizePix = getFontSize(figure);
+    if (chart.kind === 'bars') {
+        plotOptions.marginLeft = Math.max(40, maxLabelLength * fontSizePix * 0.5);
+        marks.push(new Plot.ruleX([0]));
+        marks.push(new Plot.barX(chart.data, markOptions));
+    } else {    // columns
+        plotOptions.height = options.height || 400;
+        plotOptions.marginBottom = fontSizePix * 3;
+        marks.push(new Plot.ruleY([0]));
+        marks.push(
+            new Plot.barY(
+                chart.data,
+                markOptions
+            )
+        );
+    }
+
 
     // Create the bar chart
     const plot = Plot.plot(plotOptions);
@@ -803,11 +812,26 @@ function drawGeoChart(figure, chart, options) {
         height: options.height || 600,
         color: {
             type: "quantize",
-            scheme: chart.scheme,
         },
         projection: {},
         marks: []
     };
+
+    switch (typeof options.scheme) {
+        case 'string':
+            plotOptions.color.scheme = options.scheme;
+            break;
+        case 'function':
+            plotOptions.color.interpolate = options.scheme;
+            break;
+        case 'object':
+            if (Array.isArray(options.scheme)) {
+                plotOptions.color.range = options.scheme;
+            }
+            break;
+        default:
+            console.warn("Unknown color scheme format");
+    }
 
     Promise.all([
         d3.json(`${options.staticRoot}/maps/${chart.map}.json`),
