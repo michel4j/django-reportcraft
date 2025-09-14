@@ -493,7 +493,7 @@ def generate_likert(entry, **kwargs):
         'kind': 'likert',
         'style': entry.style,
         **{key: labels.get(value, value) for key, value in settings.items()},
-        'domain': domain,
+        'domain': domain, #[(v[0], int(numpy.sign(v[1]))) for v in domain],
         'scheme': scheme,
         'notes': entry.notes,
         'data': data,

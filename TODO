@@ -1,6 +1,5 @@
 TODO
 ====
 
-- Add the ability to filter data sources and make that available through url parameters similar to
-  `django-itemlist` filters
-- Add a drag and drop field positioning capability to the source editor
+- Add ability to clone sources and reports. This is useful when you want to create a new source or report that is
+  similar to an existing one, but with some modifications. Models and Fields will have to be copied over as well.

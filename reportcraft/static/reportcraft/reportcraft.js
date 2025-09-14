@@ -975,7 +975,7 @@ function drawGeoChart(figure, chart, options) {
 function drawLikertChart(figure, chart, options) {
     let maxLabelLength = 10;
     maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[chart.questions]}`.length || 0));
-    const likert = Likert(chart.domain);
+    const likert = Likert(chart.domain.map(d => [d[0], Math.sign(d[1])]));
     const plotOptions = {
         className: "rc-chart",
         style: {
@@ -984,7 +984,7 @@ function drawLikertChart(figure, chart, options) {
         width: options.width,
         color: {
             legend: true,
-            scheme: 'RdBu',
+            scheme: options.scheme,
             domain: likert.order,
         },
         x: {
