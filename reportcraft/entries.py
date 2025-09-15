@@ -113,6 +113,7 @@ def generate_bars(entry, kind='bars', **kwargs):
     scheme = entry.attrs.get('scheme', 'Live8')
     vertical = (kind == "columns")
     scale = entry.attrs.get('scale', 'linear')
+    normalize = entry.attrs.get('normalize', False)
 
     if not categories or not values:
         return {}
@@ -166,6 +167,7 @@ def generate_bars(entry, kind='bars', **kwargs):
         'description': entry.description,
         'kind': kind,
         **features,
+        'normalize': normalize,
         'style': entry.style,
         'ticks-every': ticks_every,
         'scheme': scheme,

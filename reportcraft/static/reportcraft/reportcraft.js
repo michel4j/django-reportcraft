@@ -226,31 +226,35 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
             aspectRatio: aspectRatio,
             staticRoot: staticRoot,
         };
-
-        switch (figure.dataset.type) {
-            case 'bars':
-            case 'columns':
-                drawBarChart(figure, chart, options);
-                break;
-            case 'pie':
-            case 'donut':
-                drawPieChart(figure, chart, options);
-                break;
-            case 'xyplot':
-                drawXYPlot(figure, chart, options);
-                break;
-            case 'histogram':
-                drawHistogram(figure, chart, options);
-                break;
-            case 'timeline':
-                drawTimeline(figure, chart, options);
-                break;
-            case 'geochart':
-                drawGeoChart(figure, chart, options);
-                break;
-            case 'likert':
-                drawLikertChart(figure, chart, options);
-                break;
+        try {
+            switch (figure.dataset.type) {
+                case 'bars':
+                case 'columns':
+                    drawBarChart(figure, chart, options);
+                    break;
+                case 'pie':
+                case 'donut':
+                    drawPieChart(figure, chart, options);
+                    break;
+                case 'xyplot':
+                    drawXYPlot(figure, chart, options);
+                    break;
+                case 'histogram':
+                    drawHistogram(figure, chart, options);
+                    break;
+                case 'timeline':
+                    drawTimeline(figure, chart, options);
+                    break;
+                case 'geochart':
+                    drawGeoChart(figure, chart, options);
+                    break;
+                case 'likert':
+                    drawLikertChart(figure, chart, options);
+                    break;
+            }
+        } catch (error) {
+            //figure.innerHTML = `<div class="alert alert-warning py-5" role="alert"><pre>${error.stack}</pre></div>`;
+            console.error("Error rendering chart:", error);
         }
 
         // Remove raw data from dom
@@ -278,6 +282,25 @@ function formatTick(value, i, ticksEvery = 1, ticksInterval = undefined) {
         } else {
             return ""
         }
+    }
+}
+
+function setColorScheme(plotOptions, chartOptions) {
+    switch (typeof chartOptions.scheme) {
+        case 'string':
+            plotOptions.color.scheme = chartOptions.scheme;
+            break;
+        case 'function':
+            plotOptions.color.interpolate = chartOptions.scheme;
+            plotOptions.color.type = 'quantize';
+            break;
+        case 'object':
+            if (Array.isArray(chartOptions.scheme)) {
+                plotOptions.color.range = chartOptions.scheme;
+            }
+            break;
+        default:
+            console.warn("Unknown color scheme format");
     }
 }
 
@@ -458,6 +481,8 @@ function drawBarChart(figure, chart, options) {
     const ticksInterval = chart["ticks-interval"] || undefined; // Default to 1 for bar charts
     const colorScale = d3.scaleOrdinal(options.scheme);
     const valueScale = chart["scale"] || 'linear';
+    const markOptions = {x: chart.x,  y: chart.y, sort: null, tip: categoryAxis};
+
     let maxLabelLength = 10;
 
     const plotOptions = {
@@ -468,7 +493,6 @@ function drawBarChart(figure, chart, options) {
         width: options.width,
         color: {
             legend: true,
-            range: options.scheme,
         },
 
         [categoryAxis]: {
@@ -482,9 +506,8 @@ function drawBarChart(figure, chart, options) {
         },
         marks: marks
     };
+    setColorScheme(plotOptions, options);
     setAxisScale(plotOptions[valueAxis], valueScale);
-
-    const markOptions = {x: chart.x,  y: chart.y, sort: null, tip: categoryAxis};
 
     maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[chart[categoryAxis]]}`.length || 0));
     markOptions.fill = chart.colors || colorScale(0);
@@ -497,14 +520,18 @@ function drawBarChart(figure, chart, options) {
         } else {
             markOptions.fx = chart[categoryAxis];
         }
+    } else if (chart.normalize) {
+        markOptions.offset = "normalize";
+        plotOptions[valueAxis].tickFormat = '%';
     }
 
     if (chart.sort) {
         markOptions.sort = chart.sort.startsWith('-') ? {[categoryAxis]: `-${valueAxis}`}: {[categoryAxis]: valueAxis};
     }
+
     const fontSizePix = getFontSize(figure);
     if (chart.kind === 'bars') {
-        plotOptions.marginLeft = Math.max(40, maxLabelLength * fontSizePix * 0.5);
+        plotOptions.marginLeft = Math.max(40, maxLabelLength * fontSizePix * 0.6);
         marks.push(new Plot.ruleX([0]));
         marks.push(new Plot.barX(chart.data, markOptions));
     } else {    // columns
@@ -515,10 +542,9 @@ function drawBarChart(figure, chart, options) {
             new Plot.barY(
                 chart.data,
                 markOptions
-            )
+            ),
         );
     }
-
 
     // Create the bar chart
     const plot = Plot.plot(plotOptions);
@@ -548,7 +574,6 @@ function drawXYPlot(figure, chart, options) {
         },
         color: {
             legend: true,
-            range: options.scheme,
         },
         x: {
             grid: true,
@@ -566,6 +591,7 @@ function drawXYPlot(figure, chart, options) {
     };
 
     // Set scales
+    setColorScheme(plotOptions, options);
     setAxisScale(plotOptions.x, xScale);
     setAxisScale(plotOptions.y, yScale);
 
@@ -817,22 +843,7 @@ function drawGeoChart(figure, chart, options) {
         marks: []
     };
 
-    switch (typeof options.scheme) {
-        case 'string':
-            plotOptions.color.scheme = options.scheme;
-            break;
-        case 'function':
-            plotOptions.color.interpolate = options.scheme;
-            break;
-        case 'object':
-            if (Array.isArray(options.scheme)) {
-                plotOptions.color.range = options.scheme;
-            }
-            break;
-        default:
-            console.warn("Unknown color scheme format");
-    }
-
+    setColorScheme(plotOptions, options);
     Promise.all([
         d3.json(`${options.staticRoot}/maps/${chart.map}.json`),
         showLand ? d3.json(`${options.staticRoot}/maps/land.json`) : null,

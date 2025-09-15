@@ -494,11 +494,14 @@ class BarsForm(EntryConfigForm):
         label='Type', required=False, initial=False,
         widget=forms.Select(choices=((True, 'Grouped'), (False, 'Stacked'))),
     )
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
+    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.COLOR_SCHEMES, initial='Live8')
     ticks_every = forms.IntegerField(label='Ticks Every', required=False, initial=1)
     sort_desc = forms.BooleanField(
         label="Sort Order", required=False, widget=forms.Select(choices=((True, 'Descending'), (False, 'Ascending'))),
         initial=False
+    )
+    normalize = forms.BooleanField(
+        label='Normalize', required=False, initial=False, widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
     )
     scale = forms.ChoiceField(label='Value Scale', required=False, choices=SCALE_CHOICES, initial='linear')
     limit = forms.IntegerField(label="Limit", required=False)
@@ -506,7 +509,7 @@ class BarsForm(EntryConfigForm):
     SINGLE_FIELDS = ['categories', 'color_by', 'sort_by']
     MULTI_FIELDS = ['values']
     OTHER_FIELDS = [
-        'grouped', 'scheme', 'ticks_every', 'sort_desc', 'limit', 'scale'
+        'grouped', 'scheme', 'ticks_every', 'sort_desc', 'limit', 'scale', 'normalize'
     ]
 
     class Meta:
@@ -534,8 +537,9 @@ class BarsForm(EntryConfigForm):
                 ThirdWidth('sort_by'),
                 ThirdWidth('sort_desc'),
                 ThirdWidth('limit'),
-                HalfWidth('scale'),
-                HalfWidth('ticks_every'),
+                ThirdWidth('scale'),
+                ThirdWidth('ticks_every'),
+                ThirdWidth('normalize')
             ),
             Div(
                 Field('attrs'),
@@ -936,7 +940,7 @@ class LikertForm(EntryConfigForm):
     facets = forms.ModelChoiceField(label='Facets', required=False, queryset=models.DataField.objects.none())
     scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.DIVERGENT_SCHEMES, initial='RdBu')
     normalize = forms.BooleanField(
-        label='Normalize', required=False, initial=True, widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
+        label='Normalize', required=False, initial=False, widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
     )
 
     SINGLE_FIELDS = ['questions', 'answers', 'counts', 'scores', 'facets']
