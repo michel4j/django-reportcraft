@@ -10,7 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
 from crisp_modals.forms import (
-    ModalModelForm, HalfWidth, FullWidth, Row, ThirdWidth, QuarterWidth, ThreeQuarterWidth, TwoThirdWidth
+    ModalModelForm, HalfWidth, FullWidth, Row, ThirdWidth, QuarterWidth, ThreeQuarterWidth, TwoThirdWidth, ModalForm
 )
 
 from . import models, utils
@@ -226,6 +226,39 @@ class DataModelForm(ModalModelForm):
         return data
 
 
+class ImportEntryForm(ModalModelForm):
+    entry = forms.ModelChoiceField(label="Entry to Import", queryset=models.Entry.objects.none())
+
+    class Meta:
+        model = models.Entry
+        fields = ('report',)
+        widgets = {
+            'report': forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['entry'].queryset = models.Entry.objects.all().order_by('report__title', 'title')
+        self.body.append(
+            Row(
+                FullWidth('entry'),
+            ),
+            'report'
+        )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        copy_fields = (
+            'title', 'description', 'notes', 'style', 'kind', 'source', 'position',
+            'filters', 'attrs'
+        )
+        entry = cleaned_data.pop('entry')
+        for field in copy_fields:
+            cleaned_data[field] = getattr(entry, field)
+        print(cleaned_data)
+        return cleaned_data
+
+
 class EntryForm(ModalModelForm):
     class Meta:
         model = models.Entry
@@ -243,7 +276,6 @@ class EntryForm(ModalModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        pk = self.instance.pk
 
         self.body.append(
             Div(
@@ -494,6 +526,7 @@ class BarsForm(EntryConfigForm):
         label='Type', required=False, initial=False,
         widget=forms.Select(choices=((True, 'Grouped'), (False, 'Stacked'))),
     )
+    facets = forms.ModelChoiceField(label='Facets', required=False, queryset=models.DataField.objects.none())
     scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.COLOR_SCHEMES, initial='Live8')
     ticks_every = forms.IntegerField(label='Ticks Every', required=False, initial=1)
     sort_desc = forms.BooleanField(
@@ -506,7 +539,7 @@ class BarsForm(EntryConfigForm):
     scale = forms.ChoiceField(label='Value Scale', required=False, choices=SCALE_CHOICES, initial='linear')
     limit = forms.IntegerField(label="Limit", required=False)
 
-    SINGLE_FIELDS = ['categories', 'color_by', 'sort_by']
+    SINGLE_FIELDS = ['categories', 'color_by', 'sort_by', 'facets']
     MULTI_FIELDS = ['values']
     OTHER_FIELDS = [
         'grouped', 'scheme', 'ticks_every', 'sort_desc', 'limit', 'scale', 'normalize'
@@ -529,14 +562,17 @@ class BarsForm(EntryConfigForm):
                 ThreeQuarterWidth('values'),
             ),
             Row(
-                ThirdWidth('grouped'),
-                ThirdWidth('color_by'),
-                ThirdWidth('scheme'),
+                QuarterWidth('grouped'),
+                QuarterWidth('color_by'),
+                QuarterWidth('scheme'),
+                QuarterWidth('facets'),
             ),
             Row(
                 ThirdWidth('sort_by'),
                 ThirdWidth('sort_desc'),
                 ThirdWidth('limit'),
+            ),
+            Row(
                 ThirdWidth('scale'),
                 ThirdWidth('ticks_every'),
                 ThirdWidth('normalize')

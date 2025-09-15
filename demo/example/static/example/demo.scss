@@ -31,6 +31,9 @@ $max_font: 16px;
 }
 
 
+body, .tooltip, .popover {
+  font-family: var(--bs-font-sans-serif), sans-serif !important;
+}
 a {
     text-decoration: none;
 }

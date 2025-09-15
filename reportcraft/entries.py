@@ -114,6 +114,7 @@ def generate_bars(entry, kind='bars', **kwargs):
     vertical = (kind == "columns")
     scale = entry.attrs.get('scale', 'linear')
     normalize = entry.attrs.get('normalize', False)
+    facets = entry.attrs.get('facets', None)
 
     if not categories or not values:
         return {}
@@ -121,6 +122,7 @@ def generate_bars(entry, kind='bars', **kwargs):
     category_name = labels.get(categories, categories)
     color_name = labels.get(color_by, color_by) if color_by else None
     sort_name = labels.get(sort_by, sort_by) if sort_by else None
+    facet_name = labels.get(facets, facets) if facets else None
 
     category_axis = 'x' if vertical else 'y'
     value_axis = 'y' if vertical else 'x'
@@ -130,6 +132,8 @@ def generate_bars(entry, kind='bars', **kwargs):
         data_fields.append(color_by)
     if sort_name:
         data_fields.append(sort_by)
+    if facet_name:
+        data_fields.append(facets)
 
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     data = prepare_data(raw_data, select=data_fields, labels=labels, sort=sort_by, sort_desc=sort_desc)
@@ -160,6 +164,7 @@ def generate_bars(entry, kind='bars', **kwargs):
         'grouped': grouped,
         **({'colors': color_axis} if color_axis else {}),
         **({'sort': f'-{sort_name}' if sort_desc else sort_name} if sort_by else {}),
+        **({'facets': facet_name} if facets else {}),
     }
 
     info = {

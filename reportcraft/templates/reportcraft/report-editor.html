@@ -30,6 +30,9 @@
     <a href="#0" data-modal-url="{% url "add-report-entry" report=report.pk %}">
         {% tool_icon label='Add Entry' icon='photo-plus' %}
     </a>
+    <a href="#0" data-modal-url="{% url "import-entry" report.pk %}">
+        {% tool_icon label='Import' icon='photo-down' %}
+    </a>
     {% endif %}
 {% endblock %}
 
@@ -55,17 +58,14 @@
                         <a href="#!" data-modal-url="{% url 'configure-report-entry' report=report.pk pk=entry.pk %}" title="Configure">
                             {% tool_icon icon='adjustments-horizontal' size='sm' %}
                         </a>
+                        <a href="#!" data-modal-url="{% url 'edit-report-entry' report=report.pk pk=entry.pk %}" title="Edit Entry">
+                            {% tool_icon icon='pencil' size='sm' %}
+                        </a>
                         {% if entry.source %}
                         <a href="{% url 'source-editor' pk=entry.source.pk %}" title="Edit Source">
                             {% tool_icon icon='database' size='sm' %}
                         </a>
                         {% endif %}
-                        <a href="#!" data-modal-url="{% url 'edit-report-entry' report=report.pk pk=entry.pk %}" title="Edit Entry">
-                            {% tool_icon icon='pencil' size='sm' %}
-                        </a>
-                        <a href="#!" data-modal-url="{% url 'delete-report-entry' report=report.pk pk=entry.pk %}" title="Delete">
-                            {% tool_icon icon='trash-x' size='sm' %}
-                        </a>
                     </div>
                 </div>
                 <div class="card-body">

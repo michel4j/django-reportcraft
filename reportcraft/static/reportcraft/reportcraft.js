@@ -165,21 +165,21 @@ function decodeObj(base64Str) {
 }
 
 function Likert(responses) {
-  const map = new Map(responses);
-  return {
-    order: Array.from(map.keys()),
-    offset(I, X1, X2, Z) {
-      for (const stacks of I) {
-        for (const stack of stacks) {
-          const k = d3.sum(stack, (i) => (X2[i] - X1[i]) * (1 - map.get(Z[i]))) / 2;
-          for (const i of stack) {
-            X1[i] -= k;
-            X2[i] -= k;
-          }
+    const map = new Map(responses);
+    return {
+        order: Array.from(map.keys()),
+        offset(I, X1, X2, Z) {
+            for (const stacks of I) {
+                for (const stack of stacks) {
+                    const k = d3.sum(stack, (i) => (X2[i] - X1[i]) * (1 - map.get(Z[i]))) / 2;
+                    for (const i of stack) {
+                        X1[i] -= k;
+                        X2[i] -= k;
+                    }
+                }
+            }
         }
-      }
-    }
-  };
+    };
 }
 
 export function showReport(selector, sections, staticRoot = "/static/reportcraft/") {
@@ -192,18 +192,18 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
     target.classList.add('report-viewer');          // add main class to the container
 
     // add sections to the container, we'll fill the content in a second pass
-    sections.forEach(function(section, i) {
+    sections.forEach(function (section, i) {
         const sectionHTML = renderSection({
             id: i,
             section: section,
         });
         target.insertAdjacentHTML('beforeend', sectionHTML);
     });
-    
+
     // now fill the content with each section
     target.querySelectorAll('figure').forEach(function (figure, index) {
         const chart = decodeObj(figure.getAttribute('data-chart'));
-        let aspectRatio = chart.data['aspect-ratio'] || 16/9;
+        let aspectRatio = chart.data['aspect-ratio'] || 16 / 9;
         let scheme;
 
         if (chart.scheme in ColorSchemes) {
@@ -226,6 +226,15 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
             aspectRatio: aspectRatio,
             staticRoot: staticRoot,
         };
+
+        // set theme for the figure
+        figure.style.fontSize = '0.95rem'; // Set a base font size for the figure
+        if (figure.getAttribute('data-rc-theme') === 'sketch') {
+            figure.style.fontFamily = 'var(--rc-script-font)';
+        } else {
+            figure.style.fontFamily = 'var(--bs-font-sans-serif)'
+        }
+
         try {
             switch (figure.dataset.type) {
                 case 'bars':
@@ -270,11 +279,11 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
 }
 
 function formatTick(value, i, ticksEvery = 1, ticksInterval = undefined) {
-    if (!(ticksInterval) && (i % ticksEvery)) {
+    if (i % ticksEvery) {
         return null; // Skip this tick
-    } else if (typeof(value) === 'string') {
+    } else if (typeof (value) === 'string') {
         return value; // Return string as it is
-    } else if (typeof(value) === 'number') {
+    } else if (typeof (value) === 'number') {
         if (Number.isInteger(value)) {
             // Format integers with commas if they are larger than 10,000. This avoids
             // messing up years which are < 1e4
@@ -305,30 +314,92 @@ function setColorScheme(plotOptions, chartOptions) {
 }
 
 function getFontSize(element) {
-  if (!element || !(element instanceof Element)) {
-    console.error("Invalid input: Please provide a valid DOM element.");
-    return 12; // Default font size
-  }
+    if (!element || !(element instanceof Element)) {
+        console.error("Invalid input: Please provide a valid DOM element.");
+        return 12; // Default font size
+    }
 
-  const computedStyle = window.getComputedStyle(element);
-  const fontSizeString = computedStyle.getPropertyValue('font-size');
+    const computedStyle = window.getComputedStyle(element);
+    const fontSizeString = computedStyle.getPropertyValue('font-size');
     return parseFloat(fontSizeString);
 }
 
+function getCanvasFont(element = document.body) {
+    // Get the font properties of the element
+    const style = window.getComputedStyle(element);
+    const fontSize = style.getPropertyValue('font-size') || "16px";
+    const fontFamily = (style.getPropertyValue('font-family') || 'Fira Sans').replace(/["']/g, '');
+    return `${fontSize} ${fontFamily}`;
+}
+
+/**
+ * A function to calculate the rendered width of text in a given element.
+ *
+ * It uses a single, shared canvas element and caches the measured widths of
+ * individual characters for each specific font style. This avoids costly DOM
+ * manipulations and repeated measurements.
+ *
+ * @returns {function(string, HTMLElement): number} A function that takes text
+ * and an element and returns the text's width in pixels.
+ */
+const getTextWidth = (() => {
+    // Create a single canvas element to be reused for all measurements.
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    const fontCache = {};
+
+    /**
+     * Measures the width of a text string given a specific element's styling.
+     * @param {string} text The text to measure.
+     * @param {HTMLElement} element The element that defines the font styles.
+     * @returns {number} The width of the text in pixels.
+     */
+    return function (text, element) {
+        if (!text || !element) {
+            return 0;
+        }
+
+        // Get the complete font string from the element's computed styles.
+        const font = getCanvasFont(element);
+        if (!fontCache[font]) {
+            fontCache[font] = {};
+        }
+
+        // Set the canvas context's font to match the element's font.
+        context.font = font;
+        const charCache = fontCache[font];
+        let width = 0;
+
+        // Iterate over each character in the text.
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            // Check if the width of this character is already cached.
+            let charWidth = charCache[char];
+            if (charWidth === undefined) {
+                // If not, measure it, store it in the cache, and then use it.
+                charWidth = context.measureText(char).width;
+                charCache[char] = charWidth;
+            }
+            width += charWidth;
+        }
+        return Math.round(width);
+    };
+})();
+
 function scaleFontSize(width, minFontSize, maxFontSize, minWidth, maxWidth) {
-  const clampedWidth = Math.max(minWidth, Math.min(maxWidth, width));
-  const widthRange = maxWidth - minWidth;
-  const fontSizeRange = maxFontSize - minFontSize;
+    const clampedWidth = Math.max(minWidth, Math.min(maxWidth, width));
+    const widthRange = maxWidth - minWidth;
+    const fontSizeRange = maxFontSize - minFontSize;
 
-  let scaledFontSize;
+    let scaledFontSize;
 
-  if (widthRange === 0) { // Handle cases where minDivWidth and maxDivWidth are the same
-    scaledFontSize = minFontSize;
-  } else {
-    const scaleFactor = (clampedWidth - minWidth) / widthRange;
-    scaledFontSize = minFontSize + (fontSizeRange * scaleFactor);
-  }
-  return scaledFontSize;
+    if (widthRange === 0) { // Handle cases where minDivWidth and maxDivWidth are the same
+        scaledFontSize = minFontSize;
+    } else {
+        const scaleFactor = (clampedWidth - minWidth) / widthRange;
+        scaledFontSize = minFontSize + (fontSizeRange * scaleFactor);
+    }
+    return scaledFontSize;
 }
 
 function roughenSVG(svg, scalable = false) {
@@ -337,7 +408,7 @@ function roughenSVG(svg, scalable = false) {
         roughness: 2.0, bowing: 1, fill: 'cross-hatch', fillWeight: 0.25
     });
     svgConverter.svg = svg;
-    svgConverter.fontFamily ='var(--rc-script-font)';
+    svgConverter.fontFamily = 'var(--rc-script-font)';
     svgConverter.sketch();
 
     // transfer svg attributes
@@ -383,22 +454,18 @@ function addFigurePlot(figure, plot) {
         // If the plot is not a figure, we add it to the figure
         figure.appendChild(plot);
     }
-    figure.style.fontSize = '0.95rem'; // Set a base font size for the figure
+
     if (figure.getAttribute('data-rc-theme') === 'sketch') {
         figure.querySelectorAll('svg').forEach(function (svg) {
             // roughen the svg
             svg.replaceWith(roughenSVG(svg, svg.classList.contains('rc-chart')));
         });
-        figure.style.fontFamily = 'var(--rc-script-font)';
-    } else {
-        figure.style.fontFamily = 'var(--bs-font-sans-serif)'
+
     }
-
-
 }
 
 function setAxisScale(axisOptions, scale) {
-    switch (scale){
+    switch (scale) {
         case 'linear':
             break;
         case 'time':
@@ -411,7 +478,7 @@ function setAxisScale(axisOptions, scale) {
             axisOptions.base = 2;
             break;
         case 'inverse':
-            axisOptions.transform = d => 1/d;
+            axisOptions.transform = d => 1 / d;
             break;
         case 'square':
             axisOptions.type = "pow";
@@ -436,7 +503,7 @@ function setAxisScale(axisOptions, scale) {
             break;
         case 'cube-root':
             axisOptions.type = "pow";
-            axisOptions.exponent = 1/3;
+            axisOptions.exponent = 1 / 3;
             break;
     }
 }
@@ -481,9 +548,10 @@ function drawBarChart(figure, chart, options) {
     const ticksInterval = chart["ticks-interval"] || undefined; // Default to 1 for bar charts
     const colorScale = d3.scaleOrdinal(options.scheme);
     const valueScale = chart["scale"] || 'linear';
-    const markOptions = {x: chart.x,  y: chart.y, sort: null, tip: categoryAxis};
+    const markOptions = {x: chart.x, y: chart.y, sort: null, tip: categoryAxis};
+    const fontSizePix = getFontSize(figure);
 
-    let maxLabelLength = 10;
+    let maxLabelLength = 1;
 
     const plotOptions = {
         className: "rc-chart",
@@ -494,12 +562,12 @@ function drawBarChart(figure, chart, options) {
         color: {
             legend: true,
         },
-
         [categoryAxis]: {
             tickFormat: (d, i) => formatTick(d, i, ticksEvery, ticksInterval),
-            interval: ticksInterval,
             type: 'band',
-            label: null
+            interval: ticksInterval,
+            label: null,
+            nice: true,
         },
         [valueAxis]: {
             grid: true,
@@ -509,29 +577,37 @@ function drawBarChart(figure, chart, options) {
     setColorScheme(plotOptions, options);
     setAxisScale(plotOptions[valueAxis], valueScale);
 
-    maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[chart[categoryAxis]]}`.length || 0));
+    maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => getTextWidth(`${d[chart.y]}`, figure)));
     markOptions.fill = chart.colors || colorScale(0);
 
     if (chart.grouped) {
         plotOptions[categoryAxis].axis = null;
+        plotOptions[categoryAxis].interval = null;
+        markOptions[`f${categoryAxis}`] = chart[categoryAxis];
         markOptions[categoryAxis] = chart.colors;
-        if (chart.kind === 'bars') {
-            markOptions.fy = chart[categoryAxis];
-        } else {
-            markOptions.fx = chart[categoryAxis];
+        plotOptions[`f${categoryAxis}`] = {
+            tickFormat: (d, i) => formatTick(d, i, ticksEvery, ticksInterval),
+            type: 'band',
+            interval: ticksInterval,
+            label: null,
         }
     } else if (chart.normalize) {
         markOptions.offset = "normalize";
         plotOptions[valueAxis].tickFormat = '%';
     }
-
-    if (chart.sort) {
-        markOptions.sort = chart.sort.startsWith('-') ? {[categoryAxis]: `-${valueAxis}`}: {[categoryAxis]: valueAxis};
+    if (chart.facets) {
+        markOptions[`f${valueAxis}`] = chart.facets;
+        if (valueAxis === 'x') {
+            plotOptions.marginTop = fontSizePix * 3;
+        }
     }
 
-    const fontSizePix = getFontSize(figure);
+    if (chart.sort) {
+        markOptions.sort = chart.sort.startsWith('-') ? {[categoryAxis]: `-${valueAxis}`} : {[categoryAxis]: valueAxis};
+    }
+
+    plotOptions.marginLeft = Math.max(fontSizePix * 3, maxLabelLength);
     if (chart.kind === 'bars') {
-        plotOptions.marginLeft = Math.max(40, maxLabelLength * fontSizePix * 0.6);
         marks.push(new Plot.ruleX([0]));
         marks.push(new Plot.barX(chart.data, markOptions));
     } else {    // columns
@@ -557,7 +633,7 @@ function drawXYPlot(figure, chart, options) {
     const colorScale = d3.scaleOrdinal(options.scheme);
     const xScale = chart["x-scale"] || 'linear';
     const yScale = chart["y-scale"] || 'linear';
-    let maxLabelLength = 10;
+    let maxLabelLength = 1;
     const colorDomain = [];
     const colorRange = [];
 
@@ -596,7 +672,7 @@ function drawXYPlot(figure, chart, options) {
     setAxisScale(plotOptions.y, yScale);
 
 
-    markTypes.forEach(function(mark, index){
+    markTypes.forEach(function (mark, index) {
         maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[mark.y]}`.length || 0));
         const markOptions = {
             x: mark.x,
@@ -624,7 +700,7 @@ function drawXYPlot(figure, chart, options) {
             markOptions.stroke = colorValue;
             markOptions.strokeWidth = 1;
             marks.push(new Plot.dot(chart.data, markOptions));
-        }else if (mark.type === 'points-filled') {
+        } else if (mark.type === 'points-filled') {
             markOptions.fill = colorValue;
             markOptions.stroke = "var(--bs-body-color)";
             markOptions.strokeWidth = 0.5;
@@ -639,7 +715,7 @@ function drawXYPlot(figure, chart, options) {
         }
     });
     // Create chart
-    plotOptions.marginLeft = Math.max(40, maxLabelLength * 10);
+    plotOptions.marginLeft = Math.max(20, maxLabelLength * getFontSize(figure));
     if (colorDomain.length > 1) {
         plotOptions.color = {
             domain: colorDomain,
@@ -654,7 +730,7 @@ function drawXYPlot(figure, chart, options) {
 
 function drawHistogram(figure, chart, options) {
     const binInput = {y: "count"};
-    const binOutput = {x: {value: chart.values, thresholds: chart.bins || 'auto' }};
+    const binOutput = {x: {value: chart.values, thresholds: chart.bins || 'auto'}};
     const plotOptions = {
         className: "rc-chart",
         style: {
@@ -669,7 +745,7 @@ function drawHistogram(figure, chart, options) {
         color: {
             range: options.scheme,
         },
-        y: { grid: true},
+        y: {grid: true},
         marks: []
     };
     if (chart["groups"]) {
@@ -719,13 +795,13 @@ function drawPieChart(figure, chart, options) {
         .data(uniqueLabels)
         .enter()
         .append("span")
-            .attr("class", "rc-chart-swatch")
-            .style("display", "inline-flex")
-            .style("align-items", "center")
-            .style("font-size", '1em')
-            .style("margin-right", "10px")
-            .style("margin-bottom", "5px")
-            .html(d => `<svg width="15" height="15" fill="${color(d)}">
+        .attr("class", "rc-chart-swatch")
+        .style("display", "inline-flex")
+        .style("align-items", "center")
+        .style("font-size", '1em')
+        .style("margin-right", "10px")
+        .style("margin-bottom", "5px")
+        .html(d => `<svg width="15" height="15" fill="${color(d)}">
                         <rect width="100%" height="100%"></rect>
                         </svg>${d}`);
 
@@ -750,23 +826,24 @@ function drawPieChart(figure, chart, options) {
         .data(dataReady)
         .enter()
         .append("path")
-            .attr("d", arcGenerator)
-            .attr("fill", d => color(d.data.label))
-            .attr("stroke", "var(--bs-body-bg)")
-            .style("stroke-width", "1px")
-            .style("opacity", 1);
-        // .append("text")
-        // .attr("class", "pie-label")
-        // .attr("transform", function(d) {
-        //     const centroid = arcGenerator.centroid(d);
-        //     return `translate(${centroid[0]}, ${centroid[1]})`;
-        // })
-        // .attr("text-anchor", "middle")
-        // .attr("stroke", "var(--bs-body-color)")
-        // .text(function(d) {
-        //     const percent = (100 * d.value / total );
-        //     return d3.format(".1f")(percent) + "%";
-        // });
+        .attr("d", arcGenerator)
+        .attr("fill", d => color(d.data.label))
+        .attr("stroke", "var(--bs-body-bg)")
+        .style("stroke-width", "1px")
+        .style("opacity", 1)
+        .append("text")
+        .attr("class", "pie-label")
+        .attr("transform", function (d) {
+            const centroid = arcGenerator.centroid(d);
+            return `translate(${centroid[0]}, ${centroid[1]})`;
+        })
+        .attr("text-anchor", "middle")
+        .attr("stroke", "var(--bs-body-color)")
+        .text(function (d) {
+            console.log('calculating percentage', d);
+            const percent = (100 * d.value / total);
+            return d3.format(".1f")(percent) + "%";
+        });
 
     addFigurePlot(figure, plot);
 }
@@ -826,13 +903,12 @@ function drawTimeline(figure, chart, options) {
 
 
 function drawGeoChart(figure, chart, options) {
-    const colorScale = d3.scaleOrdinal(options.scheme);
     let colorLegend = false;
     let showLand = chart.map === '001' ? false : (chart["show-land"] || true);
     const plotOptions = {
         className: "rc-chart",
         style: {
-          fontSize: '1em',
+            fontSize: '1em',
         },
         width: options.width || 800,
         height: options.height || 600,
@@ -847,7 +923,7 @@ function drawGeoChart(figure, chart, options) {
     Promise.all([
         d3.json(`${options.staticRoot}/maps/${chart.map}.json`),
         showLand ? d3.json(`${options.staticRoot}/maps/land.json`) : null,
-    ]).then(function([geoData, landData]) {
+    ]).then(function ([geoData, landData]) {
         const map = topojson.feature(geoData, geoData.objects["subunits"] || geoData.objects["countries"]);
         if (chart.map === '001') {  // World map, no need to show land
             plotOptions.projection = {
@@ -876,7 +952,7 @@ function drawGeoChart(figure, chart, options) {
         );
 
         // add features now
-        chart.features.forEach(function(feature, index) {
+        chart.features.forEach(function (feature, index) {
             switch (feature.type) {
                 case 'area':
                     let locMap = new Map(chart.data.map(d => [d[chart.location], d[feature.value]]))
@@ -933,7 +1009,7 @@ function drawGeoChart(figure, chart, options) {
                     Plot.text(
                         map.features,
                         Plot.centroid({
-                            text: (d) => isCode? d.id: d.properties.name,
+                            text: (d) => isCode ? d.id : d.properties.name,
                             textAnchor: "middle",
                             tip: true,
                             fill: "var(--bs-body-color)",
@@ -984,8 +1060,8 @@ function drawGeoChart(figure, chart, options) {
 }
 
 function drawLikertChart(figure, chart, options) {
-    let maxLabelLength = 10;
-    maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[chart.questions]}`.length || 0));
+    let maxLabelLength = 1;
+    maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => getTextWidth(`${d[chart.questions]}`, figure)));
     const likert = Likert(chart.domain.map(d => [d[0], Math.sign(d[1])]));
     const plotOptions = {
         className: "rc-chart",
@@ -999,7 +1075,7 @@ function drawLikertChart(figure, chart, options) {
             domain: likert.order,
         },
         x: {
-          tickFormat: Math.abs
+            tickFormat: Math.abs
         },
         marks: [
             Plot.barX(
@@ -1015,10 +1091,9 @@ function drawLikertChart(figure, chart, options) {
             Plot.ruleX([0])
         ]
     };
-    const fontSizePix = getFontSize(figure);
-    plotOptions.marginLeft = Math.max(40, maxLabelLength * fontSizePix * 0.6);
 
     // Create the bar chart
+    plotOptions.marginLeft = Math.max(30, maxLabelLength);
     const plot = Plot.plot(plotOptions);
     addFigurePlot(figure, plot);
 }

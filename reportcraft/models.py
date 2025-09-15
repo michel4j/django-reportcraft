@@ -391,7 +391,9 @@ class Entry(models.Model):
         ordering = ['report', 'position']
 
     def __str__(self):
-        return self.title
+        short_report_title = (self.report.title[:20] + '...') if len(self.report.title) > 20 else self.report.title
+        kind = self.get_kind_display()
+        return f'{short_report_title} - {self.title} ({kind[:2]})'
 
     GENERATORS = {
         Types.DONUT: entries.generate_donut,

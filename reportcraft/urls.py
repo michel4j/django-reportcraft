@@ -7,6 +7,7 @@ urlpatterns = [
     path('editor/list/', views.EditorReportList.as_view(), name='editor-report-list'),
     path('editor/add/', views.CreateReport.as_view(), name='new-report'),
     path('editor/<int:pk>/', views.ReportEditor.as_view(), name='report-editor'),
+    path('editor/<int:pk>/import/', views.ImportEntry.as_view(), name='import-entry'),
     path('editor/<int:pk>/edit/', views.EditReport.as_view(), name='edit-report'),
     path('editor/<int:pk>/delete/', views.DeleteReport.as_view(), name='delete-report'),
 

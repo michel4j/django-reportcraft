@@ -2,7 +2,7 @@ import json
 from collections import defaultdict
 
 from django.conf import settings
-from django.http import JsonResponse, Http404
+from django.http import JsonResponse, Http404, HttpResponseRedirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.http import urlencode
@@ -384,6 +384,9 @@ class EditEntry(*EDIT_MIXINS, ModalUpdateView):
     def get_success_url(self):
         return reverse_lazy('report-editor', kwargs={'pk': self.object.report.pk})
 
+    def get_delete_url(self):
+        return reverse_lazy('delete-report-entry', kwargs={'report': self.object.report.pk, 'pk': self.object.pk})
+
     def get_initial(self):
         initial = super().get_initial()
         initial['report'] = self.kwargs.get('report')
@@ -452,3 +455,30 @@ class CreateEntry(*EDIT_MIXINS, ModalCreateView):
         initial['position'] = report.entries.count()
         return initial
 
+    def form_valid(self, form):
+        super().form_valid(form)
+        return HttpResponseRedirect(
+            reverse('configure-report-entry', kwargs={'pk': self.object.pk, 'report': self.object.report.pk})
+        )
+
+
+class ImportEntry(*EDIT_MIXINS, ModalCreateView):
+    form_class = forms.ImportEntryForm
+    model = models.Entry
+
+    def get_success_url(self):
+        return reverse('report-editor', kwargs={'pk': self.object.report.pk})
+
+    def get_initial(self):
+        report = models.Report.objects.filter(pk=self.kwargs.get('pk')).first()
+        if not report:
+            raise Http404('Report not found')
+        initial = super().get_initial()
+        initial['report'] = report
+        return initial
+
+    def form_valid(self, form):
+        cleaned_data = form.cleaned_data
+        entry = models.Entry(**cleaned_data)
+        entry.save()
+        return JsonResponse({'url': ''})
