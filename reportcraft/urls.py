@@ -18,7 +18,7 @@ urlpatterns = [
     path('editor/<int:report>/reorder/', views.ReorderEntries.as_view(), name='reorder-report-entries'),
     path('editor/<int:report>/config/<int:pk>/', views.ConfigureEntry.as_view(), name='configure-report-entry'),
 
-    path('editor/sources/', views.DataSourceList.as_view(), name='data-source-list'),
+    path('editor/sources/list/', views.DataSourceList.as_view(), name='data-source-list'),
     path('editor/sources/add/', views.CreateDataSource.as_view(), name='new-data-source'),
     path('editor/sources/<int:pk>/', views.SourceEditor.as_view(), name='source-editor'),
     path('editor/sources/<int:pk>/edit/', views.EditDataSource.as_view(), name='edit-data-source'),

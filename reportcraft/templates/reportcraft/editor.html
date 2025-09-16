@@ -8,9 +8,9 @@
         <div id="rc-header" class="d-flex align-items-center border-bottom">
             <div class="text-secondary d-flex flex-column px-2">
                 <div class="page-pretitle my-0">{% block editor-pretitle %}{% endblock %}</div>
-                <div class="fs-4 fw-light editor-title my-0">{% block editor-title %}{% endblock %}</div>
+                <div class="fs-5 fw-light editor-title my-0">{% block editor-title %}{% endblock %}</div>
             </div>
-            <div class="ms-auto page-tools col-auto d-flex align-items-center gap-2 ps-3">
+            <div class="ms-auto page-tools col-auto d-flex align-items-center">
             {% block editor-tools %}{% endblock %}
             <a class="text-body" href="#rc-off-canvas" data-oc-url="{% url "editor-report-list" %}" data-bs-toggle="offcanvas">
                 {% tool_icon label='Reports' icon='list-details' %}

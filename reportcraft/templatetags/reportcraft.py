@@ -362,7 +362,7 @@ SVG_TEMPLATE = (
 @register.simple_tag
 def svg_icon(name, size=None, stroke=None):
     size = 'md' if not size else size
-    stroke = 1.5 if not stroke else stroke
+    stroke = 1.25 if not stroke else stroke
     svg = SVG_TEMPLATE.format(stroke=stroke, drawing=ICONS.get(name, DEFAULT_ICON), css_class=f"icon-{size}")
     return mark_safe(svg)
 
