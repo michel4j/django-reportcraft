@@ -10,7 +10,7 @@ from django.utils.module_loading import import_string
 from django.utils.safestring import mark_safe
 from django.views import View
 from django.views.generic import DetailView, edit, ListView, TemplateView
-from crisp_modals.views import ModalUpdateView, ModalCreateView, ModalDeleteView
+from crisp_modals.views import ModalUpdateView, ModalCreateView, ModalDeleteView, ModalConfirmView
 from itemlist.views import ItemListView
 
 from . import models, forms
@@ -482,3 +482,41 @@ class ImportEntry(*EDIT_MIXINS, ModalCreateView):
         entry = models.Entry(**cleaned_data)
         entry.save()
         return JsonResponse({'url': ''})
+
+
+class CloneEntry(*EDIT_MIXINS, ModalConfirmView):
+    model = models.Entry
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = "Clone Entry"
+        context['message'] = "Are you sure you want to clone this entry?"
+        return context
+
+    def confirmed(self, *args, **kwargs):
+        entry = self.get_object()
+        obj = entry.clone()
+        return JsonResponse({
+            'modal': True,
+            'url': reverse('configure-report-entry', kwargs={'pk': obj.pk, 'report': obj.report.pk})
+        })
+
+
+class CloneDataSource(*EDIT_MIXINS, ModalConfirmView):
+    model = models.DataSource
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = "Clone Data Source"
+        context['message'] = (
+            "Are you sure you want to clone this source? "
+            "This will also clone all associated models and fields."
+        )
+        return context
+
+    def confirmed(self, *args, **kwargs):
+        source = self.get_object()
+        obj = source.clone()
+        return JsonResponse({
+            'url': reverse('edit-data-source', kwargs={'pk': obj.pk})
+        })

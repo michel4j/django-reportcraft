@@ -61,6 +61,9 @@
                         <a href="#!" data-modal-url="{% url 'edit-report-entry' report=report.pk pk=entry.pk %}" title="Edit Entry">
                             {% tool_icon icon='pencil' size='sm' %}
                         </a>
+                        <a href="#!" data-modal-url="{% url 'clone-report-entry' report=report.pk pk=entry.pk %}" title="Clone Entry">
+                            {% tool_icon icon='copy' size='sm' %}
+                        </a>
                         {% if entry.source %}
                         <a href="{% url 'source-editor' pk=entry.source.pk %}" title="Edit Source">
                             {% tool_icon icon='database' size='sm' %}
@@ -75,6 +78,10 @@
         </div>
         {% endfor %}
         </div>
+        </div>
+    {% else %}
+        <div class="h-100 w-100 pb-5 d-flex align-items-center justify-content-center opacity-50">
+            <img alt="ReportCraft" class="w-50 mb-5" src="{% static "reportcraft/logo.svg" %}">
         </div>
     {% endif %}
 {% endblock %}

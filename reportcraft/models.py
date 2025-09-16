@@ -63,6 +63,30 @@ class DataSource(models.Model):
     def __str__(self):
         return self.name
 
+    def clone(self):
+        """Make a copy of this data source, including all models and fields"""
+        clone = DataSource.objects.get(pk=self.pk)
+        clone.pk = None
+        clone.name = f'{self.name} (copy)'
+        clone.save()
+
+        model_mapping = {}
+        for model in self.models.all():
+            model_clone = DataModel.objects.get(pk=model.pk)
+            model_clone.pk = None
+            model_clone.source = clone
+            model_clone.save()
+            model_mapping[model.pk] = model_clone
+
+        for field in self.fields.all():
+            field_clone = DataField.objects.get(pk=field.pk)
+            field_clone.pk = None
+            field_clone.source = clone
+            field_clone.model = model_mapping.get(field.model.pk, None)
+            field_clone.save()
+
+        return clone
+
     def name_slug(self):
         return slugify(self.name)
 
@@ -433,3 +457,20 @@ class Entry(models.Model):
                 'text': ENTRY_ERROR_TEMPLATE.format(error=traceback.format_exc(), error_type=type(e).__name__),
                 'notes': self.notes
             }
+
+    def clone(self, report: Report = None) -> Entry:
+        """
+        Clone this entry and associate it with a new report if provided, otherwise keep the same report
+        :param report: the new report to associate the cloned entry with
+        :return: the cloned entry
+        """
+        clone = Entry.objects.get(pk=self.pk)
+        clone.pk = None
+        if report:
+            clone.report = report
+        else:
+            clone.title = f'{self.title} (copy)'
+        clone.save()
+        return clone
+
+

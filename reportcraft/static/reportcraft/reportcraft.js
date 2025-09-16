@@ -404,10 +404,13 @@ function scaleFontSize(width, minFontSize, maxFontSize, minWidth, maxWidth) {
 
 function roughenSVG(svg, scalable = false) {
     const container = document.createElement('div');
-    const svgConverter = new Svg2Roughjs(container, OutputType.SVG, {
-        roughness: 2.0, bowing: 1, fill: 'cross-hatch', fillWeight: 0.25
-    });
+    const svgConverter = new Svg2Roughjs(container, OutputType.SVG);
     svgConverter.svg = svg;
+    svgConverter.roughConfig = {
+        roughness: 1.5,
+        bowing: 1.1,
+        fillStyle: 'zigzag',
+    };
     svgConverter.fontFamily = 'var(--rc-script-font)';
     svgConverter.sketch();
 
@@ -420,7 +423,7 @@ function roughenSVG(svg, scalable = false) {
         newSvg.removeAttribute('height'); // Let CSS handle the height
         newSvg.setAttribute('width', '100%');
     }
-    return newSvg;
+    svg.replaceWith(newSvg);
 }
 
 function addFigurePlot(figure, plot) {
@@ -458,7 +461,7 @@ function addFigurePlot(figure, plot) {
     if (figure.getAttribute('data-rc-theme') === 'sketch') {
         figure.querySelectorAll('svg').forEach(function (svg) {
             // roughen the svg
-            svg.replaceWith(roughenSVG(svg, svg.classList.contains('rc-chart')));
+            roughenSVG(svg, svg.classList.contains('rc-chart'));
         });
 
     }

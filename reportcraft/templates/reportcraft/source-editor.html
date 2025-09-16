@@ -13,16 +13,19 @@
 {% block editor-title %}{{ object.name }}{% endblock %}
 
 {% block editor-tools %}
-    <a href="#!" data-modal-url="{% url "edit-data-source" source.pk %}">
+    <a href="#0" data-modal-url="{% url "edit-data-source" source.pk %}">
         {% tool_icon label='Edit' icon='pencil' %}
     </a>
-    <a href="#!" data-modal-url="{% url "delete-data-source" source.pk %}">
+    <a href="#0" data-modal-url="{% url "clone-data-source" source.pk %}">
+        {% tool_icon label='Clone' icon='copy' %}
+    </a>    
+    <a href="#0" data-modal-url="{% url "delete-data-source" source.pk %}">
         {% tool_icon label='Delete' icon='trash-x' %}
     </a>
-    <a href="#!" data-modal-url="{% url "add-source-model" source=source.pk %}">
+    <a href="#0" data-modal-url="{% url "add-source-model" source=source.pk %}">
         {% tool_icon label='Add Model' icon='database-plus' %}
     </a>
-    <a href="#!" data-modal-url="{% url "add-source-field" source=source.pk %}">
+    <a href="#0" data-modal-url="{% url "add-source-field" source=source.pk %}">
         {% tool_icon label='Add Field' icon='table-plus' %}
     </a>
 {% endblock %}

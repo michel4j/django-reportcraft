@@ -12,6 +12,7 @@ urlpatterns = [
     path('editor/<int:pk>/delete/', views.DeleteReport.as_view(), name='delete-report'),
 
     path('editor/<int:report>/edit/<int:pk>/', views.EditEntry.as_view(), name='edit-report-entry'),
+    path('editor/<int:report>/clone/<int:pk>/', views.CloneEntry.as_view(), name='clone-report-entry'),
     path('editor/<int:report>/delete/<int:pk>/', views.DeleteEntry.as_view(), name='delete-report-entry'),
     path('editor/<int:report>/add/', views.CreateEntry.as_view(), name='add-report-entry'),
     path('editor/<int:report>/reorder/', views.ReorderEntries.as_view(), name='reorder-report-entries'),
@@ -21,6 +22,7 @@ urlpatterns = [
     path('editor/sources/add/', views.CreateDataSource.as_view(), name='new-data-source'),
     path('editor/sources/<int:pk>/', views.SourceEditor.as_view(), name='source-editor'),
     path('editor/sources/<int:pk>/edit/', views.EditDataSource.as_view(), name='edit-data-source'),
+    path('editor/sources/<int:pk>/clone/', views.CloneDataSource.as_view(), name='clone-data-source'),
     path('editor/sources/<int:pk>/delete/', views.DeleteDataSource.as_view(), name='delete-data-source'),
 
     path('editor/sources/<int:source>/add-field/', views.AddSourceField.as_view(), name='add-source-field'),

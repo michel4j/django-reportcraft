@@ -255,7 +255,6 @@ class ImportEntryForm(ModalModelForm):
         entry = cleaned_data.pop('entry')
         for field in copy_fields:
             cleaned_data[field] = getattr(entry, field)
-        print(cleaned_data)
         return cleaned_data
 
 
