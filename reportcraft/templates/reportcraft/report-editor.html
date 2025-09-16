@@ -24,6 +24,9 @@
     <a href="#0" data-modal-url="{% url "edit-report" report.pk %}">
         {% tool_icon label='Edit' icon='pencil' %}
     </a>
+    <a href="#0" data-modal-url="{% url "clone-report" report.pk %}">
+        {% tool_icon label='Clone' icon='copy' %}
+    </a>
     <a href="#0" data-modal-url="{% url "delete-report" report.pk %}">
         {% tool_icon label='Delete' icon='trash-x' %}
     </a>

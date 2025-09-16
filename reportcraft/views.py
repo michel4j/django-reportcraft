@@ -497,8 +497,7 @@ class CloneEntry(*EDIT_MIXINS, ModalConfirmView):
         entry = self.get_object()
         obj = entry.clone()
         return JsonResponse({
-            'modal': True,
-            'url': reverse('configure-report-entry', kwargs={'pk': obj.pk, 'report': obj.report.pk})
+            'url': ""
         })
 
 
@@ -518,5 +517,26 @@ class CloneDataSource(*EDIT_MIXINS, ModalConfirmView):
         source = self.get_object()
         obj = source.clone()
         return JsonResponse({
-            'url': reverse('edit-data-source', kwargs={'pk': obj.pk})
+            'url': reverse('source-editor', kwargs={'pk': obj.pk})
+        })
+
+
+class CloneReport(*EDIT_MIXINS, ModalConfirmView):
+    model = models.Report
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = "Clone Report"
+        context['message'] = (
+            "Are you sure you want to clone this report? "
+            "This will also clone all associated entries."
+            "Data Sources will not be cloned."
+        )
+        return context
+
+    def confirmed(self, *args, **kwargs):
+        report = self.get_object()
+        obj = report.clone()
+        return JsonResponse({
+            'url': reverse('report-editor', kwargs={'pk': obj.pk})
         })

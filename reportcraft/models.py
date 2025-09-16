@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 import logging
+import re
 import traceback
 from typing import Any
 
@@ -372,6 +373,21 @@ class Report(models.Model):
 
     def __str__(self):
         return self.title if not self.section else f'{self.section.upper()} / {self.title}'
+
+    def clone(self):
+        """Make a copy of this report, including all entries"""
+        clone = Report.objects.get(pk=self.pk)
+        clone.pk = None
+        clone.title = f'{self.title} (copy)'
+        if m := re.match(r'.+-(\d+)$', clone.slug):
+            number = int(m.group(1)) + 1
+            clone.slug = re.sub(r'-(\d+)$', f'-{number}', clone.slug)
+        else:
+            clone.slug = f'{clone.slug}-1'
+        clone.save()
+        for entry in self.entries.all():
+            entry.clone(report=clone)
+        return clone
 
 
 class Entry(models.Model):
