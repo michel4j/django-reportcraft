@@ -171,7 +171,6 @@ class DataSource(models.Model):
         select_filters = (select if select else Q())
         dynamic_filters = Q(**self.clean_filters(filters))
 
-
         # generate the queryset
         queryset = model.objects.annotate(
             **annotations
