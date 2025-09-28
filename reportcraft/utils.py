@@ -3,7 +3,6 @@ from __future__ import annotations
 import csv
 import hashlib
 import io
-import json
 import re
 import threading
 from collections import defaultdict
@@ -12,6 +11,7 @@ from enum import Enum
 from functools import wraps, reduce
 from importlib import import_module
 from inspect import getframeinfo, stack
+from io import StringIO
 from operator import or_
 from typing import Any, Sequence, Iterable
 
@@ -19,7 +19,9 @@ import pyparsing as pp
 import yaml
 from django.apps import apps
 from django.conf import settings
+from django.core import serializers
 from django.core.cache import cache
+from django.core.management import call_command
 from django.db import models
 from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q
 from django.db.models.functions import (
@@ -29,8 +31,8 @@ from django.db.models.functions import (
     JSONArray, ExtractQuarter,
 )
 from django.http import HttpResponse
-from django.utils import timezone
 from pyparsing.exceptions import ParseException
+
 from . import countries
 from .functions import DisplayName, Hours, Minutes, ShiftStart, ShiftEnd, Interval, CumSum, CumCount
 
@@ -950,3 +952,51 @@ def wrap_table(table: list[list], max_cols: int) -> list[list[list]]:
         for start in range(1, num_cols, cols_per_table)
     ]
 
+
+def export_report(pk) -> str:
+    """
+    Dumps a single report and associated fields and sources into a YAML string.
+
+    :param pk: The primary key of the report to export
+    :returns str: A YAML string representing the dumped records.
+    """
+    output = ""
+    from reportcraft.models import Report, Entry, DataSource, DataModel, DataField
+    report = Report.objects.filter(pk=pk).first()
+    if not report:
+        return output
+
+    sources = DataSource.objects.filter(entries__report=pk).distinct()
+    data_models = DataModel.objects.filter(source__in=sources).distinct()
+    fields = DataField.objects.filter(model__in=data_models).distinct()
+    entries = Entry.objects.filter(report=pk)
+    reports = Report.objects.filter(pk=pk)
+
+    for records in [reports, sources, data_models, fields, entries]:
+        if not records.exists():
+            continue
+        output += serializers.serialize(
+            'yaml', records,
+            use_natural_foreign_keys=True,
+            use_natural_primary_keys=True
+        )
+
+    return output
+
+
+def import_report(yaml_string: str):
+    """
+    Loads a single report and associated fields and sources from a YAML string.
+
+    :param yaml_string: The YAML string representing the dumped records.
+    """
+    from reportcraft.models import Report
+
+    try:
+        for obj in serializers.deserialize('yaml', yaml_string, ignorenonexistent=True):
+            obj.save()
+    except Exception as error:
+        print(f"Error importing report: {error}")
+
+    # Return the imported report if any
+    return Report.objects.last()

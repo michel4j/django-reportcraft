@@ -4,6 +4,7 @@ import itertools
 import logging
 import re
 import traceback
+import uuid
 from typing import Any
 
 from django.apps import apps
@@ -49,14 +50,22 @@ Please check the configuration!
 """
 
 
+class CodeManager(models.Manager):
+    def get_by_natural_key(self, code):
+        return self.get(code=code)
+
+
 class DataSource(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
+    code = models.SlugField(max_length=100, unique=True, editable=False, default=uuid.uuid4)
     name = models.CharField(max_length=50)
     description = models.TextField(default='', blank=True)
     group_by = models.JSONField(_("Group Fields"), default=list, blank=True, null=True)
     filters = models.TextField(default="", blank=True)
     limit = models.IntegerField(null=True, blank=True)
+
+    objects = CodeManager()
 
     class Meta:
         verbose_name = 'Data Source'
@@ -64,10 +73,14 @@ class DataSource(models.Model):
     def __str__(self):
         return self.name
 
+    def natural_key(self):
+        return (self.code,)
+
     def clone(self):
         """Make a copy of this data source, including all models and fields"""
         clone = DataSource.objects.get(pk=self.pk)
         clone.pk = None
+        clone.code = None
         clone.name = f'{self.name} (copy)'
         clone.save()
 
@@ -253,13 +266,19 @@ class DataModel(models.Model):
     and corresponding fields for the reportcraft app.
     """
     created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)    
+    modified = models.DateTimeField(auto_now=True)
+    code = models.SlugField(max_length=100, unique=True, editable=False, default=uuid.uuid4)
     model = models.ForeignKey(ContentType, on_delete=models.SET_NULL, null=True)
     name = models.CharField(max_length=150, blank=True, null=True)
     source = models.ForeignKey(DataSource, on_delete=models.CASCADE, related_name='models')
 
+    objects = CodeManager()
+
     class Meta:
         verbose_name = 'Data Model'
+
+    def natural_key(self):
+        return (self.code,)
 
     def get_group_fields(self):
         group_names = list(self.source.group_by)
@@ -328,6 +347,7 @@ class DataField(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     name = models.SlugField(max_length=50)
+    code = models.SlugField(max_length=100, unique=True, editable=False, default=uuid.uuid4)
     model = models.ForeignKey(DataModel, on_delete=models.CASCADE, related_name='fields')
     label = models.CharField(max_length=100, null=True)
     default = models.JSONField(null=True, blank=True)
@@ -337,10 +357,15 @@ class DataField(models.Model):
     ordering = models.IntegerField(null=True, blank=True)
     source = models.ForeignKey(DataSource, on_delete=models.CASCADE, related_name='fields')
 
+    objects = CodeManager()
+
     class Meta:
         verbose_name = 'Data Field'
         unique_together = ['name', 'source', 'model']
         ordering = ['source', 'position', 'pk']
+
+    def natural_key(self):
+        return (self.code,)
 
     def __str__(self):
         return self.label
@@ -364,19 +389,26 @@ class Report(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     slug = models.SlugField(max_length=128, unique=True)
+    code = models.SlugField(max_length=100, unique=True, editable=False, default=uuid.uuid4)
     title = models.TextField()
     description = models.TextField(default='', blank=True)
     theme = models.CharField(max_length=20, choices=Themes.choices, default=Themes.DEFAULT)
     notes = models.TextField(default='', blank=True)
     section = models.SlugField(max_length=100, default='', blank=True, null=True)
 
+    objects = CodeManager()
+
     def __str__(self):
         return self.title if not self.section else f'{self.section.upper()} / {self.title}'
+
+    def natural_key(self):
+        return (self.code,)
 
     def clone(self):
         """Make a copy of this report, including all entries"""
         clone = Report.objects.get(pk=self.pk)
         clone.pk = None
+        clone.code = None
         clone.title = f'{self.title} (copy)'
         if m := re.match(r'.+-(\d+)$', clone.slug):
             number = int(m.group(1)) + 1
@@ -414,6 +446,7 @@ class Entry(models.Model):
 
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
+    code = models.SlugField(max_length=100, unique=True, editable=False, default=uuid.uuid4)
     title = models.TextField(default='', blank=True)
     description = models.TextField(default='', blank=True)
     notes = models.TextField(default='', blank=True)
@@ -425,9 +458,14 @@ class Entry(models.Model):
     filters = models.TextField(default="", blank=True)
     attrs = models.JSONField(default=dict, blank=True)
 
+    objects = CodeManager()
+
     class Meta:
         verbose_name_plural = 'Entries'
         ordering = ['report', 'position']
+
+    def natural_key(self):
+        return (self.code,)
 
     def __str__(self):
         short_report_title = (self.report.title[:20] + '...') if len(self.report.title) > 20 else self.report.title
