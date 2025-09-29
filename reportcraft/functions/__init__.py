@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-
+import numpy
+import itertools
 from django.apps import apps
 from django.db import models
 from django.db.models import Window, Sum, F, Case, When, Value as V, TextField, CharField, Count
@@ -232,7 +233,7 @@ class Interval(Case):
         from .db_functions import Interval
 
         # Annotate users with an age group based on a 'age' field.
-        # This will create 4 categories: '<18', '18-40', '40-65', '>65'
+        # This will create 4 categories: '<18', '18-40', '41-65', '>65'
         annotated_users = User.objects.annotate(
             age_group=Interval('age', lo=18, hi=65, size=4)
         )
@@ -265,8 +266,8 @@ class Interval(Case):
 
         # --- Condition 1: Lower Bound ---
         whens = [
-            When(**{f'{field}__lt': lo}, then=V(f'<{lo:g}')),
-            When(**{f'{field}__gte': hi}, then=V(f'>{hi:g}')),
+            When(**{f'{field}__lt': lo}, then=V(f' <{lo:g} ')), # Add spaces to allow sorting to work
+            When(**{f'{field}__gt': hi}, then=V(f'>{hi:g}')),
         ]
         if num_intervals == 1:
             whens.append(
@@ -274,17 +275,14 @@ class Interval(Case):
             )
         else:
             # split by step size.
-            step = (hi - lo) / num_intervals if floats else (hi - lo) // num_intervals
-            for i in range(num_intervals):
-                start = lo + i * step
-                if i == num_intervals - 1:
-                    whens.append(
-                        When(**{f'{field}__gte': start, f'{field}__lte': hi}, then=V(f'{start:g}-{hi:g}'))
-                    )
+            for pair in itertools.pairwise(numpy.linspace(lo, hi, num_intervals + 1)):
+                if floats:
+                    start, end = float(pair[0]), float(pair[1])
                 else:
-                    end = lo + (i + 1) * step
-                    whens.append(
-                        When(**{f'{field}__gte': start, f'{field}__lt': end},then=V(f'{start:g}-{end:g}'))
-                    )
+                    start, end = int(numpy.ceil(pair[0])), int(numpy.floor(pair[1]))
+
+                whens.append(
+                    When(**{f'{field}__gte': start, f'{field}__lte': end}, then=V(f'{start:g}-{end:g}'))
+                )
 
         super().__init__(*whens, output_field=CharField(), default=V(""), **extra)

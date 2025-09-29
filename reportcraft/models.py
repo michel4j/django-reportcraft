@@ -80,7 +80,7 @@ class DataSource(models.Model):
         """Make a copy of this data source, including all models and fields"""
         clone = DataSource.objects.get(pk=self.pk)
         clone.pk = None
-        clone.code = None
+        clone.code = str(uuid.uuid4())
         clone.name = f'{self.name} (copy)'
         clone.save()
 
@@ -88,6 +88,7 @@ class DataSource(models.Model):
         for model in self.models.all():
             model_clone = DataModel.objects.get(pk=model.pk)
             model_clone.pk = None
+            model_clone.code = str(uuid.uuid4())
             model_clone.source = clone
             model_clone.save()
             model_mapping[model.pk] = model_clone
@@ -95,6 +96,7 @@ class DataSource(models.Model):
         for field in self.fields.all():
             field_clone = DataField.objects.get(pk=field.pk)
             field_clone.pk = None
+            field_clone.code = str(uuid.uuid4())
             field_clone.source = clone
             field_clone.model = model_mapping.get(field.model.pk, None)
             field_clone.save()
@@ -408,7 +410,7 @@ class Report(models.Model):
         """Make a copy of this report, including all entries"""
         clone = Report.objects.get(pk=self.pk)
         clone.pk = None
-        clone.code = None
+        clone.code = str(uuid.uuid4())
         clone.title = f'{self.title} (copy)'
         if m := re.match(r'.+-(\d+)$', clone.slug):
             number = int(m.group(1)) + 1
@@ -519,6 +521,7 @@ class Entry(models.Model):
         """
         clone = Entry.objects.get(pk=self.pk)
         clone.pk = None
+        clone.code = str(uuid.uuid4())
         if report:
             clone.report = report
         else:
