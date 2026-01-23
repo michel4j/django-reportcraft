@@ -505,4 +505,5 @@ def generate_likert(entry, **kwargs):
         'notes': entry.notes,
         'data': data,
     }
+    print(info)
     return info

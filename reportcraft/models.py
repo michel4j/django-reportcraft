@@ -159,7 +159,7 @@ class DataSource(models.Model):
         model: Any = apps.get_model(model_name)
         field_names = [f.name for f in model._meta.get_fields()]
 
-        # Add annotations
+        # Add grouping
         group_by = list(self.group_by)
         annotate_filter = {'name__in': group_by} if group_by else {}
         annotations = {
@@ -187,13 +187,14 @@ class DataSource(models.Model):
         dynamic_filters = Q(**self.clean_filters(filters))
 
         # generate the queryset
-        queryset = model.objects.annotate(
+        queryset = model.objects.values(
             **annotations
-        ).values(*group_by).annotate(
+        ).annotate(
             **aggregations
         ).order_by(*order_by).filter(
             static_filters & dynamic_filters & select_filters
         )
+
         # Apply limit
         if self.limit:
             queryset = queryset[:self.limit]

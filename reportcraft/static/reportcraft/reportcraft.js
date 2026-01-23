@@ -228,7 +228,7 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
         };
 
         // set theme for the figure
-        figure.style.fontSize = '0.95rem'; // Set a base font size for the figure
+        figure.style.fontSize = '1.4rem'; // Set a base font size for the figure
         if (figure.getAttribute('data-rc-theme') === 'sketch') {
             figure.style.fontFamily = 'var(--rc-script-font)';
         } else {
@@ -615,7 +615,7 @@ function drawBarChart(figure, chart, options) {
         marks.push(new Plot.barX(chart.data, markOptions));
     } else {    // columns
         plotOptions.height = options.height || 400;
-        plotOptions.marginBottom = fontSizePix * 3;
+        plotOptions.marginBottom = Math.max(fontSizePix * 3, 40);
         marks.push(new Plot.ruleY([0]));
         marks.push(
             new Plot.barY(
@@ -1097,6 +1097,7 @@ function drawLikertChart(figure, chart, options) {
 
     // Create the bar chart
     plotOptions.marginLeft = Math.max(30, maxLabelLength);
+    plotOptions.marginBottom = 40;
     const plot = Plot.plot(plotOptions);
     addFigurePlot(figure, plot);
 }
