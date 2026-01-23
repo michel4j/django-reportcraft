@@ -615,7 +615,7 @@ function drawBarChart(figure, chart, options) {
         marks.push(new Plot.barX(chart.data, markOptions));
     } else {    // columns
         plotOptions.height = options.height || 400;
-        plotOptions.marginBottom = Math.max(fontSizePix * 3, 40);
+        plotOptions.marginBottom = fontSizePix * 3;
         marks.push(new Plot.ruleY([0]));
         marks.push(
             new Plot.barY(
@@ -1097,7 +1097,7 @@ function drawLikertChart(figure, chart, options) {
 
     // Create the bar chart
     plotOptions.marginLeft = Math.max(30, maxLabelLength);
-    plotOptions.marginBottom = 40;
+    plotOptions.marginBottom = 50;
     const plot = Plot.plot(plotOptions);
     addFigurePlot(figure, plot);
 }
