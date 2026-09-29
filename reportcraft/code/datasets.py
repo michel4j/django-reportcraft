@@ -20,12 +20,13 @@ class InMemFieldQuerySet:
     def __init__(self, names: Sequence[str]):
         self._names = list(names)
 
-    def values_list(self, *field_names: str, flat: bool = False) -> Sequence[Any]:
+    def values_list(self, field_name: str = "name", *field_names: str, flat: bool = False) -> Sequence[Any]:
         if flat:
             return list(self._names)
-        if len(field_names) <= 1:
+        all_fields = (field_name,) + field_names if field_names else (field_name,)
+        if len(all_fields) <= 1:
             return [(name,) for name in self._names]
-        return [tuple(name for _ in field_names) for name in self._names]
+        return [tuple(name for _ in all_fields) for name in self._names]
 
     def __iter__(self):
         return iter(self._names)
@@ -63,8 +64,8 @@ class InMemFieldCollection:
     def all(self) -> Sequence[str]:
         return list(self._names)
 
-    def values_list(self, *field_names: str, flat: bool = False) -> Sequence[Any]:
-        return InMemFieldQuerySet(self._names).values_list(*field_names, flat=flat)
+    def values_list(self, field_name: str = "name", *field_names: str, flat: bool = False) -> Sequence[Any]:
+        return InMemFieldQuerySet(self._names).values_list(field_name, *field_names, flat=flat)
 
     def __iter__(self):
         return iter(self._names)
@@ -231,6 +232,7 @@ class QuerySetDataset:
     def get_data(self, *, select: Any = None, **kwargs: Any) -> list[dict[str, Any]]:
         qs = self.queryset.all()
 
+        select_fields: list[str] = []
         if select:
             if isinstance(select, Q):
                 qs = qs.filter(select)
@@ -238,6 +240,14 @@ class QuerySetDataset:
                 qs = qs.filter(**select)
             elif callable(select):
                 qs = select(qs)
+            elif isinstance(select, str):
+                select_fields = [select]
+            elif isinstance(select, (list, tuple, set)):
+                for item in select:
+                    if isinstance(item, Q):
+                        qs = qs.filter(item)
+                    elif isinstance(item, str):
+                        select_fields.append(item)
 
         runtime_filters = kwargs.get("filters")
         if runtime_filters and isinstance(runtime_filters, dict):
@@ -252,14 +262,32 @@ class QuerySetDataset:
         if "limit" in kwargs and kwargs["limit"]:
             qs = qs[:kwargs["limit"]]
 
-        if getattr(qs, "_fields", None) is None:
+        # Determine fields to select: requested via select or declared in self.fields
+        fields_to_select: list[str] = []
+        if select_fields:
+            fields_to_select = list(select_fields)
+        elif hasattr(self, "fields") and hasattr(self.fields, "all"):
+            fields_to_select = list(self.fields.all())
+        elif self._fields_list:
+            fields_to_select = list(self._fields_list)
+
+        if fields_to_select:
             try:
-                if self._fields_list:
-                    qs = qs.values(*self._fields_list)
+                qs = qs.values(*fields_to_select)
+            except Exception:
+                valid_fields = []
+                for f in fields_to_select:
+                    try:
+                        self.queryset.values(f)
+                        valid_fields.append(f)
+                    except Exception:
+                        pass
+                if valid_fields:
+                    qs = qs.values(*valid_fields)
                 else:
                     qs = qs.values()
-            except Exception:
-                qs = qs.values()
+        elif getattr(qs, "_fields", None) is None:
+            qs = qs.values()
 
         return list(qs)
 

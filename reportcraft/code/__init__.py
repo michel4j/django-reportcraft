@@ -23,12 +23,13 @@ from reportcraft.code.entries import (
     TimelineEntry,
     Width,
 )
-from reportcraft.code.report import CodeReport
+from reportcraft.code.report import CodeReport, LayoutRow
 from reportcraft.registry import ReportRegistry, site
 from reportcraft.views import CodeReportView
 
 __all__ = [
     "CodeReport",
+    "LayoutRow",
     "CodeReportView",
     "CodeEntry",
     "QuerySetDataset",

@@ -26,6 +26,27 @@ class CatalogItem(dict):
     def __setattr__(self, name: str, value: Any) -> None:
         self[name] = value
 
+    def matches_search(self, search_term: str) -> bool:
+        """
+        Check if this catalog item matches the search term.
+        Matches against title, slug, description, notes, and entries' titles.
+        """
+        if not search_term:
+            return True
+        words = search_term.lower().split()
+        report = self.get("report")
+        text_corpus = [
+            str(self.get("title", "")),
+            str(self.get("slug", "")),
+            str(self.get("description", "")),
+        ]
+        if report is not None:
+            text_corpus.append(str(getattr(report, "notes", "")))
+            for entry in getattr(report, "entries", []):
+                text_corpus.append(str(getattr(entry, "title", "")))
+        combined = " ".join(text_corpus).lower()
+        return all(word in combined for word in words)
+
 
 class ReportRegistry:
     """
