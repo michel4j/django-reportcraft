@@ -6,8 +6,9 @@ from django.db.models import *
 from django.db.models.functions import *
 
 from reportcraft.models import Report
+from reportcraft.registry import ReportRegistry, site, CatalogItem
 from reportcraft.utils import ExpressionParser, FilterParser
-from reportcraft.views import DictReportView, CodeReportView
+from reportcraft.views import DictReportView, CodeReportView, ReportIndexView
 from reportcraft.code import (
     BarChartEntry,
     CodeReport,
@@ -975,3 +976,273 @@ class CodeReportTestCase(TestCase):
         # Should only contain Widget A
         self.assertEqual(len(bars_data), 1)
         self.assertEqual(bars_data[0]["Item"], "Widget A")
+
+
+class ReportRegistryTestCase(TestCase):
+    def setUp(self):
+        self.registry = ReportRegistry()
+        self.report1 = CodeReport(
+            title="Sales Report",
+            slug="sales-report",
+            description="Q1 Sales Overview",
+        )
+        self.report2 = CodeReport(
+            title="Ops Report",
+            slug="ops-report",
+            description="Operations Metrics",
+        )
+
+    def tearDown(self):
+        site.clear()
+
+    def test_package_exports(self):
+        from reportcraft import ReportRegistry as RootReportRegistry, site as root_site
+        from reportcraft.code import ReportRegistry as CodePkgReportRegistry, site as code_pkg_site
+        self.assertIs(RootReportRegistry, ReportRegistry)
+        self.assertIs(root_site, site)
+        self.assertIs(CodePkgReportRegistry, ReportRegistry)
+        self.assertIs(code_pkg_site, site)
+
+    def test_register_and_get_report(self):
+        self.registry.register(self.report1)
+        retrieved = self.registry.get_report("sales-report")
+        self.assertEqual(retrieved, self.report1)
+        self.assertIsNone(self.registry.get_report("non-existent"))
+
+    def test_register_without_slug_raises_error(self):
+        invalid_report = CodeReport(title="No Slug Report")
+        with self.assertRaises(ValueError):
+            self.registry.register(invalid_report)
+
+    def test_register_decorator(self):
+        rep = CodeReport(title="Deco Report", slug="deco-report")
+        self.registry.register()(rep)
+        self.assertEqual(self.registry.get_report("deco-report"), rep)
+
+    def test_unregister_by_slug_and_object(self):
+        self.registry.register(self.report1)
+        self.registry.register(self.report2)
+        self.assertEqual(self.registry.get_report("sales-report"), self.report1)
+
+        # Unregister by slug
+        self.registry.unregister("sales-report")
+        self.assertIsNone(self.registry.get_report("sales-report"))
+
+        # Unregister by object
+        self.registry.unregister(self.report2)
+        self.assertIsNone(self.registry.get_report("ops-report"))
+
+        # Idempotent unregister of non-existent slug
+        self.registry.unregister("non-existent")
+
+    def test_catalog_items_and_in_catalog_flag(self):
+        # report1 is in catalog, report2 is NOT
+        self.registry.register(self.report1, in_catalog=True, section="finance")
+        self.registry.register(self.report2, in_catalog=False, section="ops")
+
+        items = self.registry.get_catalog_items()
+        self.assertEqual(len(items), 1)
+        item = items[0]
+        self.assertEqual(item["slug"], "sales-report")
+        self.assertEqual(item["title"], "Sales Report")
+        self.assertEqual(item["description"], "Q1 Sales Overview")
+        self.assertEqual(item["section"], "finance")
+        self.assertTrue(item["in_catalog"])
+        # Test attribute access on CatalogItem
+        self.assertEqual(item.slug, "sales-report")
+        self.assertEqual(item.title, "Sales Report")
+        self.assertEqual(item.description, "Q1 Sales Overview")
+        self.assertEqual(item.section, "finance")
+
+        # report2 is still retrievable via get_report
+        self.assertEqual(self.registry.get_report("ops-report"), self.report2)
+
+    def test_section_filtering_in_registry(self):
+        rep_fin = CodeReport(title="Finance Report", slug="fin-rep")
+        rep_ops = CodeReport(title="Operations Report", slug="ops-rep")
+        rep_gen = CodeReport(title="General Report", slug="gen-rep")
+
+        self.registry.register(rep_fin, section="finance")
+        self.registry.register(rep_ops, section="operations")
+        self.registry.register(rep_gen)  # section is None
+
+        all_items = self.registry.get_catalog_items()
+        self.assertEqual(len(all_items), 3)
+
+        fin_items = self.registry.get_catalog_items(section="finance")
+        self.assertEqual(len(fin_items), 1)
+        self.assertEqual(fin_items[0]["slug"], "fin-rep")
+
+        ops_items = self.registry.get_catalog_items(section="operations")
+        self.assertEqual(len(ops_items), 1)
+        self.assertEqual(ops_items[0]["slug"], "ops-rep")
+
+
+@override_settings(ROOT_URLCONF='reportcraft.tests')
+class ReportIndexViewTestCase(TestCase):
+    def setUp(self):
+        site.clear()
+        self.client = Client()
+        self.factory = RequestFactory()
+        self.orm_report1 = Report.objects.create(
+            title="Database Report 1",
+            slug="db-report-1",
+            description="DB Report description",
+            section="finance",
+        )
+        self.orm_report2 = Report.objects.create(
+            title="Database Report 2",
+            slug="db-report-2",
+            description="Another DB report",
+            section="operations",
+        )
+        self.code_report1 = CodeReport(
+            title="Code Analytics",
+            slug="code-analytics",
+            description="Live code report",
+        )
+        self.code_report2 = CodeReport(
+            title="Code Finance",
+            slug="code-finance",
+            description="Live finance metrics",
+        )
+
+    def tearDown(self):
+        site.clear()
+
+    def test_get_link_url_orm_report(self):
+        view = ReportIndexView()
+        url = view.get_link_url(self.orm_report1)
+        self.assertEqual(url, reverse('report-view', kwargs={'slug': 'db-report-1'}))
+
+    def test_get_link_url_dict_with_url(self):
+        view = ReportIndexView()
+        item = {"slug": "custom-rep", "url": "/custom/path/to/report/"}
+        self.assertEqual(view.get_link_url(item), "/custom/path/to/report/")
+
+    def test_get_link_url_dict_without_url(self):
+        view = ReportIndexView()
+        item = {"slug": "code-analytics"}
+        self.assertEqual(view.get_link_url(item), reverse('report-view', kwargs={'slug': 'code-analytics'}))
+
+    def test_get_link_url_object_with_url(self):
+        view = ReportIndexView()
+        rep = CodeReport(title="Custom URL Rep", slug="custom-url-rep")
+        rep.url = "/custom/url/endpoint/"
+        self.assertEqual(view.get_link_url(rep), "/custom/url/endpoint/")
+
+    def test_get_link_url_object_without_url(self):
+        view = ReportIndexView()
+        rep = CodeReport(title="No URL Rep", slug="no-url-rep")
+        self.assertEqual(view.get_link_url(rep), reverse('report-view', kwargs={'slug': 'no-url-rep'}))
+
+    def test_index_view_combines_orm_and_code_reports(self):
+        site.register(self.code_report1, in_catalog=True)
+        site.register(self.code_report2, in_catalog=True, section="finance")
+
+        response = self.client.get(reverse('report-list'))
+        self.assertEqual(response.status_code, 200)
+
+        # Context object_list should contain both ORM reports and registered code reports
+        object_list = list(response.context['object_list'])
+        slugs = [
+            obj.slug if hasattr(obj, 'slug') else obj['slug']
+            for obj in object_list
+        ]
+        self.assertIn("db-report-1", slugs)
+        self.assertIn("db-report-2", slugs)
+        self.assertIn("code-analytics", slugs)
+        self.assertIn("code-finance", slugs)
+
+        # Ensure rendered HTML displays links for both
+        content = response.content.decode('utf-8')
+        self.assertIn("Database Report 1", content)
+        self.assertIn("Code Analytics", content)
+        self.assertIn(reverse('report-view', kwargs={'slug': 'code-analytics'}), content)
+
+    def test_index_view_section_filtering(self):
+        site.register(self.code_report1, in_catalog=True, section="operations")
+        site.register(self.code_report2, in_catalog=True, section="finance")
+
+        class FinanceIndexView(ReportIndexView):
+            limit_section = "finance"
+
+        request = self.factory.get('/reports/view/')
+        view = FinanceIndexView()
+        view.setup(request)
+        object_list = list(view.get_queryset())
+        slugs = [
+            obj.slug if hasattr(obj, 'slug') else obj['slug']
+            for obj in object_list
+        ]
+        self.assertIn("db-report-1", slugs)
+        self.assertIn("code-finance", slugs)
+        self.assertNotIn("db-report-2", slugs)
+        self.assertNotIn("code-analytics", slugs)
+
+    def test_index_view_search_filtering(self):
+        searchable_code_report = CodeReport(
+            title="Quarterly Review",
+            slug="quarterly-review",
+            description="Comprehensive Q3 breakdown",
+            notes="Quarterly finance analysis",
+        )
+        site.register(searchable_code_report, in_catalog=True)
+        site.register(self.code_report1, in_catalog=True)
+
+        response = self.client.get(reverse('report-list') + '?search=Quarterly')
+        self.assertEqual(response.status_code, 200)
+        object_list = list(response.context['object_list'])
+        slugs = [
+            obj.slug if hasattr(obj, 'slug') else obj['slug']
+            for obj in object_list
+        ]
+        self.assertIn("quarterly-review", slugs)
+        self.assertNotIn("code-analytics", slugs)
+
+    def test_index_view_in_catalog_false_excluded(self):
+        hidden_report = CodeReport(
+            title="Secret Internal",
+            slug="secret-internal",
+        )
+        site.register(hidden_report, in_catalog=False)
+
+        response = self.client.get(reverse('report-list'))
+        self.assertEqual(response.status_code, 200)
+        slugs = [
+            obj.slug if hasattr(obj, 'slug') else obj['slug']
+            for obj in response.context['object_list']
+        ]
+        self.assertNotIn("secret-internal", slugs)
+
+    def test_index_view_include_code_reports_disabled(self):
+        site.register(self.code_report1, in_catalog=True)
+
+        class PureORMIndexView(ReportIndexView):
+            include_code_reports = False
+
+        request = self.factory.get('/reports/view/')
+        view = PureORMIndexView()
+        view.setup(request)
+        object_list = list(view.get_queryset())
+        slugs = [obj.slug for obj in object_list]
+        self.assertNotIn("code-analytics", slugs)
+        self.assertIn("db-report-1", slugs)
+
+    def test_index_view_deduplication(self):
+        # Code report with same slug as existing ORM report
+        duplicate_code_report = CodeReport(
+            title="Duplicate Report",
+            slug="db-report-1",
+        )
+        site.register(duplicate_code_report, in_catalog=True)
+
+        request = self.factory.get('/reports/view/')
+        view = ReportIndexView()
+        view.setup(request)
+        object_list = list(view.get_queryset())
+        slug_counts = [
+            obj.slug if hasattr(obj, 'slug') else obj['slug']
+            for obj in object_list
+        ].count("db-report-1")
+        self.assertEqual(slug_counts, 1)

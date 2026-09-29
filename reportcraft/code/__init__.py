@@ -24,6 +24,7 @@ from reportcraft.code.entries import (
     Width,
 )
 from reportcraft.code.report import CodeReport
+from reportcraft.registry import ReportRegistry, site
 from reportcraft.views import CodeReportView
 
 __all__ = [
@@ -46,4 +47,6 @@ __all__ = [
     "LikertEntry",
     "InMemFieldCollection",
     "InMemFieldQuerySet",
+    "ReportRegistry",
+    "site",
 ]
