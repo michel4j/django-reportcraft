@@ -17,6 +17,7 @@ urlpatterns = [
     path('people/<int:pk>/delete/', views.DeletePerson.as_view(), name='person-delete'),
     path('institutions/<int:pk>/delete/', views.DeleteInstitution.as_view(), name='institution-delete'),
     path('subjects/<int:pk>/delete/', views.DeleteSubject.as_view(), name='subject-delete'),
-
+    path('reports/code-demo/', views.CodeReportDemoView.as_view(), name='code-report-demo'),
+    path('reports/dict-demo/', views.DictReportDemoView.as_view(), name='dict-report-demo'),
 ]
 
