@@ -1,10 +1,11 @@
 from django.urls import path
 
-from . import views
+from . import views, prototype_views
 from .views import HomeView
 
 urlpatterns = [
     path("", HomeView.as_view(), name="home"),
+    path("prototype/dict-report/", prototype_views.PrototypeDictReport.as_view(), name="prototype-dict-report"),
     path('people/', views.FancyPersonList.as_view(), name='person-list'),
     path('institutions/', views.FancyInstitutionList.as_view(), name='institution-list'),
     path('subjects/', views.FancySubjectList.as_view(), name='subject-list'),
