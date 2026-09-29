@@ -128,7 +128,9 @@ class DataFieldForm(ModalModelForm):
         name = data['name']
         expression = data.get('expression')
         if not model.has_field(name) and not expression:
-            self.add_error('expression', _(f"Calculation expression is required since `{model}` does not have a field named `{name}`"))
+            self.add_error('expression', _(
+                f"Calculation expression is required since `{model}` does not have a field named `{name}`"
+            ))
         return data
 
 
@@ -154,11 +156,19 @@ class DataSourceForm(ModalModelForm):
         }
         help_texts = {
             'limit': _("Maximum number of records"),
-            'filters': _("Baseline filter expression applied to all entries using this dataset (use only fields from this dataset).")
+            'filters': _(
+                "Baseline filter expression applied to all entries using "
+                "this dataset (use only fields from this dataset)."
+            )
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        model_name = self.instance._meta.verbose_name.capitalize()
+        if self.instance.pk:
+            self.body.title = f'Edit {model_name}'
+        else:
+            self.body.title = f'Add {model_name}'
         self.body.append(
             Div(
                 Div('name', css_class='col-12'),

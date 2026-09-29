@@ -21,11 +21,11 @@ Data Fields, and Report Entries.
   :width: 100%
   :alt: Report Editor
 
-Data Sources
-------------
+Datasets
+--------
 
-A Data Source is a model that provides data for the report. You can create a new Data Source by clicking the
-:guilabel:` + Add` button from the Data Sources list. To create a new Data Source, you need to provide the following
+A Dataset is a model that provides data for the report. You can create a new Dataset by clicking the
+:guilabel:` + Add` button from the Datasets list. To create a new Dataset, you need to provide the following
 information:
 
 .. image:: static/source-form.png
@@ -37,7 +37,7 @@ information:
 - Limit: The maximum number of records to return. This field is optional.
 - Description: A description of the Data Source. Use this to provide additional information about the purpose of the
   Data Source.
-- Filters: Filters to use for selecting a subset of the data. Filters are used to limit the data returned by the Data Source.
+- Filters: Filters to use for selecting a subset of the data. Filters are used to limit the data returned by the Dataset.
   The filters should be a valid :ref:`Filters <filters>`. See the Filters section below.
 
 .. image:: static/source-editor.png
@@ -47,7 +47,7 @@ information:
 As you build the data source, you can preview a snippet of the data in the Data card at the bottom of the page, and
 even use the download button to download a JSON representation of the full data set.
 
-Data Source Models
+Dataset Models
 ------------------
 After creating a Data Source, you can add Models to it. Models need to be added first, as all Data Fields are linked
 to specific models defined within the Source. Models can be added by clicking the Add Model button from the Data Source
@@ -211,7 +211,7 @@ Here are some xamples of valid expressions:
 
 Filters
 -------
-Filters are used to limit the data returned by a Data Source. Filters must only use fields added to the Data Source.
+Filters are used to limit the data returned by a Dataset. Filters must only use fields added to the Dataset.
 Native low-level model fields are not supported. Filters are boolean expressions defined using the following extended
 Python-like syntax:
 
@@ -283,7 +283,7 @@ provide initially the following information:
 - Description (optional): A description of the entry. This will be displayed as a paragraph of text at the top of the entry.
 - Notes (optional): Notes to display at the bottom of the entry. Notes are often used to provide additional information
   about the entry.
-- Data Source: The data source to use for the entry. Select a data source from the dropdown list. Only data sources that
+- Dataset: The dataset to use for the entry. Select a dataset from the dropdown list. Only datasets that
   have been added to the report are available.
 - Width: The width of the entry. The width is used to determine how much space the entry takes up in the report. The width
   is a fraction of the total width of the report.  The following widths are supported:

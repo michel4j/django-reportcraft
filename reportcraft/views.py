@@ -180,7 +180,7 @@ class DataSourceList(*EDIT_MIXINS, ListView):
     template_name = 'reportcraft/off-canvas-list.html'
     context_object_name = 'items'
     link_url = 'source-editor'
-    list_title = 'Data Sources'
+    list_title = 'Datasets'
     add_url = 'new-data-source'
 
     def get_queryset(self):
@@ -506,9 +506,9 @@ class CloneDataSource(*EDIT_MIXINS, ModalConfirmView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = "Clone Data Source"
+        context['title'] = "Clone Dataset"
         context['message'] = (
-            "Are you sure you want to clone this source? "
+            "Are you sure you want to clone this dataset? "
             "This will also clone all associated models and fields."
         )
         return context
@@ -530,7 +530,7 @@ class CloneReport(*EDIT_MIXINS, ModalConfirmView):
         context['message'] = (
             "Are you sure you want to clone this report? "
             "This will also clone all associated entries."
-            "Data Sources will not be cloned."
+            "Datasets will not be cloned."
         )
         return context
 

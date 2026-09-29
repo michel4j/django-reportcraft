@@ -74,7 +74,7 @@ class DataSource(models.Model):
     objects = CodeManager()
 
     class Meta:
-        verbose_name = 'Data Source'
+        verbose_name = 'Dataset'
 
     def __str__(self):
         return self.name

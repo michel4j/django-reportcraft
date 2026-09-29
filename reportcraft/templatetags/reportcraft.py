@@ -27,7 +27,7 @@ yaml.representer.SafeRepresenter.add_representer(str, str_presenter)
 def entry_html(entry):
     data = {
         'Type': entry.get_kind_display(),
-        'Data Source': f"{entry.source}",
+        'Dataset': f"{entry.source}",
         'Attributes': entry.attrs
     }
 

@@ -20,6 +20,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterModelOptions(
             name='datasource',
-            options={'verbose_name': 'Data Source'},
+            options={'verbose_name': 'Dataset'},
         ),
     ]
