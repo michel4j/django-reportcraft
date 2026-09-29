@@ -101,3 +101,62 @@ class DeleteSubject(ModalDeleteView):
 class HomeView(TemplateView):
     template_name = "example/home.html"
 
+
+from reportcraft.views import DictReportView, CodeReportView
+from demo.example.reports import academic_analytics_report
+
+KPI_DEMO_PAYLOAD = {
+    "title": "Executive KPI Report",
+    "description": "Real-time performance indicators and operational metrics",
+    "theme": "default",
+    "sections": [
+        {
+            "style": "row",
+            "content": [
+                {
+                    "title": "Operational Highlights",
+                    "kind": "richtext",
+                    "style": "col-md-12",
+                    "text": "## Executive Summary\n* **Platform Status**: Operational (99.98% uptime)\n* **Active Users**: 14,250 active this month\n* **Institutional Partners**: 48 active partner organizations",
+                },
+                {
+                    "title": "Quarterly Volume Trends",
+                    "kind": "bars",
+                    "style": "col-md-6",
+                    "scheme": "Live8",
+                    "categories": "quarter",
+                    "values": ["outputs"],
+                    "data": [
+                        {"quarter": "Q1", "outputs": 1250},
+                        {"quarter": "Q2", "outputs": 1480},
+                        {"quarter": "Q3", "outputs": 1620},
+                        {"quarter": "Q4", "outputs": 1950},
+                    ],
+                },
+                {
+                    "title": "Regional Distribution",
+                    "kind": "columns",
+                    "style": "col-md-6",
+                    "scheme": "Tableau10",
+                    "categories": "region",
+                    "values": ["institutions"],
+                    "data": [
+                        {"region": "North America", "institutions": 28},
+                        {"region": "Europe", "institutions": 14},
+                        {"region": "Asia Pacific", "institutions": 9},
+                        {"region": "Latin America", "institutions": 5},
+                    ],
+                },
+            ],
+        }
+    ],
+}
+
+
+class DictReportDemoView(DictReportView):
+    report_dict = KPI_DEMO_PAYLOAD
+
+
+class CodeReportDemoView(CodeReportView):
+    report = academic_analytics_report
+
