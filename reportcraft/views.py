@@ -226,17 +226,73 @@ class ReportIndexView(ItemListView):
     link_url = 'report-view'
     link_kwarg = 'slug'
     limit_section = None
+    include_code_reports = True
+    registry = None
+
+    def get_registry(self):
+        if self.registry is not None:
+            return self.registry
+        from reportcraft.registry import site
+        return site
 
     def get_link_url(self, obj):
         """
         Get the URL for the report view.
-        :param obj: Report object
-        :return: URL for the report view
+        Supports both ORM Report instances (using slug) and registered code report
+        dictionary representations or objects (using obj.url or reverse('report-view', kwargs={'slug': obj.slug})).
+        :param obj: Report object, dictionary representation, or CodeReport instance
+        :return: URL string for the report
         """
-        return reverse(self.link_url, kwargs={self.link_kwarg: obj.slug})
+        url = obj.get('url') if isinstance(obj, dict) else getattr(obj, 'url', None)
+        if url:
+            return url
+        slug = obj.get('slug') if isinstance(obj, dict) else getattr(obj, 'slug', None)
+        if not slug:
+            return ''
+        link_url = self.link_url or 'report-view'
+        link_kwarg = self.link_kwarg or 'slug'
+        return reverse(link_url, kwargs={link_kwarg: slug})
 
     def get_limit_section(self):
         return self.limit_section
+
+    def filter_code_reports_by_search(self, items, search_text):
+        if not search_text:
+            return items
+        words = search_text.lower().split()
+        matched = []
+        for item in items:
+            report = item.get('report') if isinstance(item, dict) else item
+            text_corpus = [
+                str(item.get('title', '') if isinstance(item, dict) else getattr(item, 'title', '')),
+                str(item.get('slug', '') if isinstance(item, dict) else getattr(item, 'slug', '')),
+                str(item.get('description', '') if isinstance(item, dict) else getattr(item, 'description', '')),
+            ]
+            if report is not None:
+                text_corpus.append(str(getattr(report, 'notes', '')))
+                for entry in getattr(report, 'entries', []):
+                    text_corpus.append(str(getattr(entry, 'title', '')))
+            combined = ' '.join(text_corpus).lower()
+            if all(word in combined for word in words):
+                matched.append(item)
+        return matched
+
+    def get_code_reports(self):
+        if not getattr(self, 'include_code_reports', True):
+            return []
+        registry = self.get_registry()
+        section = self.get_limit_section()
+        if section:
+            items = registry.get_catalog_items(section=section)
+        else:
+            items = registry.get_catalog_items()
+
+        search_query = ''
+        if hasattr(self, 'request') and self.request and hasattr(self.request, 'GET'):
+            search_query = self.request.GET.get('search', '').strip()
+        if search_query:
+            items = self.filter_code_reports_by_search(items, search_query)
+        return items
 
     def get_queryset(self):
         section = self.get_limit_section()
@@ -244,11 +300,31 @@ class ReportIndexView(ItemListView):
             self.queryset = self.model.objects.filter(section=section)
         else:
             self.queryset = self.model.objects.all()
-        return super().get_queryset()
+        qs = super().get_queryset()
+
+        code_reports = self.get_code_reports()
+        if not code_reports:
+            return qs
+
+        orm_slugs = {r.slug for r in qs}
+        unique_code_reports = [
+            r for r in code_reports
+            if (r.get('slug') if isinstance(r, dict) else getattr(r, 'slug', None)) not in orm_slugs
+        ]
+        return list(qs) + unique_code_reports
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'section' not in context:
+            section = self.get_limit_section()
+            if section:
+                context['section'] = section
+        return context
 
 
 class ReportIndex(*VIEW_MIXINS, ReportIndexView):
     pass
+
 
 
 class EditorReportList(*EDIT_MIXINS, ListView):
