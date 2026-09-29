@@ -32,16 +32,45 @@ class ReportView(DetailView):
     model = models.Report
     data_url = 'report-data'
 
+    def get_object(self, queryset=None):
+        slug = self.kwargs.get(self.slug_url_kwarg or 'slug')
+        try:
+            return super().get_object(queryset=queryset)
+        except Http404:
+            if slug:
+                from reportcraft.registry import site
+                code_report = site.get_report(slug)
+                if code_report is not None:
+                    return code_report
+            raise
+
     def get_data_url(self):
         """
         Get the URL for the report data endpoint.
         :return: URL for the report data
         """
-        return reverse(self.data_url, kwargs={'slug': self.object.slug})
+        slug = getattr(self.object, 'slug', None)
+        if slug:
+            return reverse(self.data_url, kwargs={'slug': slug})
+        return ''
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['report'] = self.object
+        from reportcraft.code.report import CodeReport
+        if isinstance(self.object, CodeReport):
+            filters = dict(self.request.GET.items()) if hasattr(self, 'request') and self.request and hasattr(self.request, 'GET') else {}
+            payload = self.object.generate(filters=filters)
+            context['code_report'] = self.object
+            context['payload'] = payload
+            context['report'] = {
+                'title': payload.get('title', getattr(self.object, 'title', 'Report')),
+                'description': payload.get('description', getattr(self.object, 'description', '')),
+                'theme': payload.get('theme', getattr(self.object, 'theme', 'default')),
+                'notes': payload.get('notes', getattr(self.object, 'notes', '')),
+                'slug': getattr(self.object, 'slug', ''),
+            }
+        else:
+            context['report'] = self.object
         context['data_url'] = self.get_data_url()
         context['query'] = self.get_query_string()
         return context
@@ -162,10 +191,15 @@ class DataView(View):
         :param kwargs: keyword arguments
         :return: dictionary with report data
         """
-
+        slug = slug or kwargs.get('slug', '')
         queryset = self.get_queryset()
         report = queryset.filter(slug=slug).first()
         if not report:
+            from reportcraft.registry import site
+            code_report = site.get_report(slug)
+            if code_report is not None:
+                filters = dict(self.request.GET.items()) if hasattr(self, 'request') and self.request and hasattr(self.request, 'GET') else {}
+                return code_report.generate(filters=filters)
             raise Http404('Report not found')
 
         filters = dict(self.request.GET.items())
@@ -259,22 +293,15 @@ class ReportIndexView(ItemListView):
     def filter_code_reports_by_search(self, items, search_text):
         if not search_text:
             return items
-        words = search_text.lower().split()
+        from reportcraft.registry import CatalogItem
         matched = []
         for item in items:
-            report = item.get('report') if isinstance(item, dict) else item
-            text_corpus = [
-                str(item.get('title', '') if isinstance(item, dict) else getattr(item, 'title', '')),
-                str(item.get('slug', '') if isinstance(item, dict) else getattr(item, 'slug', '')),
-                str(item.get('description', '') if isinstance(item, dict) else getattr(item, 'description', '')),
-            ]
-            if report is not None:
-                text_corpus.append(str(getattr(report, 'notes', '')))
-                for entry in getattr(report, 'entries', []):
-                    text_corpus.append(str(getattr(entry, 'title', '')))
-            combined = ' '.join(text_corpus).lower()
-            if all(word in combined for word in words):
-                matched.append(item)
+            if hasattr(item, 'matches_search'):
+                if item.matches_search(search_text):
+                    matched.append(item)
+            elif isinstance(item, dict):
+                if CatalogItem(item).matches_search(search_text):
+                    matched.append(item)
         return matched
 
     def get_code_reports(self):

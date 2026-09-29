@@ -17,7 +17,7 @@ class FieldValuesListProtocol(Protocol):
     Mimics the minimal Django QuerySet.values_list() interface needed by entries.py.
     """
 
-    def values_list(self, *field_names: str, flat: bool = False) -> Sequence[Any]:
+    def values_list(self, field_name: str, *, flat: bool = False) -> Sequence[str]:
         """
         Return sequence of field names when called as values_list('name', flat=True).
         """

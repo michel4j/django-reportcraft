@@ -192,10 +192,10 @@ class EndToEndReportDemoTests(TestCase):
 
         content = response.content.decode("utf-8")
         self.assertIn('<script id="rc-report-data" type="application/json">', content)
-        self.assertIn("Executive KPI Dashboard", content)
+        self.assertIn("Executive KPI Report", content)
 
         data = self._extract_inline_json(response)
-        self.assertEqual(data["title"], "Executive KPI Dashboard")
+        self.assertEqual(data["title"], "Executive KPI Report")
         self.assertEqual(data["description"], "Real-time performance indicators and operational metrics")
         self.assertEqual(len(data["sections"]), 1)
         entries = data["sections"][0]["content"]
@@ -215,14 +215,14 @@ class EndToEndReportDemoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/json")
         data = response.json()
-        self.assertEqual(data["title"], "Executive KPI Dashboard")
+        self.assertEqual(data["title"], "Executive KPI Report")
         self.assertEqual(len(data["sections"][0]["content"]), 3)
 
         # 2. Accept: application/json header
         response = self.client.get(reverse("dict-report-demo"), HTTP_ACCEPT="application/json")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/json")
-        self.assertEqual(response.json()["title"], "Executive KPI Dashboard")
+        self.assertEqual(response.json()["title"], "Executive KPI Report")
 
         # 3. Compound Accept header
         response = self.client.get(
@@ -231,7 +231,7 @@ class EndToEndReportDemoTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/json")
-        self.assertEqual(response.json()["title"], "Executive KPI Dashboard")
+        self.assertEqual(response.json()["title"], "Executive KPI Report")
 
     def test_code_report_demo_context_data(self):
         """Verify view context contains code_report, report metadata, and payload."""
@@ -248,7 +248,7 @@ class EndToEndReportDemoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("payload", response.context)
         self.assertIn("report", response.context)
-        self.assertEqual(response.context["report"]["title"], "Executive KPI Dashboard")
+        self.assertEqual(response.context["report"]["title"], "Executive KPI Report")
 
     def test_code_report_demo_unknown_filter_ignored(self):
         """Verify unrecognized URL parameters do not break report generation."""

@@ -221,7 +221,77 @@ class TableEntry(CodeEntry):
         )
 
 
-class BarChartEntry(CodeEntry):
+class _CategoricalChartEntry(CodeEntry):
+    """
+    Shared parent class for categorical chart entries (horizontal bar charts and vertical column charts).
+    """
+
+    def __init__(
+        self,
+        title: str = "",
+        kind: str = "bars",
+        dataset: Optional[DatasetProtocol] = None,
+        categories: str = "",
+        values: Any = None,
+        scheme: str = "Live8",
+        color_by: Optional[str] = None,
+        sort_by: Optional[str] = None,
+        sort_desc: bool = False,
+        grouped: bool = False,
+        limit: Optional[int] = None,
+        scale: str = "linear",
+        normalize: bool = False,
+        facets: Optional[str] = None,
+        ticks_every: int = 1,
+        width: Union[int, Width, str] = Width.FULL,
+        description: str = "",
+        notes: str = "",
+        filters: Any = None,
+        attrs: Optional[Mapping[str, Any]] = None,
+        **extra_attrs: Any,
+    ):
+        chart_attrs = dict(attrs or {})
+        chart_attrs.update(extra_attrs)
+
+        chart_attrs["categories"] = categories
+        if values is not None:
+            chart_attrs["values"] = [values] if isinstance(values, str) else list(values)
+        elif "values" not in chart_attrs:
+            chart_attrs["values"] = []
+
+        chart_attrs["scheme"] = scheme
+        if color_by is not None:
+            chart_attrs["color_by"] = color_by
+        if sort_by is not None:
+            chart_attrs["sort_by"] = sort_by
+        if sort_desc:
+            chart_attrs["sort_desc"] = sort_desc
+        if grouped:
+            chart_attrs["grouped"] = grouped
+        if limit is not None:
+            chart_attrs["limit"] = limit
+        if scale:
+            chart_attrs["scale"] = scale
+        if normalize:
+            chart_attrs["normalize"] = normalize
+        if facets is not None:
+            chart_attrs["facets"] = facets
+        if ticks_every != 1:
+            chart_attrs["ticks_every"] = ticks_every
+
+        super().__init__(
+            title=title,
+            kind=kind,
+            attrs=chart_attrs,
+            dataset=dataset,
+            width=width,
+            description=description,
+            notes=notes,
+            filters=filters,
+        )
+
+
+class BarChartEntry(_CategoricalChartEntry):
     """
     Specialized CodeEntry for horizontal bar charts.
     """
@@ -249,48 +319,32 @@ class BarChartEntry(CodeEntry):
         attrs: Optional[Mapping[str, Any]] = None,
         **extra_attrs: Any,
     ):
-        chart_attrs = dict(attrs or {})
-        chart_attrs.update(extra_attrs)
-
-        chart_attrs["categories"] = categories
-        if values is not None:
-            chart_attrs["values"] = [values] if isinstance(values, str) else list(values)
-        elif "values" not in chart_attrs:
-            chart_attrs["values"] = []
-
-        chart_attrs["scheme"] = scheme
-        if color_by is not None:
-            chart_attrs["color_by"] = color_by
-        if sort_by is not None:
-            chart_attrs["sort_by"] = sort_by
-        if sort_desc:
-            chart_attrs["sort_desc"] = sort_desc
-        if grouped:
-            chart_attrs["grouped"] = grouped
-        if limit is not None:
-            chart_attrs["limit"] = limit
-        if scale:
-            chart_attrs["scale"] = scale
-        if normalize:
-            chart_attrs["normalize"] = normalize
-        if facets is not None:
-            chart_attrs["facets"] = facets
-        if ticks_every != 1:
-            chart_attrs["ticks_every"] = ticks_every
-
         super().__init__(
             title=title,
             kind="bars",
-            attrs=chart_attrs,
             dataset=dataset,
+            categories=categories,
+            values=values,
+            scheme=scheme,
+            color_by=color_by,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            grouped=grouped,
+            limit=limit,
+            scale=scale,
+            normalize=normalize,
+            facets=facets,
+            ticks_every=ticks_every,
             width=width,
             description=description,
             notes=notes,
             filters=filters,
+            attrs=attrs,
+            **extra_attrs,
         )
 
 
-class ColumnChartEntry(CodeEntry):
+class ColumnChartEntry(_CategoricalChartEntry):
     """
     Specialized CodeEntry for vertical column charts.
     """
@@ -318,44 +372,28 @@ class ColumnChartEntry(CodeEntry):
         attrs: Optional[Mapping[str, Any]] = None,
         **extra_attrs: Any,
     ):
-        chart_attrs = dict(attrs or {})
-        chart_attrs.update(extra_attrs)
-
-        chart_attrs["categories"] = categories
-        if values is not None:
-            chart_attrs["values"] = [values] if isinstance(values, str) else list(values)
-        elif "values" not in chart_attrs:
-            chart_attrs["values"] = []
-
-        chart_attrs["scheme"] = scheme
-        if color_by is not None:
-            chart_attrs["color_by"] = color_by
-        if sort_by is not None:
-            chart_attrs["sort_by"] = sort_by
-        if sort_desc:
-            chart_attrs["sort_desc"] = sort_desc
-        if grouped:
-            chart_attrs["grouped"] = grouped
-        if limit is not None:
-            chart_attrs["limit"] = limit
-        if scale:
-            chart_attrs["scale"] = scale
-        if normalize:
-            chart_attrs["normalize"] = normalize
-        if facets is not None:
-            chart_attrs["facets"] = facets
-        if ticks_every != 1:
-            chart_attrs["ticks_every"] = ticks_every
-
         super().__init__(
             title=title,
             kind="columns",
-            attrs=chart_attrs,
             dataset=dataset,
+            categories=categories,
+            values=values,
+            scheme=scheme,
+            color_by=color_by,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            grouped=grouped,
+            limit=limit,
+            scale=scale,
+            normalize=normalize,
+            facets=facets,
+            ticks_every=ticks_every,
             width=width,
             description=description,
             notes=notes,
             filters=filters,
+            attrs=attrs,
+            **extra_attrs,
         )
 
 

@@ -531,7 +531,7 @@ class CodeReportViewTestCase(TestCase):
         self.assertEqual(len(report_dict['sections']), 1)
 
 
-from demo.example.models import Country
+from demo.example.models import Country, Institution
 from reportcraft.models import DataSource, Entry, Report
 from reportcraft.protocols import (
     DatasetProtocol,
@@ -550,6 +550,7 @@ from reportcraft.code import (
     HistogramEntry,
     InMemFieldCollection,
     InMemFieldQuerySet,
+    LayoutRow,
     LikertEntry,
     PieChartEntry,
     PlotEntry,
@@ -686,6 +687,37 @@ class DatasetsTestCase(TestCase):
         data = ds.get_data()
         self.assertEqual(len(data), 1)
         self.assertIn("density", data[0])
+
+    def test_queryset_dataset_relation_fields(self):
+        c = Country.objects.create(name="Canada", code="CAN")
+        Institution.objects.create(name="UofT", city="Toronto", country=c)
+
+        # Relation field requested via select (list of strings)
+        ds1 = QuerySetDataset(Institution.objects.all())
+        data1 = ds1.get_data(select=["name", "country__name"])
+        self.assertEqual(len(data1), 1)
+        self.assertIn("country__name", data1[0])
+        self.assertEqual(data1[0]["country__name"], "Canada")
+
+        # Relation field requested via select (single string)
+        data1_single = ds1.get_data(select="country__name")
+        self.assertEqual(len(data1_single), 1)
+        self.assertIn("country__name", data1_single[0])
+        self.assertEqual(data1_single[0]["country__name"], "Canada")
+
+        # Relation field declared in self.fields
+        ds2 = QuerySetDataset(Institution.objects.all(), fields=["name", "country__name"])
+        data2 = ds2.get_data()
+        self.assertEqual(len(data2), 1)
+        self.assertIn("country__name", data2[0])
+        self.assertEqual(data2[0]["country__name"], "Canada")
+
+        # Relation field preserved even when invalid field triggers fallback logic
+        ds3 = QuerySetDataset(Institution.objects.all(), fields=["name", "country__name", "non_existent_field"])
+        data3 = ds3.get_data()
+        self.assertEqual(len(data3), 1)
+        self.assertIn("country__name", data3[0])
+        self.assertEqual(data3[0]["country__name"], "Canada")
 
 
 class WidthTestCase(TestCase):
@@ -959,10 +991,11 @@ class CodeReportTestCase(TestCase):
         self.assertEqual(len(report.sections), 1)
 
         payload = report.generate()
-        self.assertEqual(len(payload["sections"]), 1)
+        self.assertEqual(len(payload["sections"]), 2)
         self.assertEqual(payload["sections"][0]["title"], "Deep Dive")
         self.assertEqual(payload["sections"][0]["theme"], "dark")
         self.assertEqual(len(payload["sections"][0]["content"]), 1)
+        self.assertEqual(payload["sections"][1]["content"][0]["title"], "Overview")
 
     def test_code_report_runtime_filter_propagation(self):
         report = CodeReport(
@@ -976,6 +1009,35 @@ class CodeReportTestCase(TestCase):
         # Should only contain Widget A
         self.assertEqual(len(bars_data), 1)
         self.assertEqual(bars_data[0]["Item"], "Widget A")
+
+    def test_code_report_layout_row_and_standalone_entries(self):
+        report = CodeReport(title="Layout Test", theme="neutral", notes="Base notes")
+        e1 = RichTextEntry(title="Stand 1", text="Standalone 1")
+        e2 = BarChartEntry(title="Row Entry", dataset=self.dataset, categories="item", values="count")
+        e3 = RichTextEntry(title="Stand 2", text="Standalone 2")
+
+        report.add_entry(e1)
+        row = LayoutRow(title="First Row", entries=[e2], style="two-col", theme="dark", notes="Row notes")
+        report.add_row(row)
+        report.add_entry(e3)
+
+        payload = report.generate()
+        self.assertEqual(len(payload["sections"]), 2)
+        # First section is the explicit LayoutRow
+        self.assertEqual(payload["sections"][0]["title"], "First Row")
+        self.assertEqual(payload["sections"][0]["theme"], "dark")
+        self.assertEqual(len(payload["sections"][0]["content"]), 1)
+        self.assertEqual(payload["sections"][0]["content"][0]["title"], "Row Entry")
+        # Second section is the default LayoutRow combining standalone entries
+        self.assertEqual(payload["sections"][1]["theme"], "neutral")
+        self.assertEqual(len(payload["sections"][1]["content"]), 2)
+        self.assertEqual(payload["sections"][1]["content"][0]["title"], "Stand 1")
+        self.assertEqual(payload["sections"][1]["content"][1]["title"], "Stand 2")
+
+    def test_categorical_chart_entry_hierarchy(self):
+        from reportcraft.code.entries import _CategoricalChartEntry
+        self.assertTrue(issubclass(BarChartEntry, _CategoricalChartEntry))
+        self.assertTrue(issubclass(ColumnChartEntry, _CategoricalChartEntry))
 
 
 class ReportRegistryTestCase(TestCase):
@@ -1246,3 +1308,64 @@ class ReportIndexViewTestCase(TestCase):
             for obj in object_list
         ].count("db-report-1")
         self.assertEqual(slug_counts, 1)
+
+    def test_registered_code_report_view_routing(self):
+        site.clear()
+        code_report = CodeReport(
+            title="Registered Code Report",
+            slug="registered-code-report",
+            theme="neutral",
+            description="A code report available via ReportView",
+            entries=[
+                RichTextEntry(title="Intro", text="Welcome"),
+            ],
+        )
+        site.register(code_report)
+
+        # 1. ReportView HTML rendering with inline payload
+        response = self.client.get(reverse('report-view', kwargs={'slug': 'registered-code-report'}))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'reportcraft/report.html')
+        self.assertIn('code_report', response.context)
+        self.assertEqual(response.context['code_report'], code_report)
+        self.assertIn('payload', response.context)
+        self.assertEqual(response.context['payload']['title'], "Registered Code Report")
+        content = response.content.decode('utf-8')
+        self.assertIn('<script id="rc-report-data" type="application/json">', content)
+        self.assertIn("Registered Code Report", content)
+
+        # 2. DataView JSON API endpoint
+        api_response = self.client.get(reverse('report-data', kwargs={'slug': 'registered-code-report'}))
+        self.assertEqual(api_response.status_code, 200)
+        self.assertEqual(api_response['Content-Type'], 'application/json')
+        data = api_response.json()
+        self.assertEqual(data['title'], "Registered Code Report")
+        self.assertEqual(len(data['sections']), 1)
+        self.assertEqual(data['sections'][0]['content'][0]['title'], "Intro")
+
+        # 3. 404 for unknown slug
+        resp_404 = self.client.get(reverse('report-view', kwargs={'slug': 'non-existent-report-slug'}))
+        self.assertEqual(resp_404.status_code, 404)
+        api_resp_404 = self.client.get(reverse('report-data', kwargs={'slug': 'non-existent-report-slug'}))
+        self.assertEqual(api_resp_404.status_code, 404)
+
+    def test_catalog_item_matches_search(self):
+        code_report = CodeReport(
+            title="Finance Report Q3",
+            slug="fin-q3",
+            description="Third quarter financial metrics",
+            notes="Audit approved",
+            entries=[RichTextEntry(title="Revenue Breakdown", text="Details")],
+        )
+        item = CatalogItem(
+            slug="fin-q3",
+            title="Finance Report Q3",
+            description="Third quarter financial metrics",
+            report=code_report,
+        )
+        self.assertTrue(item.matches_search("finance"))
+        self.assertTrue(item.matches_search("revenue"))
+        self.assertTrue(item.matches_search("audit"))
+        self.assertTrue(item.matches_search("fin-q3"))
+        self.assertFalse(item.matches_search("nonexistent"))
+

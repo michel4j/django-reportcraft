@@ -106,7 +106,7 @@ from reportcraft.views import DictReportView, CodeReportView
 from demo.example.reports import academic_analytics_report
 
 KPI_DEMO_PAYLOAD = {
-    "title": "Executive KPI Dashboard",
+    "title": "Executive KPI Report",
     "description": "Real-time performance indicators and operational metrics",
     "theme": "default",
     "sections": [

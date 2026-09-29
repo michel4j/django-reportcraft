@@ -552,8 +552,8 @@ You can specify the report dictionary in three ways:
 2. **Callable attribute**: Assign a callable (or ``staticmethod``) that accepts ``request`` or no arguments.
 3. **Method override**: Override ``get_report_dict(self, request=None)`` for dynamic, user-dependent payloads.
 
-Example: KPI Dashboard View
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Example: KPI Report View
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
