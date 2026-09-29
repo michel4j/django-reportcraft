@@ -55,7 +55,8 @@ academic_analytics_report = CodeReport(
             text="### Academic & Personnel Intelligence\n\n"
                  "This report is defined purely in version-controlled Python code using **Django ReportCraft**'s "
                  "code-first API (`CodeReport`, `QuerySetDataset`, and typed entries). It synthesizes operational data "
-                 "across **Institutions**, **Academic Subjects**, and **Personnel** without requiring database report rows.",
+                 "across **Institutions**, **Academic Subjects**, and **Personnel** without requiring "
+                 "database report rows.",
             width=Width.FULL,
         ),
         TableEntry(
