@@ -240,7 +240,7 @@ table {
       color: var(--bs-body-color);
       page-break-inside: avoid;
       font-family: var(--bs-font-monospace), monospace;
-      font-size: 0.9em;
+      font-size: 0.9rem;
       line-height: 1.6;
       margin-bottom: 1.6em;
       max-width: 100%;
@@ -255,23 +255,23 @@ table {
 
 i {
   &.icon-xs {
-    font-size: 1em;
+    font-size: 1rem;
   }
 
   &.icon-sm {
-    font-size: 1.25em;
+    font-size: 1.25rem;
   }
 
   &.icon-md {
-    font-size: 1.5em;
+    font-size: 1.5rem;
   }
 
   &.icon-lg {
-    font-size: 2em;
+    font-size: 2rem;
   }
 
   &.icon-xl {
-    font-size: 3em;
+    font-size: 3rem;
   }
 
 }
@@ -381,7 +381,7 @@ svg {
 
 .rc-chart-swatches {
   margin-bottom: 0.5em;
-  font-size: 90%;
+  font-size: 0.9rem;
 
   .rc-chart-swatch > svg {
     margin-right: 0.5em;
@@ -397,11 +397,10 @@ svg {
       margin-right: 1em;
     }
   }
-
 }
 
 svg.rc-chart-ramp {
-  font-size: 1em !important;
+  font-size: 1rem !important;
 }
 .report-sketch {
   --bs-font-sans-serif: var(--rc-script-font);
@@ -450,7 +449,7 @@ html.report-editor, body.report-editor {
   max-height: 200px;
   overflow-y: auto;
   overflow-x: auto;
-  font-size: 0.9em;
+  font-size: 0.9rem;
   min-height: 0;
 }
 
@@ -478,7 +477,7 @@ html.report-editor, body.report-editor {
   }
 
   .text-sm {
-    font-size: 0.8em;
+    font-size: 0.8rem;
   }
 }
 

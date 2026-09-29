@@ -22,7 +22,7 @@
       <envs />
     </TaskOptions>
     <TaskOptions isEnabled="true">
-      <option name="arguments" value="-t compressed -m $FileName$ $FileNameWithoutExtension$.min.css" />
+      <option name="arguments" value="--style=compressed $FileName$ $FileNameWithoutExtension$.min.css" />
       <option name="checkSyntaxErrors" value="true" />
       <option name="description" />
       <option name="exitCodeBehavior" value="ERROR" />
@@ -34,7 +34,7 @@
         <array />
       </option>
       <option name="outputFromStdout" value="false" />
-      <option name="program" value="sassc" />
+      <option name="program" value="sass" />
       <option name="runOnExternalChanges" value="true" />
       <option name="scopeName" value="SCSS Files" />
       <option name="trackOnlyRoot" value="true" />
