@@ -559,7 +559,7 @@ function drawBarChart(figure, chart, options) {
     const plotOptions = {
         className: "rc-chart",
         style: {
-            fontSize: '1em',
+            fontSize: '1rem',
         },
         width: options.width,
         color: {
@@ -613,6 +613,7 @@ function drawBarChart(figure, chart, options) {
     if (chart.kind === 'bars') {
         marks.push(new Plot.ruleX([0]));
         marks.push(new Plot.barX(chart.data, markOptions));
+        plotOptions.marginBottom = fontSizePix * 2;
     } else {    // columns
         plotOptions.height = options.height || 400;
         plotOptions.marginBottom = fontSizePix * 3;
@@ -649,7 +650,7 @@ function drawXYPlot(figure, chart, options) {
         marginTop: 40,
         marginBottom: 40,
         style: {
-            fontSize: '1em',
+            fontSize: '1rem',
         },
         color: {
             legend: true,
@@ -737,7 +738,7 @@ function drawHistogram(figure, chart, options) {
     const plotOptions = {
         className: "rc-chart",
         style: {
-            fontSize: '1em',
+            fontSize: '1rem',
         },
         width: options.width || 800,
         height: options.height || 600,
@@ -801,7 +802,7 @@ function drawPieChart(figure, chart, options) {
         .attr("class", "rc-chart-swatch")
         .style("display", "inline-flex")
         .style("align-items", "center")
-        .style("font-size", '1em')
+        .style("font-size", '1rem')
         .style("margin-right", "10px")
         .style("margin-bottom", "5px")
         .html(d => `<svg width="15" height="15" fill="${color(d)}">
@@ -857,7 +858,7 @@ function drawTimeline(figure, chart, options) {
     const plotOptions = {
         className: "rc-chart",
         style: {
-            fontSize: '1em',
+            fontSize: '1rem',
         },
         width: options.width || 800,
         height: options.height || 600,
@@ -911,7 +912,7 @@ function drawGeoChart(figure, chart, options) {
     const plotOptions = {
         className: "rc-chart",
         style: {
-            fontSize: '1em',
+            fontSize: '1rem',
         },
         width: options.width || 800,
         height: options.height || 600,
@@ -1069,7 +1070,7 @@ function drawLikertChart(figure, chart, options) {
     const plotOptions = {
         className: "rc-chart",
         style: {
-            fontSize: '1em',
+            fontSize: '1rem',
         },
         width: options.width,
         color: {

@@ -45,12 +45,12 @@ class DictReportView(TemplateView):
 PROTOTYPE_REPORT_DICT = {
     'title': 'Executive Leadership KPI Overview',
     'description': 'A preformed dictionary report rendered directly at a custom URL endpoint without database storage.',
-    'theme': 'default',
+    'theme': 'sketch',
     'sections': [
         {
             'title': 'High-Level Metrics',
             'style': 'row',
-            'theme': 'default',
+            'theme': 'sketch',
             'notes': 'Rendered via inline JSON embedding in a single HTTP request.',
             'content': [
                 {
@@ -77,7 +77,7 @@ PROTOTYPE_REPORT_DICT = {
                 {
                     'title': 'Outputs by Domain & Quarter',
                     'kind': 'table',
-                    'style': 'col-md-8',
+                    'style': 'col-md-6',
                     'header': 'column row',
                     'description': 'Publications broken down by subject category',
                     'notes': 'Quarterly snapshot from institutional warehouse',
@@ -94,9 +94,11 @@ PROTOTYPE_REPORT_DICT = {
                 {
                     'title': 'Quarterly Output Trends',
                     'kind': 'bars',
-                    'style': 'col-md-4',
+                    'style': 'col-md-6',
                     'description': 'Subject output distribution',
                     'scheme': 'Live8',
+                    'y': 'Domain',
+                    'x': 'Outputs',
                     'data': [
                         {'Domain': 'Computer Science', 'Outputs': 225},
                         {'Domain': 'Biomedical Sciences', 'Outputs': 184},
