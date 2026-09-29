@@ -1,3 +1,12 @@
+"""
+Entry Generators for Django ReportCraft.
+
+Each generator function in this module queries data from an Entry's Reusable Dataset
+(applying baseline dataset filters, entry filters, and runtime filters) and structures
+the result into a normalized Visualization Payload consumed by client Entry Renderers
+(see docs/adr/0003-client-side-rendering-with-observable-plot-and-d3.md).
+"""
+
 import math
 from collections import defaultdict
 from typing import Any, Literal

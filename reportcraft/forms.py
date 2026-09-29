@@ -75,6 +75,12 @@ class DataFieldForm(ModalModelForm):
             'name', 'model', 'label', 'default', 'expression', 'precision',
             'source', 'position', 'ordering',
         )
+        labels = {
+            'expression': _("Calculation Expression"),
+        }
+        help_texts = {
+            'expression': _("Formula expression (e.g. Sum(TotalAmount) or Concat(First, ' ', Last))"),
+        }
         widgets = {
             'default': forms.TextInput(),
             'expression': forms.Textarea(attrs={'rows': "2"}),
@@ -122,18 +128,25 @@ class DataFieldForm(ModalModelForm):
         name = data['name']
         expression = data.get('expression')
         if not model.has_field(name) and not expression:
-            self.add_error('expression', _(f"Required since `{model}` does not have a field named `{name}`"))
+            self.add_error('expression', _(f"Calculation expression is required since `{model}` does not have a field named `{name}`"))
         return data
 
 
 class DataSourceForm(ModalModelForm):
-    group_fields = forms.CharField(required=False, help_text=_("Comma separated list of field names to group by"))
+    group_fields = forms.CharField(
+        label=_("Dimensions"),
+        required=False,
+        help_text=_("Comma-separated list of dimension fields used to group and aggregate data")
+    )
 
     class Meta:
         model = models.DataSource
         fields = (
             'name', 'group_by', 'limit', 'group_fields', 'description', 'filters'
         )
+        labels = {
+            'filters': _("Dataset Filters"),
+        }
         widgets = {
             'group_by': forms.HiddenInput,
             'description': forms.Textarea(attrs={'rows': "2"}),
@@ -141,7 +154,7 @@ class DataSourceForm(ModalModelForm):
         }
         help_texts = {
             'limit': _("Maximum number of records"),
-            'filters': _("Use only field names from the source. ")
+            'filters': _("Baseline filter expression applied to all entries using this dataset (use only fields from this dataset).")
         }
 
     def __init__(self, *args, **kwargs):
@@ -193,16 +206,16 @@ class DataModelForm(ModalModelForm):
             group_fields = self.instance.get_group_fields()
             for field_name, field in group_fields.items():
                 group_name = f'{field_name}__group'
-                self.fields[group_name] = forms.CharField(label=_(f'{field_name.title()} Group'), required=True)
-                self.fields[group_name].help_text = f'Enter expression for {field_name} grouping'
+                self.fields[group_name] = forms.CharField(label=_(f'{field_name.title()} Dimension'), required=True)
+                self.fields[group_name].help_text = f'Enter calculation expression for {field_name} dimension'
                 if field:
                     self.fields[group_name].initial = field.expression
                 self.extra_fields[field_name] = group_name
         else:
             for field_name in self.source.group_by:
                 group_name = f'{field_name}__group'
-                self.fields[group_name] = forms.CharField(label=_(f'{field_name.title()} Group'), required=True)
-                self.fields[group_name].help_text = f'Enter expression for {field_name} grouping'
+                self.fields[group_name] = forms.CharField(label=_(f'{field_name.title()} Dimension'), required=True)
+                self.fields[group_name].help_text = f'Enter calculation expression for {field_name} dimension'
                 self.extra_fields[field_name] = group_name
 
         extra_div = Div(*[Div(field, css_class='col-12') for field in self.extra_fields.values()], css_class='row')
@@ -265,6 +278,15 @@ class EntryForm(ModalModelForm):
             'title', 'description', 'notes', 'style', 'kind', 'source', 'report', 'position',
             'filters'
         )
+        labels = {
+            'style': _("Width"),
+            'kind': _("Type"),
+            'source': _("Dataset"),
+            'filters': _("Entry Filters"),
+        }
+        help_texts = {
+            'filters': _("Optional filter expression scoped only to this visual entry (e.g. TotalAmount > 100)."),
+        }
         widgets = {
             'title': forms.TextInput(),
             'description': forms.TextInput(),
@@ -466,9 +488,9 @@ class EntryConfigForm(ModalModelForm):
 
 
 class TableForm(EntryConfigForm):
-    columns = forms.ModelChoiceField(label='Columns', required=True, queryset=models.DataField.objects.none())
-    rows = forms.ModelMultipleChoiceField(label='Rows', required=True, queryset=models.DataField.objects.none())
-    values = forms.ModelChoiceField(label='Values', required=False, queryset=models.DataField.objects.none())
+    columns = forms.ModelChoiceField(label=_('Columns (Dimension)'), required=True, queryset=models.DataField.objects.none())
+    rows = forms.ModelMultipleChoiceField(label=_('Rows (Dimensions)'), required=True, queryset=models.DataField.objects.none())
+    values = forms.ModelChoiceField(label=_('Metrics (Values)'), required=False, queryset=models.DataField.objects.none())
     total_column = forms.BooleanField(label="Row Totals", required=False)
     total_row = forms.BooleanField(label="Column Totals", required=False)
     force_strings = forms.BooleanField(label="Force Strings", required=False)
@@ -517,8 +539,8 @@ class TableForm(EntryConfigForm):
 
 
 class BarsForm(EntryConfigForm):
-    categories = forms.ModelChoiceField(label='Categories', required=True, queryset=models.DataField.objects.none())
-    values = forms.ModelMultipleChoiceField(label='Values', required=True, queryset=models.DataField.objects.none())
+    categories = forms.ModelChoiceField(label=_('Dimension (Categories)'), required=True, queryset=models.DataField.objects.none())
+    values = forms.ModelMultipleChoiceField(label=_('Metrics (Values)'), required=True, queryset=models.DataField.objects.none())
     color_by = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
     sort_by = forms.ModelChoiceField(label='Sort By', required=False, queryset=models.DataField.objects.none())
     grouped = forms.BooleanField(
@@ -526,7 +548,7 @@ class BarsForm(EntryConfigForm):
         widget=forms.Select(choices=((True, 'Grouped'), (False, 'Stacked'))),
     )
     facets = forms.ModelChoiceField(label='Facets', required=False, queryset=models.DataField.objects.none())
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.COLOR_SCHEMES, initial='Live8')
+    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.COLOR_SCHEMES, initial='Live8')
     ticks_every = forms.IntegerField(label='Ticks Every', required=False, initial=1)
     sort_desc = forms.BooleanField(
         label="Sort Order", required=False, widget=forms.Select(choices=((True, 'Descending'), (False, 'Ascending'))),
@@ -586,8 +608,8 @@ class PlotForm(EntryConfigForm):
     x_label = forms.CharField(label='X Label', required=False)
     y_label = forms.CharField(label='Y Label', required=False)
     x_value = forms.ModelChoiceField(label='X-Value', required=True, queryset=models.DataField.objects.none())
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
-    group_by = forms.ModelChoiceField(label='Group By', required=False, queryset=models.DataField.objects.none())
+    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
+    group_by = forms.ModelChoiceField(label=_('Group By Dimension'), required=False, queryset=models.DataField.objects.none())
     precision = forms.IntegerField(label="Precision", required=False)
     x_scale = forms.ChoiceField(label='X Scale', required=False, choices=SCALE_CHOICES, initial='linear')
     y_scale = forms.ChoiceField(label='Y Scale', required=False, choices=SCALE_CHOICES, initial='linear')
@@ -689,9 +711,9 @@ class ListForm(EntryConfigForm):
 
 
 class PieForm(ModalModelForm):
-    value = forms.ModelChoiceField(label='Value', required=True, queryset=models.DataField.objects.none())
-    label = forms.ModelChoiceField(label='Label', required=True, queryset=models.DataField.objects.none())
-    colors = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
+    value = forms.ModelChoiceField(label=_('Metric (Value)'), required=True, queryset=models.DataField.objects.none())
+    label = forms.ModelChoiceField(label=_('Dimension (Label)'), required=True, queryset=models.DataField.objects.none())
+    colors = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
 
     class Meta:
         model = models.Entry
@@ -811,13 +833,13 @@ class RichTextForm(EntryConfigForm):
 
 
 class HistogramForm(EntryConfigForm):
-    values = forms.ModelChoiceField(label='Values', required=True, queryset=models.DataField.objects.none())
-    group_by = forms.ModelChoiceField(label='Group By', required=False, queryset=models.DataField.objects.none())
+    values = forms.ModelChoiceField(label=_('Metric (Values)'), required=True, queryset=models.DataField.objects.none())
+    group_by = forms.ModelChoiceField(label=_('Group By Dimension'), required=False, queryset=models.DataField.objects.none())
     stack = forms.BooleanField(
         label='Stack Groups', required=False, initial=True,
         widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
     )
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
+    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
     bins = forms.IntegerField(label='Bins', required=False)
     scale = forms.ChoiceField(label='Y-Scale', required=False, choices=SCALE_CHOICES, initial='linear')
     binning = forms.ChoiceField(
@@ -889,7 +911,7 @@ class GeoCharForm(EntryConfigForm):
     location = forms.ModelChoiceField(label='Location', required=False, queryset=models.DataField.objects.none())
     map = forms.ChoiceField(label='Map', choices=MAP_CHOICES, initial='001')
     map_labels = forms.ChoiceField(label='Labels', choices=MAP_LABELS, initial='', required=False)
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=COLOR_SCHEMES, initial='Blues')
+    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=COLOR_SCHEMES, initial='Blues')
 
     SINGLE_FIELDS = ['latitude', 'longitude', 'location']
     OTHER_FIELDS = ['map', 'map_labels', 'scheme']
@@ -973,7 +995,7 @@ class LikertForm(EntryConfigForm):
     scores = forms.ModelChoiceField(label='Scores', required=False, queryset=models.DataField.objects.none())
 
     facets = forms.ModelChoiceField(label='Facets', required=False, queryset=models.DataField.objects.none())
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.DIVERGENT_SCHEMES, initial='RdBu')
+    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.DIVERGENT_SCHEMES, initial='RdBu')
     normalize = forms.BooleanField(
         label='Normalize', required=False, initial=False, widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
     )

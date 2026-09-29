@@ -242,6 +242,10 @@ class Parser:
 
 
 class ExpressionParser(Parser):
+    """
+    Compiles Calculation Expressions (domain formulas) into Django ORM Expression / Q objects
+    using a safe PyParsing grammar (see docs/adr/0001-pyparsing-dsl-for-expressions-and-filters.md).
+    """
     def __init__(self):
         self.expr = pp.Forward()
         self.double = pp.Combine(pp.Optional('-') + pp.Word(pp.nums) + '.' + pp.Word(pp.nums)).setParseAction(
@@ -327,10 +331,9 @@ class ExpressionParser(Parser):
 
 class FilterParser:
     """
-    A parser for boolean filter expressions that generates Django Q objects.
-
-    This class uses the pyparsing library to define a grammar for filter
-    expressions and translates them into Django's Q objects for database querying.
+    A parser for Filter Expressions (boolean predicates) that generates Django Q objects.
+    Translates domain filter grammar into Django's Q objects for database querying safely
+    (see docs/adr/0001-pyparsing-dsl-for-expressions-and-filters.md).
     """
 
     def __init__(self, identifiers: Sequence[str] = None):
@@ -542,11 +545,12 @@ def merge_data(
         unique: list[str],
 ) -> list[dict]:
     """
-    Combine data from multiple models into neat key-value pairs .if multiple entries exist for the same unique set,
-    they are merged into a single entry with later duplicated values taking precedence.
+    Combine aggregated data from multiple models along unique dimensional keys.
+    Powers in-memory Composite Dataset merging across disparate models
+    (see docs/adr/0002-in-memory-composite-dataset-merging.md).
 
     :param data: list of dictionaries
-    :param unique: Names of unique axes
+    :param unique: Names of unique dimension keys
     """
 
     # make a dictionary mapping unique values to unique entries, these will be populated later
