@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 from collections import defaultdict
 
@@ -13,8 +15,13 @@ from django.views.generic import DetailView, edit, ListView, TemplateView
 from crisp_modals.views import ModalUpdateView, ModalCreateView, ModalDeleteView, ModalConfirmView
 from itemlist.views import ItemListView
 
+from typing import TYPE_CHECKING
+
 from . import models, forms
 from .utils import CsvResponse
+
+if TYPE_CHECKING:
+    from .code.report import CodeReport
 
 VIEW_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get('VIEW',[])]
 EDIT_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get('EDIT', [])]
@@ -90,6 +97,44 @@ class DictReportView(TemplateView):
         if format_param == 'json' or 'application/json' in accept_header:
             return JsonResponse(self.get_report_dict(request), safe=False)
         return super().get(request, *args, **kwargs)
+
+
+class CodeReportView(DictReportView):
+    """
+    Renders a CodeReport at a URL endpoint.
+    Inherits from DictReportView for dual HTML and JSON content negotiation.
+    Extracts runtime URL query parameters and forwards them as filters to report.generate().
+    """
+    report: CodeReport | None = None
+
+    def get_report(self, request=None) -> CodeReport | None:
+        if request is None and hasattr(self, 'request'):
+            request = self.request
+        if callable(self.report):
+            try:
+                return self.report(request)
+            except TypeError:
+                return self.report()
+        return self.report
+
+    def get_report_dict(self, request=None) -> dict:
+        if request is None and hasattr(self, 'request'):
+            request = self.request
+        try:
+            report = self.get_report(request)
+        except TypeError:
+            report = self.get_report()
+
+        if report is None:
+            return {}
+
+        filters = dict(request.GET.items()) if request and hasattr(request, 'GET') else {}
+        return report.generate(filters=filters)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['code_report'] = self.get_report(self.request)
+        return context
 
 
 class DataView(View):

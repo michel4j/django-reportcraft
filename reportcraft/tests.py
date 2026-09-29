@@ -1,5 +1,5 @@
 import json
-from django.test import TestCase, Client, override_settings
+from django.test import TestCase, Client, RequestFactory, override_settings
 from django.template.loader import render_to_string
 from django.urls import path, include, reverse
 from django.db.models import *
@@ -7,7 +7,15 @@ from django.db.models.functions import *
 
 from reportcraft.models import Report
 from reportcraft.utils import ExpressionParser, FilterParser
-from reportcraft.views import DictReportView
+from reportcraft.views import DictReportView, CodeReportView
+from reportcraft.code import (
+    BarChartEntry,
+    CodeReport,
+    QuerySetDataset,
+    RichTextEntry,
+    StaticDataset,
+    TableEntry,
+)
 
 
 EXPRESSIONS = {
@@ -164,12 +172,77 @@ class EmptyDictReportView(DictReportView):
     pass
 
 
+SAMPLE_CODE_REPORT_DATASET = StaticDataset(
+    data=[
+        {"item": "Widget A", "count": 10, "category": "Hardware"},
+        {"item": "Widget B", "count": 20, "category": "Hardware"},
+        {"item": "Gadget X", "count": 15, "category": "Electronics"},
+    ],
+    labels={"item": "Item", "count": "Count", "category": "Category"}
+)
+
+SAMPLE_CODE_REPORT = CodeReport(
+    title="Inventory Status Report",
+    description="Live warehouse inventory tracking",
+    theme="neutral",
+    entries=[
+        RichTextEntry(title="Overview", text="Stock levels"),
+        BarChartEntry(
+            title="Items",
+            dataset=SAMPLE_CODE_REPORT_DATASET,
+            categories="item",
+            values="count",
+        ),
+    ]
+)
+
+
+class SampleCodeReportView(CodeReportView):
+    report = SAMPLE_CODE_REPORT
+
+
+class DynamicSubclassCodeReportView(CodeReportView):
+    def get_report(self, request=None):
+        user = request.GET.get('user', 'Guest') if request else 'Guest'
+        return CodeReport(
+            title=f"Dynamic Code Report for {user}",
+            description="Generated dynamically",
+            entries=[
+                RichTextEntry(title="Greeting", text=f"Welcome {user}"),
+            ]
+        )
+
+
+class DynamicSubclassNoArgCodeReportView(CodeReportView):
+    def get_report(self):
+        return CodeReport(
+            title="Dynamic Report Without Request Arg",
+            entries=[RichTextEntry(title="Info", text="No request param")]
+        )
+
+
+class CallableCodeReportView(CodeReportView):
+    report = staticmethod(lambda request=None: CodeReport(
+        title="Callable Code Report",
+        entries=[RichTextEntry(title="Static Text", text="Content")]
+    ))
+
+
+class EmptyCodeReportView(CodeReportView):
+    pass
+
+
 urlpatterns = [
     path('reports/', include('reportcraft.urls')),
     path('dict-report/', SampleDictReportView.as_view(), name='sample-dict-report'),
     path('callable-dict-report/', CallableDictReportView.as_view(), name='callable-dict-report'),
     path('function-dict-report/', FunctionDictReportView.as_view(), name='function-dict-report'),
     path('empty-dict-report/', EmptyDictReportView.as_view(), name='empty-dict-report'),
+    path('code-report/', SampleCodeReportView.as_view(), name='sample-code-report'),
+    path('dynamic-code-report/', DynamicSubclassCodeReportView.as_view(), name='dynamic-code-report'),
+    path('dynamic-noarg-code-report/', DynamicSubclassNoArgCodeReportView.as_view(), name='dynamic-noarg-code-report'),
+    path('callable-code-report/', CallableCodeReportView.as_view(), name='callable-code-report'),
+    path('empty-code-report/', EmptyCodeReportView.as_view(), name='empty-code-report'),
 ]
 
 
@@ -290,6 +363,171 @@ class DictReportViewTestCase(TestCase):
         })
         self.assertNotIn('<script id="rc-report-data" type="application/json">', rendered)
         self.assertIn('fetch("/reports/api/reports/test-embed/?param=1")', rendered)
+
+
+@override_settings(ROOT_URLCONF='reportcraft.tests')
+class CodeReportViewTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_code_report_html_rendering_inline_payload(self):
+        """Verify that CodeReportView renders HTML containing inline json_script and reportcraft JS."""
+        response = self.client.get(reverse('sample-code-report'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'reportcraft/report.html')
+
+        content = response.content.decode('utf-8')
+        self.assertIn('<script id="rc-report-data" type="application/json">', content)
+        self.assertIn('Inventory Status Report', content)
+        self.assertIn('id="report-entry"', content)
+        self.assertIn('const inlineDataEl = document.getElementById("rc-report-data");', content)
+
+        # Parse inline payload from the script tag
+        start_marker = '<script id="rc-report-data" type="application/json">'
+        end_marker = '</script>'
+        start_idx = content.find(start_marker) + len(start_marker)
+        end_idx = content.find(end_marker, start_idx)
+        raw_json = content[start_idx:end_idx].strip()
+        data = json.loads(raw_json)
+
+        self.assertEqual(data['title'], 'Inventory Status Report')
+        self.assertEqual(data['description'], 'Live warehouse inventory tracking')
+        self.assertEqual(data['theme'], 'neutral')
+        self.assertEqual(len(data['sections']), 1)
+        self.assertEqual(len(data['sections'][0]['content']), 2)
+        self.assertEqual(data['sections'][0]['content'][0]['kind'], 'richtext')
+        self.assertEqual(data['sections'][0]['content'][1]['kind'], 'bars')
+
+    def test_code_report_json_format_param(self):
+        """Verify that ?format=json returns direct JsonResponse."""
+        response = self.client.get(reverse('sample-code-report') + '?format=json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        data = response.json()
+        self.assertEqual(data['title'], 'Inventory Status Report')
+        self.assertEqual(len(data['sections']), 1)
+        self.assertEqual(len(data['sections'][0]['content']), 2)
+
+    def test_code_report_accept_header(self):
+        """Verify that Accept: application/json returns direct JsonResponse."""
+        response = self.client.get(reverse('sample-code-report'), HTTP_ACCEPT='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        data = response.json()
+        self.assertEqual(data['title'], 'Inventory Status Report')
+
+    def test_code_report_complex_accept_header(self):
+        """Verify that compound Accept headers return direct JsonResponse."""
+        response = self.client.get(
+            reverse('sample-code-report'),
+            HTTP_ACCEPT='application/json, text/javascript, */*; q=0.01'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        self.assertEqual(response.json()['title'], 'Inventory Status Report')
+
+    def test_code_report_runtime_filter_propagation_json(self):
+        """Verify that query parameters are propagated as filters in JSON mode."""
+        response = self.client.get(reverse('sample-code-report') + '?item=Widget+A&format=json')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        bars_data = data['sections'][0]['content'][1]['data']
+        self.assertEqual(len(bars_data), 1)
+        self.assertEqual(bars_data[0]['Item'], 'Widget A')
+
+    def test_code_report_runtime_filter_propagation_html(self):
+        """Verify that query parameters are propagated as filters in HTML inline mode."""
+        response = self.client.get(reverse('sample-code-report') + '?category=Electronics')
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        start_marker = '<script id="rc-report-data" type="application/json">'
+        end_marker = '</script>'
+        start_idx = content.find(start_marker) + len(start_marker)
+        end_idx = content.find(end_marker, start_idx)
+        raw_json = content[start_idx:end_idx].strip()
+        data = json.loads(raw_json)
+        bars_data = data['sections'][0]['content'][1]['data']
+        self.assertEqual(len(bars_data), 1)
+        self.assertEqual(bars_data[0]['Item'], 'Gadget X')
+
+    def test_dynamic_subclass_override_get_report(self):
+        """Verify dynamic subclass override of get_report(self, request)."""
+        # JSON mode
+        response = self.client.get(reverse('dynamic-code-report') + '?user=Alice&format=json')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['title'], 'Dynamic Code Report for Alice')
+        self.assertEqual(data['sections'][0]['content'][0]['text'], 'Welcome Alice')
+
+        # HTML mode
+        response = self.client.get(reverse('dynamic-code-report') + '?user=Bob')
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        self.assertIn('Dynamic Code Report for Bob', content)
+        self.assertIn('Welcome Bob', content)
+
+    def test_dynamic_subclass_no_arg_get_report(self):
+        """Verify dynamic subclass override of get_report(self) with no request arg."""
+        response = self.client.get(reverse('dynamic-noarg-code-report') + '?format=json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['title'], 'Dynamic Report Without Request Arg')
+
+    def test_callable_report_attribute(self):
+        """Verify callable report attribute."""
+        response = self.client.get(reverse('callable-code-report') + '?format=json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['title'], 'Callable Code Report')
+
+    def test_empty_code_report_view(self):
+        """Verify fallback when report is None."""
+        response = self.client.get(reverse('empty-code-report'))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        self.assertIn('<span id="report-title">Report</span>', content)
+
+        json_response = self.client.get(reverse('empty-code-report') + '?format=json')
+        self.assertEqual(json_response.status_code, 200)
+        self.assertEqual(json_response.json(), {})
+
+    def test_context_data_contains_code_report(self):
+        """Verify context data includes code_report."""
+        response = self.client.get(reverse('sample-code-report'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('code_report', response.context)
+        self.assertIs(response.context['code_report'], SAMPLE_CODE_REPORT)
+
+    def test_code_report_with_queryset_dataset(self):
+        """Verify CodeReportView works with QuerySetDataset and propagates runtime filters."""
+        Report.objects.create(title="Alpha Report", slug="alpha-report", theme="light")
+        Report.objects.create(title="Beta Report", slug="beta-report", theme="dark")
+
+        qs_ds = QuerySetDataset(Report.objects.all(), fields=["title", "slug", "theme"])
+        orm_report = CodeReport(
+            title="ORM Reports",
+            entries=[
+                BarChartEntry(title="All Reports", dataset=qs_ds, categories="title", values="slug")
+            ]
+        )
+
+        class ORMCodeReportView(CodeReportView):
+            report = orm_report
+
+        request = RequestFactory().get('/fake-path/?theme=dark&format=json')
+        view = ORMCodeReportView.as_view()
+        response = view(request)
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content.decode('utf-8'))
+        chart_data = data['sections'][0]['content'][0]['data']
+        self.assertEqual(len(chart_data), 1)
+        self.assertEqual(chart_data[0]['Title'], 'Beta Report')
+
+    def test_direct_method_calls(self):
+        """Verify get_report() and get_report_dict() work when called directly without request."""
+        view = SampleCodeReportView()
+        self.assertIs(view.get_report(), SAMPLE_CODE_REPORT)
+        report_dict = view.get_report_dict()
+        self.assertEqual(report_dict['title'], 'Inventory Status Report')
+        self.assertEqual(len(report_dict['sections']), 1)
 
 
 from demo.example.models import Country
