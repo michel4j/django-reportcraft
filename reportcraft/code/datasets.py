@@ -118,6 +118,19 @@ class StaticDataset:
         labels.update(self._labels)
         return labels
 
+    def clean_filters(self, filters: dict[str, Any]) -> dict[str, Any]:
+        if not filters or not isinstance(filters, dict):
+            return {}
+        valid_fields = set(self.fields.all())
+        cleaned = {}
+        for k, v in filters.items():
+            if v is None or v == "":
+                continue
+            base_field = k.split("__")[0]
+            if base_field in valid_fields or k in valid_fields:
+                cleaned[k] = v
+        return cleaned
+
     def get_data(self, *, select: Any = None, **kwargs: Any) -> list[dict[str, Any]]:
         data = list(self._data)
         if callable(select):
@@ -125,13 +138,13 @@ class StaticDataset:
 
         runtime_filters = kwargs.get("filters")
         if runtime_filters and isinstance(runtime_filters, dict):
-            for k, v in runtime_filters.items():
-                if v is not None and v != "":
-                    field_name = k.split("__")[0]
-                    data = [
-                        row for row in data
-                        if field_name in row and str(row[field_name]) == str(v)
-                    ]
+            cleaned = self.clean_filters(runtime_filters)
+            for k, v in cleaned.items():
+                field_name = k.split("__")[0]
+                data = [
+                    row for row in data
+                    if field_name in row and str(row[field_name]) == str(v)
+                ]
         return data
 
 

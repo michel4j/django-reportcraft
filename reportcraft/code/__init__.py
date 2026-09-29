@@ -24,9 +24,11 @@ from reportcraft.code.entries import (
     Width,
 )
 from reportcraft.code.report import CodeReport
+from reportcraft.views import CodeReportView
 
 __all__ = [
     "CodeReport",
+    "CodeReportView",
     "CodeEntry",
     "QuerySetDataset",
     "StaticDataset",
