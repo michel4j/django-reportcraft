@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 from collections import defaultdict
 
@@ -13,8 +15,13 @@ from django.views.generic import DetailView, edit, ListView, TemplateView
 from crisp_modals.views import ModalUpdateView, ModalCreateView, ModalDeleteView, ModalConfirmView
 from itemlist.views import ItemListView
 
+from typing import TYPE_CHECKING
+
 from . import models, forms
 from .utils import CsvResponse
+
+if TYPE_CHECKING:
+    from .code.report import CodeReport
 
 VIEW_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get('VIEW',[])]
 EDIT_MIXINS = [import_string(mixin) for mixin in settings.REPORTCRAFT_MIXINS.get('EDIT', [])]
@@ -25,16 +32,45 @@ class ReportView(DetailView):
     model = models.Report
     data_url = 'report-data'
 
+    def get_object(self, queryset=None):
+        slug = self.kwargs.get(self.slug_url_kwarg or 'slug')
+        try:
+            return super().get_object(queryset=queryset)
+        except Http404:
+            if slug:
+                from reportcraft.registry import site
+                code_report = site.get_report(slug)
+                if code_report is not None:
+                    return code_report
+            raise
+
     def get_data_url(self):
         """
         Get the URL for the report data endpoint.
         :return: URL for the report data
         """
-        return reverse(self.data_url, kwargs={'slug': self.object.slug})
+        slug = getattr(self.object, 'slug', None)
+        if slug:
+            return reverse(self.data_url, kwargs={'slug': slug})
+        return ''
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['report'] = self.object
+        from reportcraft.code.report import CodeReport
+        if isinstance(self.object, CodeReport):
+            filters = dict(self.request.GET.items()) if hasattr(self, 'request') and self.request and hasattr(self.request, 'GET') else {}
+            payload = self.object.generate(filters=filters)
+            context['code_report'] = self.object
+            context['payload'] = payload
+            context['report'] = {
+                'title': payload.get('title', getattr(self.object, 'title', 'Report')),
+                'description': payload.get('description', getattr(self.object, 'description', '')),
+                'theme': payload.get('theme', getattr(self.object, 'theme', 'default')),
+                'notes': payload.get('notes', getattr(self.object, 'notes', '')),
+                'slug': getattr(self.object, 'slug', ''),
+            }
+        else:
+            context['report'] = self.object
         context['data_url'] = self.get_data_url()
         context['query'] = self.get_query_string()
         return context
@@ -47,6 +83,87 @@ class ReportView(DetailView):
         params = dict(self.request.GET.items())
         param_string = urlencode(sorted(params.items()), doseq=True)
         return mark_safe(f'?{param_string}')
+
+
+class DictReportView(TemplateView):
+    """
+    Renders a preformed report dictionary at a URL endpoint.
+    - Default GET: renders HTML embedding payload directly via json_script.
+    - GET with ?format=json or Accept: application/json: returns pure JSON.
+    - Integrators can supply report_dict directly or override get_report_dict(request).
+    """
+    template_name = 'reportcraft/report.html'
+    report_dict = None
+
+    def get_report_dict(self, request=None) -> dict:
+        if request is None and hasattr(self, 'request'):
+            request = self.request
+        if callable(self.report_dict):
+            try:
+                return self.report_dict(request)
+            except TypeError:
+                return self.report_dict()
+        elif self.report_dict is not None:
+            return self.report_dict
+        return {}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        payload = self.get_report_dict(self.request)
+        context['report'] = {
+            'title': payload.get('title', 'Report'),
+            'description': payload.get('description', ''),
+            'theme': payload.get('theme', 'default'),
+            'notes': payload.get('notes', ''),
+        }
+        context['payload'] = payload
+        context['query'] = ''
+        return context
+
+    def get(self, request, *args, **kwargs):
+        format_param = request.GET.get('format', '').lower()
+        accept_header = request.headers.get('Accept', '')
+        if format_param == 'json' or 'application/json' in accept_header:
+            return JsonResponse(self.get_report_dict(request), safe=False)
+        return super().get(request, *args, **kwargs)
+
+
+class CodeReportView(DictReportView):
+    """
+    Renders a CodeReport at a URL endpoint.
+    Inherits from DictReportView for dual HTML and JSON content negotiation.
+    Extracts runtime URL query parameters and forwards them as filters to report.generate().
+    """
+    report: CodeReport | None = None
+
+    def get_report(self, request=None) -> CodeReport | None:
+        if request is None and hasattr(self, 'request'):
+            request = self.request
+        if callable(self.report):
+            try:
+                return self.report(request)
+            except TypeError:
+                return self.report()
+        return self.report
+
+    def get_report_dict(self, request=None) -> dict:
+        if request is None and hasattr(self, 'request'):
+            request = self.request
+        try:
+            report = self.get_report(request)
+        except TypeError:
+            report = self.get_report()
+
+        if report is None:
+            return {}
+
+        filters = dict(request.GET.items()) if request and hasattr(request, 'GET') else {}
+        return report.generate(filters=filters)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['code_report'] = self.get_report(self.request)
+        return context
 
 
 class DataView(View):
@@ -74,10 +191,15 @@ class DataView(View):
         :param kwargs: keyword arguments
         :return: dictionary with report data
         """
-
+        slug = slug or kwargs.get('slug', '')
         queryset = self.get_queryset()
         report = queryset.filter(slug=slug).first()
         if not report:
+            from reportcraft.registry import site
+            code_report = site.get_report(slug)
+            if code_report is not None:
+                filters = dict(self.request.GET.items()) if hasattr(self, 'request') and self.request and hasattr(self.request, 'GET') else {}
+                return code_report.generate(filters=filters)
             raise Http404('Report not found')
 
         filters = dict(self.request.GET.items())
@@ -138,17 +260,66 @@ class ReportIndexView(ItemListView):
     link_url = 'report-view'
     link_kwarg = 'slug'
     limit_section = None
+    include_code_reports = True
+    registry = None
+
+    def get_registry(self):
+        if self.registry is not None:
+            return self.registry
+        from reportcraft.registry import site
+        return site
 
     def get_link_url(self, obj):
         """
         Get the URL for the report view.
-        :param obj: Report object
-        :return: URL for the report view
+        Supports both ORM Report instances (using slug) and registered code report
+        dictionary representations or objects (using obj.url or reverse('report-view', kwargs={'slug': obj.slug})).
+        :param obj: Report object, dictionary representation, or CodeReport instance
+        :return: URL string for the report
         """
-        return reverse(self.link_url, kwargs={self.link_kwarg: obj.slug})
+        url = obj.get('url') if isinstance(obj, dict) else getattr(obj, 'url', None)
+        if url:
+            return url
+        slug = obj.get('slug') if isinstance(obj, dict) else getattr(obj, 'slug', None)
+        if not slug:
+            return ''
+        link_url = self.link_url or 'report-view'
+        link_kwarg = self.link_kwarg or 'slug'
+        return reverse(link_url, kwargs={link_kwarg: slug})
 
     def get_limit_section(self):
         return self.limit_section
+
+    def filter_code_reports_by_search(self, items, search_text):
+        if not search_text:
+            return items
+        from reportcraft.registry import CatalogItem
+        matched = []
+        for item in items:
+            if hasattr(item, 'matches_search'):
+                if item.matches_search(search_text):
+                    matched.append(item)
+            elif isinstance(item, dict):
+                if CatalogItem(item).matches_search(search_text):
+                    matched.append(item)
+        return matched
+
+    def get_code_reports(self):
+        if not getattr(self, 'include_code_reports', True):
+            return []
+        registry = self.get_registry()
+        section = self.get_limit_section()
+        if section:
+            items = registry.get_catalog_items(section=section)
+        else:
+            items = registry.get_catalog_items()
+
+        search_query = ''
+        if hasattr(self, 'request') and self.request and hasattr(self.request, 'GET'):
+            search_query = self.request.GET.get('search', '').strip()
+        if search_query:
+            items = self.filter_code_reports_by_search(items, search_query)
+        return items
 
     def get_queryset(self):
         section = self.get_limit_section()
@@ -156,11 +327,31 @@ class ReportIndexView(ItemListView):
             self.queryset = self.model.objects.filter(section=section)
         else:
             self.queryset = self.model.objects.all()
-        return super().get_queryset()
+        qs = super().get_queryset()
+
+        code_reports = self.get_code_reports()
+        if not code_reports:
+            return qs
+
+        orm_slugs = {r.slug for r in qs}
+        unique_code_reports = [
+            r for r in code_reports
+            if (r.get('slug') if isinstance(r, dict) else getattr(r, 'slug', None)) not in orm_slugs
+        ]
+        return list(qs) + unique_code_reports
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'section' not in context:
+            section = self.get_limit_section()
+            if section:
+                context['section'] = section
+        return context
 
 
 class ReportIndex(*VIEW_MIXINS, ReportIndexView):
     pass
+
 
 
 class EditorReportList(*EDIT_MIXINS, ListView):
@@ -180,7 +371,7 @@ class DataSourceList(*EDIT_MIXINS, ListView):
     template_name = 'reportcraft/off-canvas-list.html'
     context_object_name = 'items'
     link_url = 'source-editor'
-    list_title = 'Data Sources'
+    list_title = 'Datasets'
     add_url = 'new-data-source'
 
     def get_queryset(self):
@@ -506,9 +697,9 @@ class CloneDataSource(*EDIT_MIXINS, ModalConfirmView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = "Clone Data Source"
+        context['title'] = "Clone Dataset"
         context['message'] = (
-            "Are you sure you want to clone this source? "
+            "Are you sure you want to clone this dataset? "
             "This will also clone all associated models and fields."
         )
         return context
@@ -530,7 +721,7 @@ class CloneReport(*EDIT_MIXINS, ModalConfirmView):
         context['message'] = (
             "Are you sure you want to clone this report? "
             "This will also clone all associated entries."
-            "Data Sources will not be cloned."
+            "Datasets will not be cloned."
         )
         return context
 

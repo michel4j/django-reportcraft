@@ -56,6 +56,12 @@ class CodeManager(models.Manager):
 
 
 class DataSource(models.Model):
+    """
+    Represents a Reusable Dataset: a named, standalone query specification defining
+    underlying models, dimensions, calculation expressions, metrics, and baseline dataset filters.
+    When configured with multiple DataModels, acts as a Composite Dataset merged across
+    common dimensions in Python memory (see docs/adr/0002-in-memory-composite-dataset-merging.md).
+    """
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     code = models.SlugField(max_length=100, unique=True, editable=False, default=uuid.uuid4)
@@ -68,7 +74,7 @@ class DataSource(models.Model):
     objects = CodeManager()
 
     class Meta:
-        verbose_name = 'Data Source'
+        verbose_name = 'Dataset'
 
     def __str__(self):
         return self.name
@@ -347,6 +353,10 @@ class DataModel(models.Model):
 
 
 class DataField(models.Model):
+    """
+    Represents a field in a Reusable Dataset. Can be a direct Model Field,
+    a Dimension for grouping, or a Metric / Calculated Field defined via a Calculation Expression.
+    """
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     name = models.SlugField(max_length=50)
@@ -386,6 +396,11 @@ class DataField(models.Model):
 
 
 class Report(models.Model):
+    """
+    Represents a Report: a curated collection of visual entries arranged across
+    responsive layout rows. Can be categorized into a Section slug for catalog indexing
+    and access control.
+    """
     class Themes(models.TextChoices):
         DEFAULT = 'default', _('Default')
         SKETCH = 'sketch', _('Sketch')
@@ -425,6 +440,11 @@ class Report(models.Model):
 
 
 class Entry(models.Model):
+    """
+    Represents a visual Entry placed within a layout row of a Report.
+    Transforms data from a Reusable Dataset via an Entry Generator into a Visualization Payload,
+    rendered in the browser by client Entry Renderers.
+    """
     class Types(models.TextChoices):
         BARS = 'bars', _('Bar Chart')
         COLUMNS = 'columns', _('Column Chart')

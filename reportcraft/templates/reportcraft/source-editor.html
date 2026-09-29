@@ -9,7 +9,7 @@
     </style>
 {% endblock %}
 
-{% block editor-pretitle %}Edit Data Source{% endblock %}
+{% block editor-pretitle %}Edit Dataset{% endblock %}
 {% block editor-title %}{{ object.name }}{% endblock %}
 
 {% block editor-tools %}
@@ -34,8 +34,8 @@
     <div class="container-fluid h-100">
         <div class="d-flex flex-column justify-content-stretch py-3 h-100">
             <div class="alert alert-info small mb-4">
-                Add models to the Data Source and add fields linked to the models. Use groups and expressions for more
-                complex annotations and aggregations. Once fields are added specify any filters as needed.
+                Add models to the Dataset and add fields linked to the models. Use dimensions and calculation expressions to
+                configure grouping and metric aggregations. Add dataset filter expressions to establish baseline data constraints.
             </div>
             <div class="card mb-3">
                 <div class="card-header py-2 d-flex align-items-center">
@@ -53,7 +53,7 @@
                         <th>Model</th>
                         {% for group_field in source.group_by %}
                             <th>{{ group_field|human_title }}<span
-                                    class="hidden-xs text-body-secondary">&nbsp;&middot;&nbsp;Group</span>
+                                    class="hidden-xs text-body-secondary">&nbsp;&middot;&nbsp;Dimension</span>
                             </th>
                         {% endfor %}
                         <th>&nbsp;</th>

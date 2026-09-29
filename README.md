@@ -8,11 +8,11 @@ business intelligence reports
 - Create and manage reports through a graphical designer.
 - Easily add new report entries using the intuitive interface.
 
-### Data Sources & Models
-- **Data Sources:** Configure models that provide data for reports.  
-  - Define the data source name, grouping fields, and record limit.
-- **Data Source Models:**  
-  - Add models to a data source.
+### Datasets & Models
+- **Dataset:** Configure models that provide data for reports.  
+  - Define the dataset name, grouping fields, and record limit.
+- **Dataset Models:**  
+  - Add models to a dataset.
   - Specify group expressions for data aggregation.
 
 ### Data Fields & Expressions

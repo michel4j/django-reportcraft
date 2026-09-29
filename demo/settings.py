@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+from django.utils.csp import CSP
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 PROJECT_DIR = Path(__file__).resolve().parent
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "django.middleware.csp.ContentSecurityPolicyMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -106,6 +108,15 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+SECURE_CSP = {
+    "default-src": [CSP.SELF],
+    "img-src": ["data:", CSP.SELF],
+    "style-src": [CSP.SELF, CSP.UNSAFE_INLINE, "https://fonts.googleapis.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+    "font-src": [CSP.SELF, "https://fonts.gstatic.com"],
+    "script-src": [CSP.UNSAFE_INLINE, CSP.UNSAFE_EVAL, CSP.SELF, "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+    "frame-src": [CSP.NONE],
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
