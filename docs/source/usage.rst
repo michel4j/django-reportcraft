@@ -513,3 +513,370 @@ For example:
         path('custom-report-data/<slug:slug>/', CustomReportData.as_view(), name='custom-report-data'),
         ...
     ]
+
+
+Code-First Reports and Preformed Dictionaries
+=============================================
+
+In addition to designing reports through the graphical web editor, **Django ReportCraft** supports declaring
+and serving reports directly from Python code without database persistence.
+
+This provides two key integration paradigms:
+
+1. **Preformed Report Dictionaries (`DictReportView`)**: Render pre-aggregated Visualization Payloads (e.g. from data warehouses, external REST microservices, or periodic cron tasks) directly at custom URL endpoints.
+2. **Code-First Reports (`CodeReport`)**: Construct reports in version-controlled Python modules using Django ORM QuerySets or static Python iterables via ``QuerySetDataset`` and ``StaticDataset``, combined with typed entry classes.
+
+Both approaches leverage Django's ``json_script`` template filter to embed the Visualization Payload directly
+into the initial HTML response. This eliminates the secondary client-side AJAX fetch, ensuring instant, single-roundtrip
+rendering. Both views also provide dual HTML and JSON content negotiation out of the box.
+
+
+Preformed Dictionaries with DictReportView
+------------------------------------------
+
+``DictReportView`` is a class-based view inheriting from Django's ``TemplateView``. It renders a complete
+preformed report dictionary at any custom URL endpoint.
+
+Content Negotiation
+~~~~~~~~~~~~~~~~~~~
+``DictReportView`` automatically handles dual HTML and JSON content negotiation:
+
+- **Browser Navigation (HTML)**: Renders ``reportcraft/report.html`` with the report payload embedded inline via ``<script id="rc-report-data" type="application/json">``. The client-side ``reportcraft.js`` engine renders Observable Plot / D3 charts synchronously upon page load without extra network requests.
+- **API Requests (JSON)**: If the request contains ``?format=json`` in the query string or specifies an ``Accept: application/json`` HTTP header, ``DictReportView`` returns a direct ``JsonResponse`` containing the raw payload dictionary.
+
+Configuring DictReportView
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+You can specify the report dictionary in three ways:
+
+1. **Static dictionary attribute**: Assign a dictionary to ``report_dict``.
+2. **Callable attribute**: Assign a callable (or ``staticmethod``) that accepts ``request`` or no arguments.
+3. **Method override**: Override ``get_report_dict(self, request=None)`` for dynamic, user-dependent payloads.
+
+Example: KPI Dashboard View
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    # myapp/views.py
+    from reportcraft.views import DictReportView
+
+    WAREHOUSE_KPI_PAYLOAD = {
+        "title": "Daily Logistics Snapshot",
+        "description": "Real-time dispatch and inventory indicators",
+        "theme": "default",
+        "sections": [
+            {
+                "style": "row",
+                "content": [
+                    {
+                        "title": "Executive Summary",
+                        "kind": "richtext",
+                        "style": "col-md-12",
+                        "text": "## Dispatch Performance\n* **On-Time Rate**: 98.4%\n* **Active Couriers**: 142\n* **Packages Shipped**: 4,120",
+                    },
+                    {
+                        "title": "Volume by Region",
+                        "kind": "bars",
+                        "style": "col-md-6",
+                        "scheme": "Live8",
+                        "categories": "region",
+                        "values": ["packages"],
+                        "data": [
+                            {"region": "West", "packages": 1800},
+                            {"region": "East", "packages": 1320},
+                            {"region": "Central", "packages": 1000},
+                        ],
+                    },
+                    {
+                        "title": "Vehicle Fleet Status",
+                        "kind": "columns",
+                        "style": "col-md-6",
+                        "scheme": "Tableau10",
+                        "categories": "fleet",
+                        "values": ["count"],
+                        "data": [
+                            {"fleet": "Vans", "count": 65},
+                            {"fleet": "Trucks", "count": 42},
+                            {"fleet": "Bikes", "count": 35},
+                        ],
+                    },
+                ],
+            }
+        ],
+    }
+
+    class WarehouseKPIView(DictReportView):
+        report_dict = WAREHOUSE_KPI_PAYLOAD
+
+Mount the view in your ``urls.py``:
+
+.. code-block:: python
+
+    # myapp/urls.py
+    from django.urls import path
+    from myapp.views import WarehouseKPIView
+
+    urlpatterns = [
+        path("kpis/warehouse/", WarehouseKPIView.as_view(), name="warehouse-kpi"),
+    ]
+
+
+In-Memory Reusable Datasets
+---------------------------
+
+Report entries pull data from objects implementing ``DatasetProtocol`` (defined in ``reportcraft.protocols``).
+Django ReportCraft provides two in-memory dataset classes in ``reportcraft.code``:
+
+QuerySetDataset
+~~~~~~~~~~~~~~~
+``QuerySetDataset`` wraps any standard Django ORM ``QuerySet``.
+
+Features:
+- **Automatic Field Discovery**: Introspects model fields via Django's model ``_meta`` API, as well as query annotations.
+- **Label Resolution**: Maps field names to human-readable labels using ``verbose_name`` by default, with custom overrides via ``labels={...}``.
+- **Related Fields**: Traverses ForeignKey relations (e.g. ``institution__name``).
+- **Runtime Filter Propagation**: Automatically filters querysets based on URL query parameters, sanitizing parameters to prevent invalid query lookups.
+
+Constructor:
+
+.. code-block:: python
+
+    from reportcraft.code import QuerySetDataset
+
+    dataset = QuerySetDataset(
+        queryset,                         # Django QuerySet (e.g. Person.objects.all())
+        labels={"field_name": "Label"},   # Optional dictionary of label overrides
+        fields=["col1", "col2"],          # Optional explicit field list
+    )
+
+Methods:
+- ``get_labels() -> dict[str, str]``: Returns the mapping of field names to display labels.
+- ``get_data(*, select=None, **kwargs) -> list[dict]``: Evaluates the queryset, applies filters and ordering, and returns a list of dictionaries.
+
+StaticDataset
+~~~~~~~~~~~~~
+``StaticDataset`` wraps arbitrary in-memory tabular data such as lists of dictionaries or pandas DataFrames.
+
+Constructor:
+
+.. code-block:: python
+
+    from reportcraft.code import StaticDataset
+
+    # From a list of dictionaries:
+    sales_dataset = StaticDataset(
+        data=[
+            {"quarter": "Q1", "revenue": 10500, "region": "North"},
+            {"quarter": "Q2", "revenue": 14200, "region": "North"},
+            {"quarter": "Q1", "revenue": 8900, "region": "South"},
+            {"quarter": "Q2", "revenue": 11300, "region": "South"},
+        ],
+        labels={"quarter": "Fiscal Quarter", "revenue": "Revenue ($)", "region": "Sales Region"}
+    )
+
+    # From a pandas DataFrame:
+    # df_dataset = StaticDataset(data=my_dataframe, labels={"col": "Column Title"})
+
+
+Code-First Reports (CodeReport)
+-------------------------------
+
+``CodeReport`` is an in-memory report container that holds metadata (title, slug, theme, description)
+and visual entries.
+
+Constructor & Methods
+~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    from reportcraft.code import CodeReport
+
+    report = CodeReport(
+        title="Quarterly Sales Report",
+        slug="quarterly-sales",
+        description="Comprehensive summary of sales performance across regions.",
+        theme="default",       # UI theme ("default", "light", "dark", "neutral", etc.)
+        entries=[...],         # Initial list of CodeEntry objects
+    )
+
+    # Builder methods
+    report.add_entry(entry)
+    report.add_section(title="Regional Breakdown", entries=[entry1, entry2], style="row")
+
+    # Generate full Visualization Payload:
+    payload = report.generate(filters={"region": "North"})
+
+
+Typed Entry Classes
+-------------------
+
+The ``reportcraft.code`` package provides specialized subclasses for all standard entry kinds.
+Each class provides typed arguments with IDE autocompletion.
+
+Width Control
+~~~~~~~~~~~~~
+The ``Width`` enum provides standard Bootstrap 12-column grid classes:
+
+- ``Width.FULL`` (``"col-md-12"``)
+- ``Width.THREE_QUARTERS`` (``"col-md-9"``)
+- ``Width.TWO_THIRDS`` (``"col-md-8"``)
+- ``Width.HALF`` (``"col-md-6"``)
+- ``Width.THIRD`` (``"col-md-4"``)
+- ``Width.QUARTER`` (``"col-md-3"``)
+
+You can also pass integers ``1`` through ``12`` or custom CSS class strings directly to ``width=...``.
+
+RichTextEntry
+~~~~~~~~~~~~~
+Renders Markdown or HTML formatted explanatory text. Does not require a dataset.
+
+.. code-block:: python
+
+    from reportcraft.code import RichTextEntry, Width
+
+    RichTextEntry(
+        title="Overview",
+        text="### Summary\nKey findings for the current period.",
+        width=Width.FULL,
+    )
+
+TableEntry
+~~~~~~~~~~
+Renders tabular datasets or crosstab/pivot tables.
+
+.. code-block:: python
+
+    from reportcraft.code import TableEntry, Width
+
+    TableEntry(
+        title="Personnel by Role and Gender",
+        dataset=person_dataset,
+        rows=["type"],          # Row grouping field(s)
+        columns="gender",       # Column grouping field
+        values="count",         # Aggregated value field
+        total_row=True,         # Include summary totals row
+        total_column=True,      # Include summary totals column
+        transpose=False,        # Transpose rows and columns
+        width=Width.HALF,
+    )
+
+ColumnChartEntry & BarChartEntry
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Render vertical column or horizontal bar charts powered by Observable Plot.
+
+.. code-block:: python
+
+    from reportcraft.code import ColumnChartEntry, BarChartEntry, Width
+
+    ColumnChartEntry(
+        title="Institutions per Subject Area",
+        dataset=subject_dataset,
+        categories="name",              # X-axis category field
+        values=["institution_count"],   # Y-axis value field(s)
+        scheme="Live8",                 # Color scheme palette
+        grouped=False,                  # Grouped bars when multiple values
+        normalize=False,                # Normalize to 100%
+        width=Width.HALF,
+    )
+
+    BarChartEntry(
+        title="Top Revenue Generators",
+        dataset=sales_dataset,
+        categories="product",
+        values=["revenue"],
+        sort_by="revenue",
+        sort_desc=True,
+        width=Width.FULL,
+    )
+
+Other Specialized Entries
+~~~~~~~~~~~~~~~~~~~~~~~~~
+- ``PieChartEntry`` / ``DonutChartEntry``: Proportional distribution charts.
+- ``PlotEntry``: 2D XY scatter and line charts.
+- ``HistogramEntry``: Value distribution frequency bins.
+- ``TimelineEntry``: Chronological event spans.
+- ``GeoChartEntry``: Geographic heatmaps and marker maps.
+- ``LikertEntry``: Survey sentiment rating visualizations.
+
+
+Serving Code Reports with CodeReportView
+----------------------------------------
+
+``CodeReportView`` subclasses ``DictReportView`` to serve a ``CodeReport`` instance at any URL.
+
+It extracts URL query parameters (e.g. ``?gender=female&type=user``) and automatically propagates them as
+runtime filters to the report's datasets.
+
+Example: Complete Code Report Integration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    # myapp/reports.py
+    from django.db.models import Count
+    from myapp.models import Person, Subject, Institution
+    from reportcraft.code import (
+        CodeReport,
+        ColumnChartEntry,
+        QuerySetDataset,
+        RichTextEntry,
+        TableEntry,
+        Width,
+    )
+
+    person_summary = QuerySetDataset(
+        Person.objects.values("type", "gender").annotate(count=Count("id")),
+        labels={"type": "Role", "gender": "Gender", "count": "Total"},
+    )
+
+    subject_summary = QuerySetDataset(
+        Subject.objects.annotate(institutions=Count("institutions")).values("name", "institutions"),
+        labels={"name": "Subject Area", "institutions": "Affiliated Institutions"},
+    )
+
+    academic_report = CodeReport(
+        title="Academic & Personnel Directory",
+        slug="academic-directory",
+        description="Comprehensive analytics across people and academic programs.",
+        theme="default",
+        entries=[
+            RichTextEntry(
+                title="Executive Overview",
+                text="### Academic & Personnel Analytics\nThis report is defined purely in version-controlled Python code.",
+                width=Width.FULL,
+            ),
+            TableEntry(
+                title="Personnel by Role and Gender",
+                dataset=person_summary,
+                rows=["type"],
+                columns="gender",
+                values="count",
+                total_row=True,
+                total_column=True,
+                width=Width.HALF,
+            ),
+            ColumnChartEntry(
+                title="Institutions per Subject",
+                dataset=subject_summary,
+                categories="name",
+                values=["institutions"],
+                scheme="Live8",
+                width=Width.HALF,
+            ),
+        ],
+    )
+
+    # myapp/views.py
+    from reportcraft.views import CodeReportView
+    from myapp.reports import academic_report
+
+    class AcademicReportView(CodeReportView):
+        report = academic_report
+
+    # myapp/urls.py
+    from django.urls import path
+    from myapp.views import AcademicReportView
+
+    urlpatterns = [
+        path("reports/academic/", AcademicReportView.as_view(), name="academic-report"),
+    ]
