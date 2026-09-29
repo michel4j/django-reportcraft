@@ -49,6 +49,49 @@ class ReportView(DetailView):
         return mark_safe(f'?{param_string}')
 
 
+class DictReportView(TemplateView):
+    """
+    Renders a preformed report dictionary at a URL endpoint.
+    - Default GET: renders HTML embedding payload directly via json_script.
+    - GET with ?format=json or Accept: application/json: returns pure JSON.
+    - Integrators can supply report_dict directly or override get_report_dict(request).
+    """
+    template_name = 'reportcraft/report.html'
+    report_dict = None
+
+    def get_report_dict(self, request=None) -> dict:
+        if request is None and hasattr(self, 'request'):
+            request = self.request
+        if callable(self.report_dict):
+            try:
+                return self.report_dict(request)
+            except TypeError:
+                return self.report_dict()
+        elif self.report_dict is not None:
+            return self.report_dict
+        return {}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        payload = self.get_report_dict(self.request)
+        context['report'] = {
+            'title': payload.get('title', 'Report'),
+            'description': payload.get('description', ''),
+            'theme': payload.get('theme', 'default'),
+            'notes': payload.get('notes', ''),
+        }
+        context['payload'] = payload
+        context['query'] = ''
+        return context
+
+    def get(self, request, *args, **kwargs):
+        format_param = request.GET.get('format', '').lower()
+        accept_header = request.headers.get('Accept', '')
+        if format_param == 'json' or 'application/json' in accept_header:
+            return JsonResponse(self.get_report_dict(request), safe=False)
+        return super().get(request, *args, **kwargs)
+
+
 class DataView(View):
     """
     Base class for report data views.
