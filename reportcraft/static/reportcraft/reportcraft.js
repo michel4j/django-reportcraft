@@ -232,7 +232,6 @@ function fillMissingCombinations(rawData, config) {
   for (const time of uniqueTimes) {
     for (const category of uniqueCategories) {
       const key = `${time}|${category}`;
-      console.log(key, dataMap.has(key));
       if (dataMap.has(key)) {
         completeData.push(dataMap.get(key));
       } else {
