@@ -182,6 +182,148 @@ function Likert(responses) {
     };
 }
 
+function fillMissing(list, defaultValue = 0) {
+  // Get a unique list of all keys present in any object
+  const allKeys = [...new Set(list.flatMap(obj => Object.keys(obj)))];
+
+  // Map over the list and return a new array of objects with filled keys
+  return list.map(obj => {
+    const filledObj = { ...obj };
+    for (const key of allKeys) {
+      if (!(key in filledObj)) {
+        filledObj[key] = defaultValue;
+      }
+    }
+    return filledObj;
+  });
+}
+
+/**
+ * Fills in missing combinations of categories and time series steps in a dataset.
+ *
+ * @param {Array<Object>} rawData - The array of raw data objects.
+ * @param {Object} config - Configuration options for field mappings.
+ * @param {string} config.timeField - The field name representing time/x-axis (e.g., "Year").
+ * @param {string} config.categoryField - The field name representing the breakdown (e.g., "Project Type").
+ * @param {string} config.valueField - The field name representing the numeric value (e.g., "Projects").
+ * @param {*} [config.defaultValue=0] - The value to fill missing entries with (e.g., 0, null, "N/A").
+ * @returns {Array<Object>} A complete, sorted data array with no missing combinations.
+ */
+function fillMissingCombinations(rawData, config) {
+  const {
+    timeField,
+    categoryField,
+    valueField,
+    defaultValue = 0
+  } = config;
+
+  // Extract unique time coordinates and unique categories
+  const uniqueTimes = [...new Set(rawData.map(d => d[timeField]))];
+  const uniqueCategories = [...new Set(rawData.map(d => d[categoryField]))];
+
+  // Map existing entries to a Quick-Lookup Map using a unified key
+  const dataMap = new Map(
+    rawData.map(d => [`${d[timeField]}|${d[categoryField]}`, d])
+  );
+
+  const completeData = [];
+
+  // Evaluate every permutation
+  for (const time of uniqueTimes) {
+    for (const category of uniqueCategories) {
+      const key = `${time}|${category}`;
+      console.log(key, dataMap.has(key));
+      if (dataMap.has(key)) {
+        completeData.push(dataMap.get(key));
+      } else {
+        // Construct a dynamic missing record object
+        completeData.push({
+          [timeField]: time,
+          [categoryField]: category,
+          [valueField]: defaultValue
+        });
+      }
+    }
+  }
+
+  // Return data sorted sequentially by the time axis
+  return completeData.sort((a, b) => a[timeField] - b[timeField]);
+}
+
+/**
+ * Fills missing combinations and optionally calculates cumulative values over time.
+ *
+ * @param {Array<Object>} rawData - The array of raw data objects.
+ * @param {Object} config - Configuration options for field mappings and calculations.
+ * @param {string} config.timeField - The field name representing time/x-axis (e.g., "Year").
+ * @param {string} config.categoryField - The field name representing the breakdown (e.g., "Project Type").
+ * @param {string} config.valueField - The field name representing the numeric value (e.g., "Projects").
+ * @param {*} [config.defaultValue=0] - The value to fill missing entries with if cumulative is false.
+ * @param {boolean} [config.cumulative=false] - If true, values will accumulate sequentially over time per category.
+ * @returns {Array<Object>} A complete, chronologically sorted data array.
+ */
+function processChartData(rawData, config) {
+  const {
+    timeField,
+    categoryField,
+    valueField,
+    defaultValue = 0,
+    cumulative = false
+  } = config;
+
+  // Extract and sort unique time coordinates to guarantee chronological accumulation
+  const uniqueTimes = [...new Set(rawData.map(d => d[timeField]))].sort((a, b) => a - b);
+  const uniqueCategories = [...new Set(rawData.map(d => d[categoryField]))];
+
+  // Map existing entries to a Quick-Lookup Map
+  const dataMap = new Map(
+    rawData.map(d => [`${d[timeField]}|${d[categoryField]}`, d])
+  );
+
+  const completeData = [];
+
+  // Track running totals for each category if cumulative mode is enabled
+  const runningTotals = {};
+  if (cumulative) {
+    uniqueCategories.forEach(cat => runningTotals[cat] = 0);
+  }
+
+  // Evaluate every permutation chronologically
+  for (const time of uniqueTimes) {
+    for (const category of uniqueCategories) {
+      const key = `${time}|${category}`;
+      let finalValue;
+
+      if (dataMap.has(key)) {
+        const originalValue = dataMap.get(key)[valueField];
+
+        if (cumulative) {
+          runningTotals[category] += (Number(originalValue) || 0);
+          finalValue = runningTotals[category];
+        } else {
+          finalValue = originalValue;
+        }
+      } else {
+        if (cumulative) {
+          // If a year is missing an entry, it adds 0 to the current running total
+          finalValue = runningTotals[category];
+        } else {
+          finalValue = defaultValue;
+        }
+      }
+
+      completeData.push({
+        [timeField]: time,
+        [categoryField]: category,
+        [valueField]: finalValue
+      });
+    }
+  }
+
+  return completeData;
+}
+
+
 export function showReport(selector, sections, staticRoot = "/static/reportcraft/") {
     const target = document.querySelector(selector);
 
@@ -681,7 +823,6 @@ function drawXYPlot(figure, chart, options) {
         const markOptions = {
             x: mark.x,
             y: mark.y,
-            r: mark.z || undefined,
             curve: mark.curve || "linear",
             tip: true,
         };
@@ -701,16 +842,26 @@ function drawXYPlot(figure, chart, options) {
             markOptions.marker = mark.marker || 'circle-stroke';
             marks.push(new Plot.lineY(chart.data, markOptions));
         } else if (mark.type === 'points') {
+            markOptions.r = mark.z || undefined;
             markOptions.stroke = colorValue;
             markOptions.strokeWidth = 1;
             marks.push(new Plot.dot(chart.data, markOptions));
         } else if (mark.type === 'points-filled') {
+            markOptions.r = mark.z || undefined;
             markOptions.fill = colorValue;
             markOptions.stroke = "var(--bs-body-color)";
             markOptions.strokeWidth = 0.5;
-        } else if (mark.type === 'area') {
+        } else if (mark.type === 'area' || mark.type === 'cumarea') {
             markOptions.fill = colorValue;
-            marks.push(new Plot.areaY(chart.data, markOptions));
+            const filledData = processChartData(
+                chart.data, {
+                    timeField: markOptions.x,
+                    categoryField: markOptions.fill,
+                    valueField: markOptions.y,
+                    defaultValue: 0,
+                    cumulative: mark.type === 'cumarea',
+                }); // Fill missing values with 0 and optionally calculate cumulative values
+            marks.push(new Plot.areaY(filledData, markOptions));
         } else {
             console.warn(`Unknown XY Plot: ${mark.type}`);
         }
@@ -844,7 +995,6 @@ function drawPieChart(figure, chart, options) {
         .attr("text-anchor", "middle")
         .attr("stroke", "var(--bs-body-color)")
         .text(function (d) {
-            console.log('calculating percentage', d);
             const percent = (100 * d.value / total);
             return d3.format(".1f")(percent) + "%";
         });

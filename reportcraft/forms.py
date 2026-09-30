@@ -358,7 +358,8 @@ PLOT_TYPES = [
     ('points-filled', 'Filled Points'),
     ('line', 'Line'),
     ('line-points', 'Line & Points'),
-    ('area', 'Area')
+    ('area', 'Area'),
+    ('cumarea', 'Cumulative Area')
 ]
 
 SCALE_CHOICES = [

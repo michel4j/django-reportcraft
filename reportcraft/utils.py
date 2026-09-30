@@ -582,7 +582,8 @@ def prepare_data(
         sort_desc: bool = False
 ) -> list[dict]:
     """
-    Prepare a dataset for plotting, label data according to the labels dictionary, if provided, and sort it by a field if specified.
+    Prepare a dataset for plotting, label data according to the labels dictionary, if provided, and sort it by a field
+    if specified.
 
     :param data: list of dictionaries
     :param select: an iterable of field names to select from the data, selects all fields if None

@@ -268,6 +268,7 @@ class DataSource(models.Model):
             logger.exception(e)
             result = DATA_ERROR_TEMPLATE.format(error=traceback.format_exc(), error_type=type(e).__name__)
             total = 0
+        print(result)
         return result, total
 
 

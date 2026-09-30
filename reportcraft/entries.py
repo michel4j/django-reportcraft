@@ -15,7 +15,7 @@ import numpy
 
 from .utils import (
     regroup_data, MinMax, epoch, get_histogram_points, wrap_table,
-    prepare_data, debug_value
+    prepare_data, debug_value, ValueType
 )
 
 
@@ -286,7 +286,7 @@ def generate_plot(entry, **kwargs):
 
     select_fields = {x_value} | ({group_by} if group_by else set())
     select_fields |= {group[k] for group in groups for k in ['y', 'z'] if k in group}
-    data = prepare_data(raw_data, select=select_fields, labels=labels, sort=x_value, sort_desc=False)
+    data = prepare_data(raw_data, select=select_fields, labels=labels, sort=x_value, sort_desc=False, default=0)
 
     return {
         'title': entry.title,
