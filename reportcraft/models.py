@@ -178,7 +178,9 @@ class DataSource(models.Model):
         if group_by:
             aggregations = {
                 field.name: field.get_expression()
-                for field in self.fields.exclude(name__in=field_names).exclude(name__in=group_by).filter(model__name=model_name)
+                for field in self.fields.exclude(name__in=field_names).exclude(name__in=group_by).filter(
+                    model__name=model_name
+                )
             }
 
         # Ordering
@@ -534,7 +536,7 @@ class Entry(models.Model):
                 'notes': self.notes
             }
 
-    def clone(self, report: Report = None) -> Entry:
+    def clone(self, report: Report = None) -> 'Entry':
         """
         Clone this entry and associate it with a new report if provided, otherwise keep the same report
         :param report: the new report to associate the cloned entry with
