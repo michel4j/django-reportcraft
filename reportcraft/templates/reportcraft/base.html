@@ -18,5 +18,11 @@
                 $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
             });
         });
+        $(document).on("keyup", "#record-list-search", function () {
+            let value = $(this).val().toLowerCase();
+            $("#record-list-items li:not(.record-class)").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
     </script>
 {% endblock %}

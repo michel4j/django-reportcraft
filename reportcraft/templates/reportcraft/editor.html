@@ -10,8 +10,9 @@
                 <div class="page-pre-title my-0">{% block editor-pre-title %}{% endblock %}</div>
                 <div class="fs-5 fw-light editor-title my-0">{% block editor-title %}{% endblock %}</div>
             </div>
-            <div class="ms-auto page-tools col-auto d-flex align-items-center">
+            <div class="ms-auto page-tools col-auto ms-auto d-flex flex-row gap-3 mb-2 align-items-center">
             {% block editor-tools %}{% endblock %}
+            <div class="separator"></div>
             <a class="text-body" href="#rc-off-canvas" data-oc-url="{% url "editor-report-list" %}" data-bs-toggle="offcanvas">
                 {% tool_icon label='Reports' icon='list-details' %}
             </a>

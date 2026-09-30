@@ -49,7 +49,7 @@
     {% block pre_js %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %} bg-body-tertiary">
-    {% block body %}
+    {% block full %}
     <div class="container-fluid bg-body p-5">
         {% block content-header %}
             <nav class="mb-5" aria-label="breadcrumb">
@@ -62,7 +62,7 @@
                         <h1 class="page-title">{% block page-title %}{% endblock %}</h1>
                         <div class="page-subtitle">{% block page-subtitle %}{% endblock %}</div>
                     </div>
-                    <div class="page-tools col-auto ms-auto d-flex flex-row">
+                    <div class="page-tools col-auto ms-auto d-flex flex-row gap-3 mb-2 align-items-center">
                         {% block page-tools %}{% endblock %}
                     </div>
                 </div>
