@@ -344,7 +344,7 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
     // now fill the content with each section
     target.querySelectorAll('figure').forEach(function (figure, index) {
         const chart = decodeObj(figure.getAttribute('data-chart'));
-        let aspectRatio = chart.data['aspect-ratio'] || 16 / 9;
+        let aspectRatio = chart['aspect-ratio'] || 16 / 9;
         let scheme;
 
         if (chart.scheme in ColorSchemes) {
@@ -834,7 +834,7 @@ function drawXYPlot(figure, chart, options) {
     if (xScale === 'inv-square') {
         const xValues = chart.data.map(d => d[markTypes[0].x]);
         const xDomain = [Math.min(...xValues), Math.max(...xValues)];
-        let niceTicks = d3.ticks(Math.pow(xDomain[0], -2), Math.pow(xDomain[1], -2), 8); // Generate 5 nice ticks
+        let niceTicks = d3.ticks(Math.pow(xDomain[0], -2), Math.pow(xDomain[1], -2), 7); // Generate 7 nice ticks
 
         plotOptions.x.ticks = niceTicks.map(tick => Math.pow(tick, -0.5)); // Convert back to original scale
     }
@@ -862,7 +862,7 @@ function drawXYPlot(figure, chart, options) {
             markOptions.marker = mark.marker || 'circle-stroke';
             marks.push(new Plot.lineY(chart.data, markOptions));
         } else if (mark.type === 'points') {
-            markOptions.r = mark.z || undefined;
+            markOptions.r = mark.z || 0.75;
             markOptions.stroke = colorValue;
             markOptions.strokeWidth = 1;
             marks.push(new Plot.dot(chart.data, markOptions));
