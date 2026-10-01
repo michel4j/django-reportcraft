@@ -353,7 +353,6 @@ class ReportIndex(*VIEW_MIXINS, ReportIndexView):
     pass
 
 
-
 class EditorReportList(*EDIT_MIXINS, ListView):
     model = models.Report
     template_name = 'reportcraft/off-canvas-list.html'

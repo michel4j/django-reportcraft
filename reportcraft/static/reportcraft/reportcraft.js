@@ -88,6 +88,11 @@ const tableTemplate = _.template(
     '<% if ((entry.title) && (showCaption))  { %>' +
     '   <caption class="text-center"><%= entry.title %></caption>' +
     '<% } %>' +
+    '<colgroup>' +
+    '   <% _.each(table[1], function(cell, i){ %>' +
+    '       <col class="table-cell-<%= typeof cell %>">' +
+    '   <% }); %>' +
+    '</colgroup>' +
     '<% if (entry.header.includes("row")) { %>' +
     '   <thead><tr>' +
     '       <% _.each(table[0], function(cell, i){ %>' +
@@ -103,7 +108,7 @@ const tableTemplate = _.template(
     '           <% if (entry.header.includes("column") && (i==0)) { %>' +
     '               <th><%= cell %></th>' +
     '           <% } else { %>' +
-    '               <td class="table-cell-<%= typeof cell %>" ><%= cell %></td>' +
+    '               <td><%= cell %></td>' +
     '           <% } %>' +
     '       <% }); %>' +
     '       </tr>' +
