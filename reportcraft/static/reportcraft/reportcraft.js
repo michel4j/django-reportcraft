@@ -425,12 +425,14 @@ function formatTick(value, i, ticksEvery = 1, ticksInterval = undefined) {
     } else if (typeof (value) === 'string') {
         return value; // Return string as it is
     } else if (typeof (value) === 'number') {
-        if (Number.isInteger(value)) {
-            // Format integers with commas if they are larger than 10,000. This avoids
-            // messing up years which are < 1e4
+        if ((Number.isInteger(value) && (Math.abs(value) < 5e3 ))) {
             return Math.abs(value) >= 1e4 ? value.toLocaleString() : value.toString();
         } else {
-            return ""
+            const formatter = new Intl.NumberFormat('en-US', {
+                notation: 'compact',
+                maximumFractionDigits: 2
+            });
+            return formatter.format(value);
         }
     }
 }
@@ -622,7 +624,8 @@ function setAxisScale(axisOptions, scale) {
             axisOptions.base = 2;
             break;
         case 'inverse':
-            axisOptions.transform = d => 1 / d;
+            axisOptions.type = "pow";
+            axisOptions.exponent = -1;
             break;
         case 'square':
             axisOptions.type = "pow";
@@ -637,9 +640,9 @@ function setAxisScale(axisOptions, scale) {
             axisOptions.exponent = 3;
             break;
         case 'inv-square':
+            axisOptions.reverse = true;
             axisOptions.type = "pow";
             axisOptions.exponent = -2;
-            axisOptions.reverse = true;
             break;
         case 'inv-cube':
             axisOptions.type = "pow";
@@ -718,6 +721,7 @@ function drawBarChart(figure, chart, options) {
         },
         marks: marks
     };
+
     setColorScheme(plotOptions, options);
     setAxisScale(plotOptions[valueAxis], valueScale);
 
@@ -772,13 +776,22 @@ function drawBarChart(figure, chart, options) {
     addFigurePlot(figure, plot);
 }
 
+function formatXYTicks(value, index) {
+    const formatter = new Intl.NumberFormat('en-US', {
+        notation: 'compact',
+        maximumFractionDigits: 2
+    });
+    const formatted = formatter.format(value);
+    return formatted;
+}
+
 function drawXYPlot(figure, chart, options) {
     let marks = [];
     const markTypes = chart.features || [];
     const colorScale = d3.scaleOrdinal(options.scheme);
     const xScale = chart["x-scale"] || 'linear';
     const yScale = chart["y-scale"] || 'linear';
-    let maxLabelLength = 1;
+    let maxLabelLength = 3;
     const colorDomain = [];
     const colorRange = [];
 
@@ -804,6 +817,7 @@ function drawXYPlot(figure, chart, options) {
         y: {
             grid: true,
             label: chart["y-label"] || undefined,
+            tickFormat: formatXYTicks,
         },
         r: {
             transform: (r) => Math.pow(r, 2), // Square the radius so that area is proportional to value
@@ -816,9 +830,16 @@ function drawXYPlot(figure, chart, options) {
     setAxisScale(plotOptions.x, xScale);
     setAxisScale(plotOptions.y, yScale);
 
+    // Get array of x values to determine scale for x-axis
+    if (xScale === 'inv-square') {
+        const xValues = chart.data.map(d => d[markTypes[0].x]);
+        const xDomain = [Math.min(...xValues), Math.max(...xValues)];
+        let niceTicks = d3.ticks(Math.pow(xDomain[0], -2), Math.pow(xDomain[1], -2), 8); // Generate 5 nice ticks
+
+        plotOptions.x.ticks = niceTicks.map(tick => Math.pow(tick, -0.5)); // Convert back to original scale
+    }
 
     markTypes.forEach(function (mark, index) {
-        maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[mark.y]}`.length || 0));
         const markOptions = {
             x: mark.x,
             y: mark.y,
@@ -869,7 +890,7 @@ function drawXYPlot(figure, chart, options) {
         }
     });
     // Create chart
-    plotOptions.marginLeft = Math.max(20, maxLabelLength * getFontSize(figure));
+    plotOptions.marginLeft = maxLabelLength * getFontSize(figure);
     if (colorDomain.length > 1) {
         plotOptions.color = {
             domain: colorDomain,
