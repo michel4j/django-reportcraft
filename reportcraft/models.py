@@ -268,7 +268,6 @@ class DataSource(models.Model):
             logger.exception(e)
             result = DATA_ERROR_TEMPLATE.format(error=traceback.format_exc(), error_type=type(e).__name__)
             total = 0
-        print(result)
         return result, total
 
 
@@ -441,6 +440,30 @@ class Report(models.Model):
             entry.clone(report=clone)
         return clone
 
+    def generate(self, filters=None, select=None, order_by=None):
+        """
+        Generate the report payload by generating each entry's payload
+        :param filters: dynamic filters to apply to the data source
+        :param select: additional Q object to apply as filter to select a subset of data
+        :param order_by: order by fields
+        :return: a dictionary containing the report payload
+        """
+
+        section = {
+            'style': f"row",
+            'theme': self.theme,
+            'content': [entry.generate(filters=filters) for entry in self.entries.all()],
+            'notes': self.notes
+        }
+
+        return {
+            'title': self.title,
+            'description': self.description,
+            'theme': self.theme,
+            'notes': self.notes,
+            'sections':  [section],
+        }
+
 
 class Entry(models.Model):
     """
@@ -481,6 +504,7 @@ class Entry(models.Model):
     source = models.ForeignKey(DataSource, on_delete=models.CASCADE, related_name='entries', null=True, blank=True)
     report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name='entries')
     position = models.IntegerField(default=0)
+    aspect_ratio = models.FloatField(default=1.8)
     filters = models.TextField(default="", blank=True)
     attrs = models.JSONField(default=dict, blank=True)
 

@@ -186,6 +186,7 @@ def generate_bars(entry, kind='bars', **kwargs):
         'ticks-every': ticks_every,
         'scheme': scheme,
         'scale': scale,
+        'aspect-ratio': entry.aspect_ratio,
         'notes': entry.notes,
         'data': data,
     }
@@ -273,6 +274,15 @@ def generate_plot(entry, **kwargs):
     if not (x_value and groups):
         return {}
 
+    raw_facets = {
+        'x': entry.attrs.get('x_facet', None),
+        'y': entry.attrs.get('y_facet', None),
+    }
+    facets = {
+        axis: labels.get(facet, facet)
+        for axis, facet in raw_facets.items() if facet
+    }
+
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     features = [
         {
@@ -286,6 +296,7 @@ def generate_plot(entry, **kwargs):
 
     select_fields = {x_value} | ({group_by} if group_by else set())
     select_fields |= {group[k] for group in groups for k in ['y', 'z'] if k in group}
+    select_fields |= {facet for facet in raw_facets.values() if facet}
     data = prepare_data(raw_data, select=select_fields, labels=labels, sort=x_value, sort_desc=False, default=0)
 
     return {
@@ -298,6 +309,8 @@ def generate_plot(entry, **kwargs):
         'y-scale': y_scale,
         'x-label': x_label,
         'y-label': y_label,
+        'aspect-ratio': entry.aspect_ratio,
+        'facets': facets,
         'features': features,
         'data': data,
         'notes': entry.notes
@@ -357,11 +370,20 @@ def generate_histogram(entry, **kwargs):
     stack = entry.attrs.get('stack', True)
     scale = entry.attrs.get('scale', 'linear')
 
+    raw_facets = {
+        'x': entry.attrs.get('x_facet', None),
+        'y': entry.attrs.get('y_facet', None),
+    }
+    facets = {
+        axis: labels.get(facet, facet)
+        for axis, facet in raw_facets.items() if facet
+    }
+
     if not values:
         return {}
 
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
-    select_fields = [values, group_by]
+    select_fields = [values, group_by, *[facet for facet in raw_facets.values() if facet]]
     data = prepare_data(raw_data, select=select_fields, labels=labels)
 
     info = {
@@ -371,11 +393,14 @@ def generate_histogram(entry, **kwargs):
         'style': entry.style,
         'scheme': scheme,
         'scale': scale,
+        'facets': facets,
         'stack': stack,
         'values': labels.get(values, values),
+        'aspect-ratio': entry.aspect_ratio,
         'data': data,
         'notes': entry.notes
     }
+
     if group_by:
         info['groups'] = labels.get(group_by, group_by)
 
@@ -414,6 +439,7 @@ def generate_timeline(entry, **kwargs):
         'end': labels.get(end_value, end_value),
         'style': entry.style,
         'scheme': scheme,
+        'aspect-ratio': entry.aspect_ratio,
         'notes': entry.notes,
         'data': data
     }
@@ -477,6 +503,7 @@ def generate_geochart(entry, **kwargs):
         'longitude': labels.get(longitude, longitude),
         'location': labels.get(location, location),
         'scheme': scheme,
+        'aspect-ratio': entry.aspect_ratio,
         'features': features,
         'style': entry.style,
         'notes': entry.notes,
@@ -486,7 +513,7 @@ def generate_geochart(entry, **kwargs):
 
 def generate_likert(entry, **kwargs):
     """
-    Generate a liker scale Bar charts
+    Generate a likert scale Bar charts
     :param entry: The report entry containing the configuration for the table
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
@@ -508,11 +535,11 @@ def generate_likert(entry, **kwargs):
         'description': entry.description,
         'kind': 'likert',
         'style': entry.style,
+        'aspect-ratio': entry.aspect_ratio,
         **{key: labels.get(value, value) for key, value in settings.items()},
         'domain': domain, #[(v[0], int(numpy.sign(v[1]))) for v in domain],
         'scheme': scheme,
         'notes': entry.notes,
         'data': data,
     }
-    print(info)
     return info

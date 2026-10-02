@@ -10,7 +10,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
 from crisp_modals.forms import (
-    ModalModelForm, HalfWidth, FullWidth, Row, ThirdWidth, QuarterWidth, ThreeQuarterWidth, TwoThirdWidth, ModalForm
+    ModalModelForm, HalfWidth, FullWidth, Row, ThirdWidth, QuarterWidth, ThreeQuarterWidth, TwoThirdWidth, ModalForm,
+    FiveSixthWidth, SixthWidth
 )
 
 from . import models, utils
@@ -273,7 +274,7 @@ class ImportEntryForm(ModalModelForm):
         cleaned_data = super().clean()
         copy_fields = (
             'title', 'description', 'notes', 'style', 'kind', 'source', 'position',
-            'filters', 'attrs'
+            'filters', 'aspect_ratio', 'attrs'
         )
         entry = cleaned_data.pop('entry')
         for field in copy_fields:
@@ -286,7 +287,7 @@ class EntryForm(ModalModelForm):
         model = models.Entry
         fields = (
             'title', 'description', 'notes', 'style', 'kind', 'source', 'report', 'position',
-            'filters'
+            'filters', 'aspect_ratio'
         )
         labels = {
             'style': _("Width"),
@@ -309,27 +310,17 @@ class EntryForm(ModalModelForm):
         super().__init__(*args, **kwargs)
 
         self.body.append(
-            Div(
-                Div('title', css_class='col-10'),
-                Div('position', css_class='col-2'),
-                css_class='row'
+            Row(
+                HalfWidth('title'), QuarterWidth('position'), QuarterWidth('aspect_ratio'),
+                FullWidth('description'),
+                ThirdWidth('kind'), ThirdWidth('source'), ThirdWidth('style'),
+                FullWidth('notes'),
+                FullWidth(Field('filters', css_class="font-monospace")),
+                style="g-2"
             ),
-            Div(
-                Div('description', css_class='col-12'),
-                css_class='row'
-            ),
-            Div(
-                Div('kind', css_class='col-4'),
-                Div('source', css_class='col-4'),
-                Div('style', css_class='col-4'),
-                css_class='row'
-            ),
-            Div(
-                Div('notes', css_class='col-12'),
-                Div(Field('filters', css_class="font-monospace"), css_class='col-12'),
-                Field('report'),
-                css_class='row'
-            ),
+            Row(
+                Field('report')
+            )
         )
 
     def clean(self):
@@ -342,7 +333,6 @@ class EntryForm(ModalModelForm):
         filters = cleaned_data.get('filters')
         if filters.strip() and source:
             source_fields = set(source.fields.values_list('name', flat=True))
-            print(source_fields)
             try:
                 parser = utils.FilterParser(identifiers=source_fields)
                 parser.parse(filters)
@@ -499,9 +489,9 @@ class EntryConfigForm(ModalModelForm):
 
 
 class TableForm(EntryConfigForm):
-    columns = forms.ModelChoiceField(label=_('Columns (Dimension)'), required=True, queryset=models.DataField.objects.none())
-    rows = forms.ModelMultipleChoiceField(label=_('Rows (Dimensions)'), required=True, queryset=models.DataField.objects.none())
-    values = forms.ModelChoiceField(label=_('Metrics (Values)'), required=False, queryset=models.DataField.objects.none())
+    columns = forms.ModelChoiceField(label=_('Columns'), required=True, queryset=models.DataField.objects.none())
+    rows = forms.ModelMultipleChoiceField(label=_('Rows'), required=True, queryset=models.DataField.objects.none())
+    values = forms.ModelChoiceField(label=_('Values'), required=False, queryset=models.DataField.objects.none())
     total_column = forms.BooleanField(label="Row Totals", required=False)
     total_row = forms.BooleanField(label="Column Totals", required=False)
     force_strings = forms.BooleanField(label="Force Strings", required=False)
@@ -550,8 +540,8 @@ class TableForm(EntryConfigForm):
 
 
 class BarsForm(EntryConfigForm):
-    categories = forms.ModelChoiceField(label=_('Dimension (Categories)'), required=True, queryset=models.DataField.objects.none())
-    values = forms.ModelMultipleChoiceField(label=_('Metrics (Values)'), required=True, queryset=models.DataField.objects.none())
+    categories = forms.ModelChoiceField(label=_('Categories'), required=True, queryset=models.DataField.objects.none())
+    values = forms.ModelMultipleChoiceField(label=_('Values'), required=True, queryset=models.DataField.objects.none())
     color_by = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
     sort_by = forms.ModelChoiceField(label='Sort By', required=False, queryset=models.DataField.objects.none())
     grouped = forms.BooleanField(
@@ -620,12 +610,14 @@ class PlotForm(EntryConfigForm):
     y_label = forms.CharField(label='Y Label', required=False)
     x_value = forms.ModelChoiceField(label='X-Value', required=True, queryset=models.DataField.objects.none())
     scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
-    group_by = forms.ModelChoiceField(label=_('Group By Dimension'), required=False, queryset=models.DataField.objects.none())
+    group_by = forms.ModelChoiceField(label=_('Group By'), required=False, queryset=models.DataField.objects.none())
     precision = forms.IntegerField(label="Precision", required=False)
     x_scale = forms.ChoiceField(label='X Scale', required=False, choices=SCALE_CHOICES, initial='linear')
     y_scale = forms.ChoiceField(label='Y Scale', required=False, choices=SCALE_CHOICES, initial='linear')
+    x_facet = forms.ModelChoiceField(label='X Facet', required=False, queryset=models.DataField.objects.none())
+    y_facet = forms.ModelChoiceField(label='Y Facet', required=False, queryset=models.DataField.objects.none())
 
-    SINGLE_FIELDS = ['group_by', 'x_value']
+    SINGLE_FIELDS = ['group_by', 'x_value', 'x_facet', 'y_facet']
     OTHER_FIELDS = ['x_label', 'y_label', 'scheme', 'precision', 'x_scale', 'y_scale']
 
     class Meta:
@@ -644,17 +636,13 @@ class PlotForm(EntryConfigForm):
                 ThirdWidth('x_value'),
                 ThirdWidth('x_label'),
                 ThirdWidth('y_label'),
-                style='g-3'
-            ),
-            Row(
                 ThirdWidth('group_by'),
                 ThirdWidth('scheme'),
                 ThirdWidth('precision'),
-                style='g-3'
-            ),
-            Row(
-                HalfWidth('x_scale'),
-                HalfWidth('y_scale'),
+                QuarterWidth('x_scale'),
+                QuarterWidth('y_scale'),
+                QuarterWidth('x_facet'),
+                QuarterWidth('y_facet'),
                 style='g-2'
             ),
         )
@@ -664,7 +652,7 @@ class PlotForm(EntryConfigForm):
                     ThirdWidth(f'groups__{i}__y'),
                     ThirdWidth(f'groups__{i}__z'),
                     ThirdWidth(f'groups__{i}__type'),
-                    style='g-3'
+                    style='g-2 bg-cat-6 mt-0'
                 ),
             )
 
@@ -722,8 +710,8 @@ class ListForm(EntryConfigForm):
 
 
 class PieForm(ModalModelForm):
-    value = forms.ModelChoiceField(label=_('Metric (Value)'), required=True, queryset=models.DataField.objects.none())
-    label = forms.ModelChoiceField(label=_('Dimension (Label)'), required=True, queryset=models.DataField.objects.none())
+    value = forms.ModelChoiceField(label=_('Value'), required=True, queryset=models.DataField.objects.none())
+    label = forms.ModelChoiceField(label=_('Label'), required=True, queryset=models.DataField.objects.none())
     colors = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
 
     class Meta:
@@ -844,8 +832,8 @@ class RichTextForm(EntryConfigForm):
 
 
 class HistogramForm(EntryConfigForm):
-    values = forms.ModelChoiceField(label=_('Metric (Values)'), required=True, queryset=models.DataField.objects.none())
-    group_by = forms.ModelChoiceField(label=_('Group By Dimension'), required=False, queryset=models.DataField.objects.none())
+    values = forms.ModelChoiceField(label=_('Values'), required=True, queryset=models.DataField.objects.none())
+    group_by = forms.ModelChoiceField(label=_('Group By'), required=False, queryset=models.DataField.objects.none())
     stack = forms.BooleanField(
         label='Stack Groups', required=False, initial=True,
         widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
@@ -853,6 +841,8 @@ class HistogramForm(EntryConfigForm):
     scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
     bins = forms.IntegerField(label='Bins', required=False)
     scale = forms.ChoiceField(label='Y-Scale', required=False, choices=SCALE_CHOICES, initial='linear')
+    x_facet = forms.ModelChoiceField(label='X Facet', required=False, queryset=models.DataField.objects.none())
+    y_facet = forms.ModelChoiceField(label='Y Facet', required=False, queryset=models.DataField.objects.none())
     binning = forms.ChoiceField(
         label='Binning', required=False, initial='auto',
         choices=(
@@ -864,7 +854,7 @@ class HistogramForm(EntryConfigForm):
         ),
     )
 
-    SINGLE_FIELDS = ['values', 'group_by']
+    SINGLE_FIELDS = ['values', 'group_by', 'x_facet', 'y_facet']
     OTHER_FIELDS = ['bins', 'scheme', 'binning', 'stack', 'scale']
 
     class Meta:
@@ -880,12 +870,12 @@ class HistogramForm(EntryConfigForm):
         super().__init__(*args, **kwargs)
         self.body.append(
             Row(
-                HalfWidth('values'),HalfWidth('scale'),
-                ThirdWidth('group_by'), ThirdWidth('scheme'), ThirdWidth('stack'),
-                HalfWidth('binning'), HalfWidth('bins'),
+                ThirdWidth('values'),  ThirdWidth('group_by'), ThirdWidth('stack'),
+                ThirdWidth('scale'), ThirdWidth('binning'), ThirdWidth('bins'),
+                ThirdWidth('x_facet'), ThirdWidth('y_facet'),  ThirdWidth('scheme'),
+                style='g-2'
             ),
             Row(
-
                 Field('attrs'),
             ),
         )

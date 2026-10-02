@@ -686,13 +686,28 @@ def cached_model_method(duration: int = 30):
 
                 # Compute and store the fresh result
                 return _update_cache(self, func, cache_key, args, kwargs, duration)
-            except Exception as e:
-                print(f"Cache error: {e}")
+            except Exception as err:
+                print(f"Cache error: {err}")
                 return func(self, *args, **kwargs)
 
         return wrapper
 
     return decorator
+
+
+def _fetch_cache(self, func, cache_key, args, kwargs, duration):
+    """Fetches the cache value, computing and storing it if not present."""
+    result = cache.get(cache_key)
+    if result is None:
+        result = func(self, *args, **kwargs)
+        cache_expiry_key = f"{cache_key}:expiry"
+        cache.set_many(
+            {
+                cache_key: result,
+                cache_expiry_key: datetime.now() + timedelta(seconds=duration)
+            }, timeout=CACHE_TIMEOUT
+        )
+    return result
 
 
 def _update_cache(self, func, cache_key, args, kwargs, duration):

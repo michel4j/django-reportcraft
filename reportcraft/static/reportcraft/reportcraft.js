@@ -17,6 +17,33 @@ export const figureTypes = [
     'likert',
 ];
 
+class ObjectRegistry  {
+    constructor() {
+        this._store = new Map();
+        this._counter = 0;
+    }
+
+    /**
+    * Stores an object and returns a unique key.
+    * @param {Object} obj - The object to store.
+    * @returns {string} Unique identifier key.
+    */
+    encode(obj) {
+        const key = `entry-${this._counter++}`;
+        this._store.set(key, obj);
+        return key;
+    }
+
+    /**
+    * Retrieves the object associated with the key.
+    * @param {string} key - The key returned by encode.
+    * @returns {Object|undefined} The original object, or undefined if not found.
+    */
+    decode(key) {
+        return this._store.get(key);
+    }
+};
+
 // Define custom color schemes
 const ColorSchemes = {
     "Live4": [
@@ -63,7 +90,7 @@ const contentTemplate = _.template(
     '       <% }); %>' +
     '   <% } else if (figureTypes.includes(entry.kind)) { %>' +
     '       <figure id="figure-<%= entry.id || id %>" data-type="<%= entry.kind %>" ' +
-    '           data-rc-theme="<%= theme || null %>" data-chart="<%= encodeObj(entry) %>" >' +
+    '           data-rc-theme="<%= theme || null %>" data-chart="<%= entry.data_id %>" >' +
     '       </figure>' +
     '   <% }%>' +
     '   <% if (entry.notes) { %>' +
@@ -128,13 +155,17 @@ function renderContent(options) {
         tableTemplate: tableTemplate,
         figureTypes: figureTypes,
         theme: options.theme,
-        encodeObj: encodeObj,
-        decodeObj: decodeObj
+        // encodeObj: encodeObj,
+        // decodeObj: decodeObj
     });
 }
 
 
 function renderSection(options) {
+    // loop through the content and store entries in a registry to avoid storing large data in the DOM
+    options.section.content.forEach(entry => {
+        entry.data_id = options.registry.encode(entry);
+    });
     return sectionTemplate({
         id: options.id,
         section: options.section,
@@ -325,6 +356,7 @@ function processChartData(rawData, config) {
 
 export function showReport(selector, sections, staticRoot = "/static/reportcraft/") {
     const target = document.querySelector(selector);
+    const entryRegistry = new ObjectRegistry();
 
     if (!target) {
         console.error("Container Not found");
@@ -336,6 +368,7 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
     sections.forEach(function (section, i) {
         const sectionHTML = renderSection({
             id: i,
+            registry: entryRegistry,
             section: section,
         });
         target.insertAdjacentHTML('beforeend', sectionHTML);
@@ -343,7 +376,7 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
 
     // now fill the content with each section
     target.querySelectorAll('figure').forEach(function (figure, index) {
-        const chart = decodeObj(figure.getAttribute('data-chart'));
+        const chart = entryRegistry.decode(figure.getAttribute('data-chart'));
         let aspectRatio = chart['aspect-ratio'] || 16 / 9;
         let scheme;
 
@@ -360,7 +393,7 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
         const options = {
             uid: (index + Date.now()).toString(36),
             width: targetWidth,
-            fontSize: scaleFontSize(targetWidth, 0.75, 2, 400, 1200),
+            //fontSize: scaleFontSize(targetWidth, 0.75, 1.5, 400, 1200),
             height: targetWidth / aspectRatio,
             scheme: scheme,
             theme: figure.getAttribute('data-rc-theme') || 'default',
@@ -835,8 +868,22 @@ function drawXYPlot(figure, chart, options) {
         const xValues = chart.data.map(d => d[markTypes[0].x]);
         const xDomain = [Math.min(...xValues), Math.max(...xValues)];
         let niceTicks = d3.ticks(Math.pow(xDomain[0], -2), Math.pow(xDomain[1], -2), 7); // Generate 7 nice ticks
-
         plotOptions.x.ticks = niceTicks.map(tick => Math.pow(tick, -0.5)); // Convert back to original scale
+    }
+
+    if (chart.facets && (chart.facets.x || chart.facets.y)) {
+        plotOptions.facet = {
+            data: chart.data,
+        }
+        // Add x and y facets if they are defined in the chart configuration
+        if (chart.facets.x !== undefined) {
+            plotOptions.facet.x = chart.facets.x;
+            plotOptions.marginTop = 80;
+        }
+        if (chart.facets.y !== undefined) {
+            plotOptions.facet.y = chart.facets.y;
+            plotOptions.marginRight = 80;
+        }
     }
 
     markTypes.forEach(function (mark, index) {
@@ -871,6 +918,7 @@ function drawXYPlot(figure, chart, options) {
             markOptions.fill = colorValue;
             markOptions.stroke = "var(--bs-body-color)";
             markOptions.strokeWidth = 0.5;
+            marks.push(new Plot.dot(chart.data, markOptions));
         } else if (mark.type === 'area' || mark.type === 'cumarea') {
             markOptions.fill = colorValue;
             const filledData = processChartData(
@@ -904,7 +952,9 @@ function drawXYPlot(figure, chart, options) {
 
 
 function drawHistogram(figure, chart, options) {
-    const binInput = {y: "count"};
+    chart.density = true;
+    const reducer = chart.density ? "proportion" : "count";
+    const binInput = {y: reducer};
     const binOutput = {x: {value: chart.values, thresholds: chart.bins || 'auto'}};
     const plotOptions = {
         className: "rc-chart",
@@ -929,8 +979,23 @@ function drawHistogram(figure, chart, options) {
         if (!(chart.stack)) {
             binOutput.nudge = 1; // Avoid bars overlapping
             binInput.y = undefined;
-            binInput.y2 = "count";
+            binInput.y2 = reducer;
             binOutput.mixBlendMode = "multiply";
+        }
+    }
+
+    if (chart.facets && (chart.facets.x || chart.facets.y)) {
+        plotOptions.facet = {
+            data: chart.data,
+        }
+        // Add x and y facets if they are defined in the chart configuration
+        if (chart.facets.x !== undefined) {
+            plotOptions.facet.x = chart.facets.x;
+            plotOptions.marginTop = 80;
+        }
+        if (chart.facets.y !== undefined) {
+            plotOptions.facet.y = chart.facets.y;
+            plotOptions.marginRight = 80;
         }
     }
     plotOptions.marks = [
@@ -948,7 +1013,7 @@ function drawPieChart(figure, chart, options) {
     // Placeholder for pie chart implementation
     const uniqueLabels = [...d3.union(chart.data.map(d => d.label))];
     const color = d3.scaleOrdinal(options.scheme);
-    const outerRadius = Math.min(options.width, options.height) / 2 - 15;
+    const outerRadius = Math.min(options.width, options.height) / 2 - 35;
     const innerRadius = (chart.kind === 'donut') ? outerRadius / 2 : 0;
     const total = d3.sum(chart.data, d => d.value);
 
@@ -973,7 +1038,7 @@ function drawPieChart(figure, chart, options) {
         .attr("class", "rc-chart-swatch")
         .style("display", "inline-flex")
         .style("align-items", "center")
-        .style("font-size", '1rem')
+        // .style("font-size", '1rem')
         .style("margin-right", "10px")
         .style("margin-bottom", "5px")
         .html(d => `<svg width="15" height="15" fill="${color(d)}">
@@ -992,32 +1057,63 @@ function drawPieChart(figure, chart, options) {
     const pie = d3.pie()
         .value(d => d.value);
 
-    let dataReady = pie(chart.data);
-    let arcGenerator = d3.arc()
+    const arc = d3.arc()
         .innerRadius(innerRadius)
         .outerRadius(outerRadius);
+    const labelRadius = outerRadius + 20;
+    const arcLabel = d3.arc()
+        .innerRadius(labelRadius)
+        .outerRadius(labelRadius);
+    const arcs = pie(chart.data);
 
-    svg.selectAll("pieSlices")
-        .data(dataReady)
-        .enter()
-        .append("path")
-        .attr("d", arcGenerator)
-        .attr("fill", d => color(d.data.label))
+    // Add pie slices
+    svg.append("g")
         .attr("stroke", "var(--bs-body-bg)")
-        .style("stroke-width", "1px")
-        .style("opacity", 1)
-        .append("text")
-        .attr("class", "pie-label")
-        .attr("transform", function (d) {
-            const centroid = arcGenerator.centroid(d);
-            return `translate(${centroid[0]}, ${centroid[1]})`;
-        })
+      .selectAll("path")
+      .data(arcs)
+      .join("path")
+        .attr("fill", d => color(d.data.label))
+        .attr("d", arc)
+      .append("title")
+        .text(d => `${d.data.label}: ${d.data.value.toLocaleString("en-US")}`);
+
+    // Add labels
+    svg.append("g")
         .attr("text-anchor", "middle")
-        .attr("stroke", "var(--bs-body-color)")
-        .text(function (d) {
-            const percent = (100 * d.value / total);
-            return d3.format(".1f")(percent) + "%";
-        });
+        .attr("fill", "var(--bs-body-color)")
+        .attr("font-size", "1rem")
+        .selectAll()
+        .data(arcs)
+        .join("text")
+          .attr("transform", d => `translate(${arcLabel.centroid(d)})`)
+          .call(text => text.filter(d => (d.endAngle - d.startAngle) > 0.15).append("tspan")
+              .attr("x", 0)
+              .attr("y", "0.7em")
+              .attr("fill-opacity", 0.7)
+              .attr("font-weight", "bold")
+              .text(d => d.data.value.toLocaleString("en-US")));
+
+    // svg.selectAll("pieSlices")
+    //     .data(dataReady)
+    //     .enter()
+    //     .append("path")
+    //     .attr("d", arcGenerator)
+    //     .attr("fill", d => color(d.data.label))
+    //     .attr("stroke", "var(--bs-body-bg)")
+    //     .style("stroke-width", "1px")
+    //     .style("opacity", 1)
+    //     .append("text")
+    //     .attr("class", "pie-label")
+    //     .attr("transform", function (d) {
+    //         const centroid = arcGenerator.centroid(d);
+    //         return `translate(${centroid[0]}, ${centroid[1]})`;
+    //     })
+    //     .attr("text-anchor", "middle")
+    //     .attr("stroke", "var(--bs-body-color)")
+    //     .text(function (d) {
+    //         const percent = (100 * d.value / total);
+    //         return d3.format(".1f")(percent) + "%";
+    //     });
 
     addFigurePlot(figure, plot);
 }

@@ -57,8 +57,12 @@ class ReportView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from reportcraft.code.report import CodeReport
+        if hasattr(self, 'request') and self.request and hasattr(self.request, 'GET'):
+            filters = dict(self.request.GET.items())
+        else:
+            filters = {}
+
         if isinstance(self.object, CodeReport):
-            filters = dict(self.request.GET.items()) if hasattr(self, 'request') and self.request and hasattr(self.request, 'GET') else {}
             payload = self.object.generate(filters=filters)
             context['code_report'] = self.object
             context['payload'] = payload
@@ -71,6 +75,7 @@ class ReportView(DetailView):
             }
         else:
             context['report'] = self.object
+            context['payload'] = self.object.generate(filters=filters)
         context['data_url'] = self.get_data_url()
         context['query'] = self.get_query_string()
         return context
@@ -203,17 +208,7 @@ class DataView(View):
             raise Http404('Report not found')
 
         filters = dict(self.request.GET.items())
-        section = {
-            'style': f"row",
-            'theme': report.theme,
-            'content': [block.generate(filters=filters) for block in report.entries.all()],
-            'notes': report.notes
-        }
-        return {
-            'title': report.title,
-            'description': report.description,
-            'sections': [section],
-        }
+        return report.generate(filters=filters)
 
     def get(self, request, *args, **kwargs):
         info = self.get_report(*args, **kwargs)
