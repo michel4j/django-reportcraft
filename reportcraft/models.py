@@ -322,10 +322,11 @@ class DataModel(models.Model):
             'AutoField', 'BigAutoField', 'UUIDField', 'BinaryField', 'FileField', 'ImageField', 'ForeignKey',
             'GenericForeignKey', 'GenericRelation', 'OneToOneRel', 'ManyToManyField', 'ManyToOneRel', 'OneToOneField'
         ]
+        disallowed_names = ['id', 'pk', 'key', 'password']
 
         if isinstance(field, (models.OneToOneField, models.ForeignKey, models.ManyToManyField)):
             return self.get_model_specs(field.related_model, parent=spec, depth=depth + 1)
-        elif field_type not in disallowed_types:
+        elif field_type not in disallowed_types and field.name not in disallowed_names:
             return [(utils.sanitize_field(spec), utils.FIELD_TYPES.get(field_type, field_type.replace('Field', '')))]
         return []
 

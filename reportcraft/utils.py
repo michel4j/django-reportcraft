@@ -822,13 +822,15 @@ def get_models(exclude: Sequence = ('django', 'rest_framework')) -> dict:
         info[app_name] = {}
         for model in app.get_models():
             info[app_name][model.__name__] = {
-                field.name: re.sub(r'Field$', '', field.get_internal_type()) for field in model._meta.get_fields() if
-                not field.is_relation
+                field.name: re.sub(r'Field$', '', field.get_internal_type())
+                for field in model._meta.get_fields()
+                if not field.is_relation
             }
-            info[app_name][model.__name__].update(
-                {field.name: f"{get_model_name(field.related_model)}" for field in model._meta.get_fields() if
-                 field.is_relation and field.related_model}
-            )
+            info[app_name][model.__name__].update({
+                field.name: f"{get_model_name(field.related_model)}"
+                for field in model._meta.get_fields()
+                if field.is_relation and field.related_model
+            })
         if not info[app_name]:
             del info[app_name]
     return info
