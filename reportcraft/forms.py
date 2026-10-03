@@ -549,7 +549,7 @@ class BarsForm(EntryConfigForm):
         widget=forms.Select(choices=((True, 'Grouped'), (False, 'Stacked'))),
     )
     facets = forms.ModelChoiceField(label='Facets', required=False, queryset=models.DataField.objects.none())
-    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.COLOR_SCHEMES, initial='Live8')
+    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.COLOR_SCHEMES)
     ticks_every = forms.IntegerField(label='Ticks Every', required=False, initial=1)
     sort_desc = forms.BooleanField(
         label="Sort Order", required=False, widget=forms.Select(choices=((True, 'Descending'), (False, 'Ascending'))),
@@ -609,7 +609,7 @@ class PlotForm(EntryConfigForm):
     x_label = forms.CharField(label='X Label', required=False)
     y_label = forms.CharField(label='Y Label', required=False)
     x_value = forms.ModelChoiceField(label='X-Value', required=True, queryset=models.DataField.objects.none())
-    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
+    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES)
     group_by = forms.ModelChoiceField(label=_('Group By'), required=False, queryset=models.DataField.objects.none())
     precision = forms.IntegerField(label="Precision", required=False)
     x_scale = forms.ChoiceField(label='X Scale', required=False, choices=SCALE_CHOICES, initial='linear')
@@ -709,60 +709,33 @@ class ListForm(EntryConfigForm):
         )
 
 
-class PieForm(ModalModelForm):
+class PieForm(EntryConfigForm):
     value = forms.ModelChoiceField(label=_('Value'), required=True, queryset=models.DataField.objects.none())
     label = forms.ModelChoiceField(label=_('Label'), required=True, queryset=models.DataField.objects.none())
-    colors = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
+    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES)
+
+    SINGLE_FIELDS = ['value', 'label']
+    OTHER_FIELDS = ['scheme']
 
     class Meta:
         model = models.Entry
-        fields = ('attrs', 'value', 'label', 'colors')
+        fields = ('attrs',)
         widgets = {
             'attrs': forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
-        self.update_initial()
         self.body.append(
             Row(
-                ThirdWidth(Field('value', css_class='select')),
-                ThirdWidth(Field('label', css_class='select')),
-                ThirdWidth(Field('colors', css_class='select')),
+                ThirdWidth('value'),
+                ThirdWidth('label'),
+                ThirdWidth('scheme'),
             ),
             Div(
                 Field('attrs'),
             ),
         )
-
-    def update_initial(self):
-        attrs = self.instance.attrs
-        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
-        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
-        for field in ['value', 'label']:
-            self.fields[field].queryset = field_queryset
-
-        for field in ['value', 'label']:
-            if field in attrs:
-                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
-        for field in ['colors']:
-            if field in attrs:
-                self.fields[field].initial = attrs[field]
-
-    def clean(self):
-        cleaned_data = super().clean()
-        new_attrs = {}
-
-        for field in ['value', 'label']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = cleaned_data[field].name
-        for field in ['colors']:
-            if field in cleaned_data:
-                new_attrs[field] = cleaned_data[field]
-
-        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, []]}
-        return cleaned_data
 
 
 class TimelineForm(EntryConfigForm):
@@ -772,7 +745,7 @@ class TimelineForm(EntryConfigForm):
     end_value = forms.ModelChoiceField(label='Event End', required=True, queryset=models.DataField.objects.none())
     labels = forms.ModelChoiceField(label='Labels', required=False, queryset=models.DataField.objects.none())
     color_by = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
+    scheme = forms.ChoiceField(label='Palette', required=False, choices=utils.CATEGORICAL_SCHEMES)
 
     SINGLE_FIELDS = ['start_value', 'end_value', 'labels', 'color_by',]
     OTHER_FIELDS = ['min_time', 'max_time', 'scheme']
@@ -838,7 +811,7 @@ class HistogramForm(EntryConfigForm):
         label='Stack Groups', required=False, initial=True,
         widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
     )
-    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
+    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES)
     bins = forms.IntegerField(label='Bins', required=False)
     scale = forms.ChoiceField(label='Y-Scale', required=False, choices=SCALE_CHOICES, initial='linear')
     x_facet = forms.ModelChoiceField(label='X Facet', required=False, queryset=models.DataField.objects.none())

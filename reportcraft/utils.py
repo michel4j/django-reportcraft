@@ -596,6 +596,12 @@ def prepare_data(
     if select is None:
         # if no fields are selected, select all fields from the data
         select = {key for item in data for key in item.keys()}
+    else:
+        select = set(select)
+
+    # Always select "color" field if they exist in the data, even if not in select
+    if any('color' in item for item in data):
+        select.add('color')
 
     fill_missing = default != ValueType.IGNORE
 
@@ -775,24 +781,36 @@ DIVERGENT_SCHEME_NAMES = [
 CYCLICAL_SCHEME_NAMES = ['Rainbow', 'Sinebow']
 
 
-def _make_scheme_choices(schemes):
+def _make_scheme_choices(schemes, blank: bool = True):
+    """
+    Make a list of tuples for use in Django ChoiceField, with an optional blank choice at the beginning.
+    :param schemes: List of scheme names
+    :param blank: Whether to include a blank choice at the beginning
+    :return: List of tuples of (scheme_name, scheme_name)
+    """
+    if blank:
+        return [('', 'Select...')] + [(scheme, scheme) for scheme in schemes]
     return [(scheme, scheme) for scheme in schemes]
 
 
 CATEGORICAL_SCHEMES = _make_scheme_choices(CATEGORICAL)
 DIVERGENT_SCHEMES = _make_scheme_choices(DIVERGENT_SCHEME_NAMES)
 CYCLICAL_SCHEMES = _make_scheme_choices(CYCLICAL_SCHEME_NAMES)
+SEQUENTIAL_MULTI = _make_scheme_choices(SEQUENTIAL_MULTI)
+SEQUENTIAL_SINGLE = _make_scheme_choices(SEQUENTIAL_SINGLE)
+
 SEQUENTIAL_SCHEMES = [
-    ('Single Hue', _make_scheme_choices(SEQUENTIAL_SINGLE)),
-    ('Multi Hue', _make_scheme_choices(SEQUENTIAL_MULTI)),
-    ('Diverging', DIVERGENT_SCHEMES),
-    ('Cyclical', CYCLICAL_SCHEMES),
+    ('', 'Select...'),
+    ('Single Hue', SEQUENTIAL_SINGLE[1:]),
+    ('Multi Hue', SEQUENTIAL_MULTI[1:]),
+    ('Diverging', DIVERGENT_SCHEMES[1:]),
+    ('Cyclical', CYCLICAL_SCHEMES[1:]),
 ]
 
 COLOR_SCHEMES = [
     ('', 'Select...'),
-    ('Categorical', CATEGORICAL_SCHEMES),
-    *SEQUENTIAL_SCHEMES
+    ('Categorical', CATEGORICAL_SCHEMES[1:]),
+    *SEQUENTIAL_SCHEMES[1:]
 ]
 
 AXIS_CHOICES = [('', 'Select...'), ('y', 'Y1-Axis'), ('y2', 'Y2-Axis')]

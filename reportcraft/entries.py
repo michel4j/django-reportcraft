@@ -119,7 +119,7 @@ def generate_bars(entry, kind='bars', **kwargs):
     sort_desc = entry.attrs.get('sort_desc', False)
     ticks_every = entry.attrs.get('ticks_every', 1)
     limit = entry.attrs.get('limit', None)
-    scheme = entry.attrs.get('scheme', 'Live8')
+    scheme = entry.attrs.get('scheme', None)
     vertical = (kind == "columns")
     scale = entry.attrs.get('scale', 'linear')
     normalize = entry.attrs.get('normalize', False)
@@ -269,7 +269,7 @@ def generate_plot(entry, **kwargs):
     x_scale = entry.attrs.get('x_scale', 'linear')
     y_scale = entry.attrs.get('y_scale', 'linear')
     group_by = entry.attrs.get('group_by', None)
-    scheme = entry.attrs.get('scheme', 'Live8')
+    scheme = entry.attrs.get('scheme', None)
 
     if not (x_value and groups):
         return {}
@@ -325,23 +325,43 @@ def generate_pie(entry, kind: Literal['pie', 'donut'] = 'pie', **kwargs):
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
 
-    colors = entry.attrs.get('colors', None)
+    # support legacy 'colors' attribute for backward compatibility
+    scheme = entry.attrs.get('scheme', entry.attrs.get('colors', None))
     value_field = entry.attrs.get('value', '')
     label_field = entry.attrs.get('label', '')
     labels = entry.source.get_labels()
 
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
-    data = defaultdict(int)
+    print(raw_data)
+    pre_data = defaultdict(int)
+    colors = {}
     for item in raw_data:
-        data[item.get(label_field)] += item.get(value_field, 0)
+        pre_data[item.get(label_field)] += item.get(value_field, 0)
+        if 'color' in item:
+            colors[item.get(label_field)] = item.get('color')
 
+    def _get_color(label):
+        if label in colors:
+            return {'Color': colors[label]}
+        else:
+            return {}
+
+    data = [
+        {
+            'label': labels.get(label, label),
+            'value': value,
+            **_get_color(label)
+        }
+        for label, value in pre_data.items()
+    ]
     return {
         'title': entry.title,
         'description': entry.description,
         'kind': kind,
+        'colors': 'label',
         'style': entry.style,
-        'scheme': colors,
-        'data': [{'label': labels.get(label, label), 'value': value} for label, value in data.items()],
+        'scheme': scheme,
+        'data': data,
         'notes': entry.notes
     }
 
@@ -420,7 +440,7 @@ def generate_timeline(entry, **kwargs):
     end_value = entry.attrs.get('end_value', None)
     label_value = entry.attrs.get('labels', None)
     color_by = entry.attrs.get('color_by', None)
-    scheme = entry.attrs.get('scheme', 'Live8')
+    scheme = entry.attrs.get('scheme', None)
 
     if not start_value or not end_value:
         return {}
@@ -477,7 +497,7 @@ def generate_geochart(entry, **kwargs):
     latitude = entry.attrs.get('latitude', None)
     longitude = entry.attrs.get('longitude', None)
     map_labels = entry.attrs.get('map_labels', None)
-    scheme = entry.attrs.get('scheme', 'Live8')
+    scheme = entry.attrs.get('scheme', None)
 
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     features = [
@@ -518,7 +538,7 @@ def generate_likert(entry, **kwargs):
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
     labels = entry.source.get_labels()
-    scheme = entry.attrs.get('scheme', 'Live8')
+    scheme = entry.attrs.get('scheme', None)
 
     settings = {
         key: entry.attrs.get(key, '')

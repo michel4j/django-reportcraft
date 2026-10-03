@@ -146,7 +146,6 @@ function renderMarkdown(text) {
     return markdown.makeHtml(text);
 }
 
-
 function renderContent(options) {
     return contentTemplate({
         id: options.id,
@@ -155,8 +154,6 @@ function renderContent(options) {
         tableTemplate: tableTemplate,
         figureTypes: figureTypes,
         theme: options.theme,
-        // encodeObj: encodeObj,
-        // decodeObj: decodeObj
     });
 }
 
@@ -175,26 +172,6 @@ function renderSection(options) {
     });
 }
 
-
-function encodeObj(obj) {
-    // encode object as base64 string
-    const utf8Bytes = encodeURIComponent(JSON.stringify(obj)).replace(/%([0-9A-F]{2})/g,
-        function toSolidBytes(match, p1) {
-            return String.fromCharCode(`0x${p1}`);
-        });
-    return btoa(utf8Bytes);
-}
-
-
-function decodeObj(base64Str) {
-    // decode base64 string to object
-    const binaryString = atob(base64Str);
-    const percentEncodedStr = binaryString.split('').map(function (c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join('');
-    return JSON.parse(decodeURIComponent(percentEncodedStr));
-}
-
 function Likert(responses) {
     const map = new Map(responses);
     return {
@@ -211,22 +188,6 @@ function Likert(responses) {
             }
         }
     };
-}
-
-function fillMissing(list, defaultValue = 0) {
-  // Get a unique list of all keys present in any object
-  const allKeys = [...new Set(list.flatMap(obj => Object.keys(obj)))];
-
-  // Map over the list and return a new array of objects with filled keys
-  return list.map(obj => {
-    const filledObj = { ...obj };
-    for (const key of allKeys) {
-      if (!(key in filledObj)) {
-        filledObj[key] = defaultValue;
-      }
-    }
-    return filledObj;
-  });
 }
 
 /**
@@ -383,17 +344,17 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
         if (chart.scheme in ColorSchemes) {
             scheme = ColorSchemes[chart.scheme];
         } else if (`scheme${chart.scheme}` in d3) {
-            scheme = chart.scheme;
+            scheme = d3[`scheme${chart.scheme}`];
         } else if (`interpolate${chart.scheme}` in d3) {
             scheme = d3[`interpolate${chart.scheme}`];
         } else {
-            scheme = d3.Observable10;
+            scheme = d3.schemeObservable10;
         }
+
         const targetWidth = figure.offsetWidth;
         const options = {
             uid: (index + Date.now()).toString(36),
             width: targetWidth,
-            //fontSize: scaleFontSize(targetWidth, 0.75, 1.5, 400, 1200),
             height: targetWidth / aspectRatio,
             scheme: scheme,
             theme: figure.getAttribute('data-rc-theme') || 'default',
@@ -470,22 +431,28 @@ function formatTick(value, i, ticksEvery = 1, ticksInterval = undefined) {
     }
 }
 
-function setColorScheme(plotOptions, chartOptions) {
-    switch (typeof chartOptions.scheme) {
-        case 'string':
-            plotOptions.color.scheme = chartOptions.scheme;
-            break;
-        case 'function':
-            plotOptions.color.interpolate = chartOptions.scheme;
-            plotOptions.color.type = 'quantize';
-            break;
-        case 'object':
-            if (Array.isArray(chartOptions.scheme)) {
-                plotOptions.color.range = chartOptions.scheme;
-            }
-            break;
-        default:
-            console.warn("Unknown color scheme format");
+function setColorScheme(plotOptions, chartOptions, chart) {
+    if ((chart.scheme === null) && (chart.colors) && (chart.data.some(d => "Color" in d))) {
+        const colorMap = new Map(chart.data.map(d => [d[chart.colors], d.Color]));
+        plotOptions.color.domain = [...colorMap.keys()];
+        plotOptions.color.range = [...colorMap.values()];
+    } else {
+        switch (typeof chartOptions.scheme) {
+            case 'string':
+                plotOptions.color.scheme = chartOptions.scheme;
+                break;
+            case 'function':
+                plotOptions.color.interpolate = chartOptions.scheme;
+                plotOptions.color.type = 'quantize';
+                break;
+            case 'object':
+                if (Array.isArray(chartOptions.scheme)) {
+                    plotOptions.color.range = chartOptions.scheme;
+                }
+                break;
+            default:
+                console.warn("Unknown color scheme format");
+        }
     }
 }
 
@@ -755,7 +722,7 @@ function drawBarChart(figure, chart, options) {
         marks: marks
     };
 
-    setColorScheme(plotOptions, options);
+    setColorScheme(plotOptions, options, chart);
     setAxisScale(plotOptions[valueAxis], valueScale);
 
     maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => getTextWidth(`${d[chart.y]}`, figure)));
@@ -780,6 +747,8 @@ function drawBarChart(figure, chart, options) {
         markOptions[`f${valueAxis}`] = chart.facets;
         if (valueAxis === 'x') {
             plotOptions.marginTop = fontSizePix * 3;
+        } else {
+            plotOptions.marginRight = fontSizePix * 5;
         }
     }
 
@@ -859,7 +828,7 @@ function drawXYPlot(figure, chart, options) {
     };
 
     // Set scales
-    setColorScheme(plotOptions, options);
+    setColorScheme(plotOptions, options, chart);
     setAxisScale(plotOptions.x, xScale);
     setAxisScale(plotOptions.y, yScale);
 
@@ -1012,10 +981,22 @@ function drawHistogram(figure, chart, options) {
 function drawPieChart(figure, chart, options) {
     // Placeholder for pie chart implementation
     const uniqueLabels = [...d3.union(chart.data.map(d => d.label))];
-    const color = d3.scaleOrdinal(options.scheme);
+
     const outerRadius = Math.min(options.width, options.height) / 2 - 35;
     const innerRadius = (chart.kind === 'donut') ? outerRadius / 2 : 0;
     const total = d3.sum(chart.data, d => d.value);
+    const plotOptions = {
+        color: {
+            legend: true,
+        }
+    }
+    let color;
+    setColorScheme(plotOptions, options, chart);
+    if (plotOptions.color.range && plotOptions.color.domain) {
+        color = d3.scaleOrdinal(plotOptions.color.range).domain(plotOptions.color.domain);
+    } else {
+        color = d3.scaleOrdinal(options.scheme);
+    }
 
     // Add plot
     const plot = document.createElement("figure");
@@ -1087,10 +1068,15 @@ function drawPieChart(figure, chart, options) {
         .join("text")
           .attr("transform", d => `translate(${arcLabel.centroid(d)})`)
           .call(text => text.filter(d => (d.endAngle - d.startAngle) > 0.15).append("tspan")
+              .attr("y", "-0.4em")
+              .attr("font-weight", "bold")
+              .text(d => d3.format(".1f")(100 * d.data.value / total) + "%")
+          )
+          .call(text => text.filter(d => (d.endAngle - d.startAngle) > 0.15).append("tspan")
               .attr("x", 0)
               .attr("y", "0.7em")
               .attr("fill-opacity", 0.7)
-              .attr("font-weight", "bold")
+              .attr("font-weight", "300")
               .text(d => d.data.value.toLocaleString("en-US")));
 
     // svg.selectAll("pieSlices")
@@ -1189,7 +1175,7 @@ function drawGeoChart(figure, chart, options) {
         marks: []
     };
 
-    setColorScheme(plotOptions, options);
+    setColorScheme(plotOptions, options, chart);
     Promise.all([
         d3.json(`${options.staticRoot}/maps/${chart.map}.json`),
         showLand ? d3.json(`${options.staticRoot}/maps/land.json`) : null,
