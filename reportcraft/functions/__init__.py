@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from datetime import datetime
-import numpy
 import itertools
+from datetime import datetime
+
+import numpy
 from django.apps import apps
 from django.db import models
 from django.db.models import Window, Sum, F, Case, When, Value as V, TextField, CharField, Count
 from django.db.models.expressions import RowRange
 from django.utils import timezone
-
 
 SHIFT = 8
 SHIFT_DURATION = '{:d} hour'.format(SHIFT)
@@ -266,7 +266,7 @@ class Interval(Case):
 
         # --- Condition 1: Lower Bound ---
         whens = [
-            When(**{f'{field}__lt': lo}, then=V(f' <{lo:g} ')), # Add spaces to allow sorting to work
+            When(**{f'{field}__lt': lo}, then=V(f' <{lo:g} ')),     # Add spaces to allow sorting to work
             When(**{f'{field}__gt': hi}, then=V(f'>{hi:g}')),
         ]
         if num_intervals == 1:

@@ -11,7 +11,6 @@ from enum import Enum
 from functools import wraps, reduce
 from importlib import import_module
 from inspect import getframeinfo, stack
-from io import StringIO
 from operator import or_
 from typing import Any, Sequence, Iterable
 
@@ -21,7 +20,6 @@ from django.apps import apps
 from django.conf import settings
 from django.core import serializers
 from django.core.cache import cache
-from django.core.management import call_command
 from django.db import models
 from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q
 from django.db.models.functions import (

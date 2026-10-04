@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from django.db import models
-from django.contrib.postgres.aggregates import StringAgg
+from django.db.models.aggregates import StringAgg
 
 
 class Join(StringAgg):
