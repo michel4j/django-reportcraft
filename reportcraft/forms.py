@@ -21,6 +21,10 @@ from .utils import MAP_CHOICES, AXIS_CHOICES, COLOR_SCHEMES
 disabled_widget = forms.HiddenInput(attrs={'readonly': True})
 
 
+def human_title(text):
+    return text.replace('_', ' ').title()
+
+
 class AutoPopulatedSlugField(forms.TextInput):
     """
     A SlugField that automatically populates the slug based on the title field.
@@ -217,16 +221,18 @@ class DataModelForm(ModalModelForm):
             group_fields = self.instance.get_group_fields()
             for field_name, field in group_fields.items():
                 group_name = f'{field_name}__group'
-                self.fields[group_name] = forms.CharField(label=_(f'{field_name.title()} Dimension'), required=True)
-                self.fields[group_name].help_text = f'Enter calculation expression for {field_name} dimension'
+                field_label = human_title(field_name)
+                self.fields[group_name] = forms.CharField(label=_(f'{field_label} Dimension'), required=True)
+                self.fields[group_name].help_text = f'Enter calculation expression for {field_label} dimension'
                 if field:
                     self.fields[group_name].initial = field.expression
                 self.extra_fields[field_name] = group_name
         else:
             for field_name in self.source.group_by:
                 group_name = f'{field_name}__group'
-                self.fields[group_name] = forms.CharField(label=_(f'{field_name.title()} Dimension'), required=True)
-                self.fields[group_name].help_text = f'Enter calculation expression for {field_name} dimension'
+                field_label = human_title(field_name)
+                self.fields[group_name] = forms.CharField(label=_(f'{field_label} Dimension'), required=True)
+                self.fields[group_name].help_text = f'Enter calculation expression for {field_label} dimension'
                 self.extra_fields[field_name] = group_name
 
         extra_div = Div(*[Div(field, css_class='col-12') for field in self.extra_fields.values()], css_class='row')

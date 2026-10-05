@@ -525,7 +525,7 @@ const getTextWidth = (() => {
             }
             width += charWidth;
         }
-        return Math.round(width);
+        return Math.round(0.8 * width);
     };
 })();
 
