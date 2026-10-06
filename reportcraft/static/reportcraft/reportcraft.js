@@ -345,6 +345,7 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
             scheme = ColorSchemes[chart.scheme];
         } else if (`scheme${chart.scheme}` in d3) {
             scheme = d3[`scheme${chart.scheme}`];
+
         } else if (`interpolate${chart.scheme}` in d3) {
             scheme = d3[`interpolate${chart.scheme}`];
         } else {
@@ -447,7 +448,11 @@ function setColorScheme(plotOptions, chartOptions, chart) {
                 break;
             case 'object':
                 if (Array.isArray(chartOptions.scheme)) {
-                    plotOptions.color.range = chartOptions.scheme;
+                    if (Array.isArray(chartOptions.scheme) && chartOptions.scheme.some(Array.isArray)) {
+                        plotOptions.color.range = chartOptions.scheme[6];
+                    } else {
+                        plotOptions.color.range = chartOptions.scheme;
+                    }
                 }
                 break;
             default:
@@ -1170,6 +1175,7 @@ function drawGeoChart(figure, chart, options) {
         height: options.height || 600,
         color: {
             type: "quantize",
+            tickFormat: '.2s'
         },
         projection: {},
         marks: []

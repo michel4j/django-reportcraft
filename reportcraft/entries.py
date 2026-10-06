@@ -332,7 +332,6 @@ def generate_pie(entry, kind: Literal['pie', 'donut'] = 'pie', **kwargs):
     labels = entry.source.get_labels()
 
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
-    print(raw_data)
     pre_data = defaultdict(int)
     colors = {}
     for item in raw_data:
