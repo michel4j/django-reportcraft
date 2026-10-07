@@ -15,7 +15,7 @@ import numpy
 
 from .utils import (
     regroup_data, MinMax, epoch, get_histogram_points, wrap_table,
-    prepare_data, debug_value, ValueType
+    prepare_data, debug_value, ValueType, nice_sum
 )
 
 
@@ -65,13 +65,13 @@ def generate_table(entry, **kwargs) -> dict:
 
     if total_row:
         table_data.append(
-            ['Total'] + [sum([row[i] for row in table_data[1:]]) for i in range(1, num_columns + 1)]
+            ['Total'] + [nice_sum([row[i] for row in table_data[1:]]) for i in range(1, num_columns + 1)]
         )
 
     if total_column:
         table_data[0].append('All')
         for row in table_data[1:]:
-            row.append(sum(row[1:]))
+            row.append(nice_sum(row[1:]))
 
     if force_strings:
         table_data = [

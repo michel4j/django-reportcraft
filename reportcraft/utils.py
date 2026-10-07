@@ -1038,3 +1038,10 @@ def import_report(yaml_string: str):
 
     # Return the imported report if any
     return Report.objects.last()
+
+
+def nice_sum(values):
+    value = sum(v for v in values if v is not None)
+    if isinstance(value, float):
+        return round(value, 2)
+    return value
