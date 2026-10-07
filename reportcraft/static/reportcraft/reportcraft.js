@@ -344,8 +344,8 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
         if (chart.scheme in ColorSchemes) {
             scheme = ColorSchemes[chart.scheme];
         } else if (`scheme${chart.scheme}` in d3) {
-            scheme = d3[`scheme${chart.scheme}`];
-
+            // scheme = d3[`scheme${chart.scheme}`];
+            scheme = chart.scheme;
         } else if (`interpolate${chart.scheme}` in d3) {
             scheme = d3[`interpolate${chart.scheme}`];
         } else {
