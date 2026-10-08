@@ -36,6 +36,8 @@ EXPRESSIONS = {
     "Count(Journal, filters='Journal.Metrics.ImpactFactor > 5')": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5)),
     "Count(Journal, filters=\"Journal.Metrics.ImpactFactor > 5 and Journal.Publisher = 'Springer'\")": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5) & Q(journal__publisher='Springer')),
     "Count(Journal, filter='Journal.Metrics.ImpactFactor > 5')": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5)),
+    "Avg(Journal.Metrics.ImpactFactor, filter=(Journal.Metrics.Year = 2000))": Avg('journal__metrics__impact_factor', filter=Q(journal__metrics__year=2000)),
+    "Avg(Journal.Metrics.ImpactFactor, filters=(Journal.Metrics.Year = 2000))": Avg('journal__metrics__impact_factor', filter=Q(journal__metrics__year=2000)),
 }
 
 FILTERS = {
@@ -1567,5 +1569,121 @@ class MergeDataTestCase(TestCase):
         by_name = {item["name"]: item["capital"] for item in data}
         self.assertEqual(by_name["Iceland"], "Default Capital")
         self.assertEqual(by_name["Japan"], "Tokyo")
+
+    def test_datasource_get_source_data_with_filtered_datafield(self):
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Country
+        from reportcraft.models import DataSource, DataModel, DataField
+
+        Country.objects.create(name="Country Alpha", code="CAL", continent="Region 1")
+        Country.objects.create(name="Country Beta", code="CBE", continent="Region 1")
+        Country.objects.create(name="Country Gamma", code="CGA", continent="Region 1")
+        Country.objects.create(name="Country Delta", code="CDE", continent="Region 2")
+        Country.objects.create(name="Country Epsilon", code="CEP", continent="Region 2")
+
+        ds = DataSource.objects.create(name="Filtered DataField DS", group_by=["continent"])
+        ct = ContentType.objects.get_for_model(Country)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Country")
+
+        DataField.objects.create(source=ds, model=dm, name="continent", label="Continent")
+        DataField.objects.create(source=ds, model=dm, name="total", label="Total", expression="Count(id)")
+        DataField.objects.create(
+            source=ds, model=dm, name="alpha_count", label="Alpha Count",
+            expression="Count(id, filters=\"name = 'Country Alpha'\")"
+        )
+        DataField.objects.create(
+            source=ds, model=dm, name="alpha_or_beta", label="Alpha or Beta Count",
+            expression="Count(id, filters=(name = 'Country Alpha' or name = 'Country Beta'))"
+        )
+        DataField.objects.create(
+            source=ds, model=dm, name="not_alpha", label="Not Alpha Count",
+            expression="Count(id, filter=(name != 'Country Alpha'))"
+        )
+
+        data = ds.get_source_data()
+        by_continent = {item["continent"]: item for item in data}
+
+        self.assertIn("Region 1", by_continent)
+        self.assertEqual(by_continent["Region 1"]["total"], 3)
+        self.assertEqual(by_continent["Region 1"]["alpha_count"], 1)
+        self.assertEqual(by_continent["Region 1"]["alpha_or_beta"], 2)
+        self.assertEqual(by_continent["Region 1"]["not_alpha"], 2)
+
+        self.assertIn("Region 2", by_continent)
+        self.assertEqual(by_continent["Region 2"]["total"], 2)
+        self.assertEqual(by_continent["Region 2"]["alpha_count"], 0)
+        self.assertEqual(by_continent["Region 2"]["alpha_or_beta"], 0)
+        self.assertEqual(by_continent["Region 2"]["not_alpha"], 2)
+
+    def test_datasource_filtered_avg_expression(self):
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Institution, Person, Country
+        from reportcraft.models import DataSource, DataModel, DataField
+
+        c = Country.objects.create(name="AvgTestCountry", code="ATC")
+        inst1 = Institution.objects.create(name="Institute Alpha", city="City A", country=c)
+        inst2 = Institution.objects.create(name="Institute Beta", city="City B", country=c)
+
+        # Institute Alpha has two people: age 30 and age 50 (avg: 40.0)
+        Person.objects.create(first_name="Alice", last_name="A", gender="female", age=30, institution=inst1)
+        Person.objects.create(first_name="Bob", last_name="B", gender="male", age=50, institution=inst1)
+        # Institute Beta has one person: age 20 (avg: 20.0)
+        Person.objects.create(first_name="Charlie", last_name="C", gender="male", age=20, institution=inst2)
+
+        ds = DataSource.objects.create(name="Filtered Avg DS", group_by=["name"])
+        ct = ContentType.objects.get_for_model(Institution)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Institution")
+
+        DataField.objects.create(source=ds, model=dm, name="name", label="Name")
+        df_unfiltered = DataField.objects.create(
+            source=ds, model=dm, name="avg_age", label="Avg Age",
+            expression="Avg(People.Age)"
+        )
+        df_match = DataField.objects.create(
+            source=ds, model=dm, name="avg_age_filtered_match", label="Filtered Match",
+            expression="Avg(People.Age, filter=(People.Age = 30))"
+        )
+        df_nomatch = DataField.objects.create(
+            source=ds, model=dm, name="avg_age_filtered_nomatch", label="Filtered No Match",
+            expression="Avg(People.Age, filter=(People.Age = 2000))"
+        )
+        df_filters_nomatch = DataField.objects.create(
+            source=ds, model=dm, name="avg_age_filters_nomatch", label="Filters No Match",
+            expression="Avg(People.Age, filters=(People.Age = 2000))"
+        )
+
+        # 1. Verify direct ORM evaluation via aggregate()
+        agg_res = Institution.objects.filter(name="Institute Alpha").aggregate(
+            unfiltered=df_unfiltered.get_expression(),
+            filtered_match=df_match.get_expression(),
+            filtered_nomatch=df_nomatch.get_expression(),
+            filters_nomatch=df_filters_nomatch.get_expression(),
+        )
+        self.assertEqual(agg_res["unfiltered"], 40.0)
+        self.assertEqual(agg_res["filtered_match"], 30.0)
+        self.assertIsNone(agg_res["filtered_nomatch"])
+        self.assertIsNone(agg_res["filters_nomatch"])
+        self.assertNotEqual(agg_res["filtered_nomatch"], agg_res["unfiltered"])
+
+        # 2. Verify via ds.get_source_data() with grouping
+        data = ds.get_source_data()
+        by_name = {item["name"]: item for item in data}
+
+        self.assertIn("Institute Alpha", by_name)
+        alpha = by_name["Institute Alpha"]
+        self.assertEqual(alpha["avg_age"], 40.0)
+        self.assertEqual(alpha["avg_age_filtered_match"], 30.0)
+        self.assertIsNone(alpha["avg_age_filtered_nomatch"])
+        self.assertIsNone(alpha["avg_age_filters_nomatch"])
+        self.assertNotEqual(alpha["avg_age_filtered_nomatch"], alpha["avg_age"])
+
+        self.assertIn("Institute Beta", by_name)
+        beta = by_name["Institute Beta"]
+        self.assertEqual(beta["avg_age"], 20.0)
+        self.assertIsNone(beta["avg_age_filtered_match"])
+        self.assertIsNone(beta["avg_age_filtered_nomatch"])
+        self.assertIsNone(beta["avg_age_filters_nomatch"])
+
+
 
 

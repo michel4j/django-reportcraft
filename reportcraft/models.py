@@ -196,6 +196,7 @@ class DataSource(models.Model):
 
         # generate the queryset
         queryset = model.objects.values(
+            *group_by,
             **annotations
         ).annotate(
             **aggregations

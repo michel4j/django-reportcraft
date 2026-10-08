@@ -240,6 +240,8 @@ class Parser:
                 sig = signature(func)
                 if 'filter' in kwargs and 'filter' not in sig.parameters and 'filters' in sig.parameters:
                     kwargs['filters'] = kwargs.pop('filter')
+                elif 'filters' in kwargs and 'filters' not in sig.parameters and 'filter' in sig.parameters:
+                    kwargs['filter'] = kwargs.pop('filters')
             except (ValueError, TypeError):
                 pass
             return func(*ordered_args, **kwargs)

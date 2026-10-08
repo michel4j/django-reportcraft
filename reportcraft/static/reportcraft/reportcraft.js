@@ -806,8 +806,8 @@ function drawXYPlot(figure, chart, options) {
         className: "rc-chart",
         width: options.width || 800,
         height: options.height || 600,
-        marginLeft: 40,
-        marginRight: 40,
+        marginLeft: 50,
+        marginRight: 50,
         marginTop: 40,
         marginBottom: 40,
         style: {
@@ -937,8 +937,8 @@ function drawHistogram(figure, chart, options) {
         },
         width: options.width || 800,
         height: options.height || 600,
-        marginLeft: 40,
-        marginRight: 40,
+        marginLeft: 50,
+        marginRight: 50,
         marginTop: 40,
         marginBottom: 40,
         color: {
@@ -1119,8 +1119,8 @@ function drawTimeline(figure, chart, options) {
         },
         width: options.width || 800,
         height: options.height || 600,
-        marginLeft: 40,
-        marginRight: 40,
+        marginLeft: 50,
+        marginRight: 50,
         marginTop: 40,
         marginBottom: 40,
         color: {
