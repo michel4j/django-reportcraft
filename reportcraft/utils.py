@@ -300,14 +300,24 @@ class FilterParser:
             ]
         )
 
-        # Values
+        # Values and RHS expressions
         number = pp.pyparsing_common.number
         quoted_string = pp.QuotedString("'") | pp.QuotedString('"')
         boolean = pp.oneOf('True False', caseless=True).setParseAction(self._parse_bool)
-        value = number | quoted_string | boolean
+        if self.identifiers:
+            rhs_field = pp.oneOf(self.identifiers, caseless=True).setParseAction(self._make_f_object)
+        else:
+            rhs_field = pp.Word(pp.alphas + "_", pp.alphanums + "_.").setParseAction(self._make_f_object)
+        rhs_operand = quoted_string | boolean | number | rhs_field
+        rhs_expr = pp.infixNotation(
+            rhs_operand, [
+                (pp.oneOf('* /'), 2, pp.opAssoc.LEFT, self._eval_binary_op),
+                (pp.oneOf('+ -'), 2, pp.opAssoc.LEFT, self._eval_binary_op),
+            ]
+        )
 
-        # A single condition (e.g., "Citations > 100")
-        condition = pp.Group(identifier + operator + value)
+        # A single condition (e.g., "Citations > 100", "Journal.Metrics.Year = Published.Year")
+        condition = pp.Group(identifier + operator + rhs_expr)
         condition.setParseAction(self._make_q_object)
 
         # Define the boolean logic using an operator precedence parser
@@ -331,6 +341,29 @@ class FilterParser:
             'true': True,
             'false': False,
         }.get(tokens[0].lower(), False)
+
+    @classmethod
+    def _make_f_object(cls, tokens):
+        """Parse action to convert field identifiers into Django F expressions."""
+        return F(cls._clean_field(tokens))
+
+    @staticmethod
+    def _eval_binary_op(tokens):
+        """Parse action to evaluate binary arithmetic operations on RHS operands."""
+        elems = tokens[0]
+        res = elems[0]
+        for i in range(1, len(elems), 2):
+            op = elems[i]
+            rhs = elems[i + 1]
+            if op == '+':
+                res = res + rhs
+            elif op == '-':
+                res = res - rhs
+            elif op == '*':
+                res = res * rhs
+            elif op == '/':
+                res = res / rhs
+        return res
 
     @staticmethod
     def _clean_field(tokens):

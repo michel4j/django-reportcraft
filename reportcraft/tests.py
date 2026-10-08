@@ -38,9 +38,13 @@ EXPRESSIONS = {
     "Count(Journal, filter='Journal.Metrics.ImpactFactor > 5')": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5)),
     "Avg(Journal.Metrics.ImpactFactor, filter=(Journal.Metrics.Year = 2000))": Avg('journal__metrics__impact_factor', filter=Q(journal__metrics__year=2000)),
     "Avg(Journal.Metrics.ImpactFactor, filters=(Journal.Metrics.Year = 2000))": Avg('journal__metrics__impact_factor', filter=Q(journal__metrics__year=2000)),
+    "Avg(Journal.Metrics.ImpactFactor, filter=(Journal.Metrics.Year = Published.Year))": Avg('journal__metrics__impact_factor', filter=Q(journal__metrics__year=F('published__year'))),
+    "Avg(Journal.Metrics.ImpactFactor, filters=(Journal.Metrics.Year = Published.Year))": Avg('journal__metrics__impact_factor', filter=Q(journal__metrics__year=F('published__year'))),
 }
 
 FILTERS = {
+    "Journal.Metrics.Year = Published.Year": Q(journal__metrics__year__exact=F('published__year')),
+    "Journal.Metrics.Year = Published.Year + 1": Q(journal__metrics__year__exact=F('published__year') + 1),
     "journal isnull True": Q(journal__isnull=True),
     "counts = 10": Q(counts__exact=10),
     "counts == 10.5": Q(counts__exact=10.5),
@@ -1683,6 +1687,69 @@ class MergeDataTestCase(TestCase):
         self.assertIsNone(beta["avg_age_filtered_match"])
         self.assertIsNone(beta["avg_age_filtered_nomatch"])
         self.assertIsNone(beta["avg_age_filters_nomatch"])
+
+    def test_publication_filtered_metric_impact_factor(self):
+        import datetime
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Journal, Metric, Publication
+        from reportcraft.models import DataSource, DataModel, DataField
+
+        # Setup Journal and Metrics
+        j = Journal.objects.create(name="Journal of Examples")
+        Metric.objects.create(journal=j, year=2020, impact_factor=2.0)
+        Metric.objects.create(journal=j, year=2021, impact_factor=4.0)
+
+        # Setup Publications: 1 in 2020 (IF: 2.0), 3 in 2021 (IF: 4.0)
+        Publication.objects.create(title="Paper 2020", journal=j, published=datetime.date(2020, 5, 1))
+        Publication.objects.create(title="Paper 2021 A", journal=j, published=datetime.date(2021, 2, 1))
+        Publication.objects.create(title="Paper 2021 B", journal=j, published=datetime.date(2021, 6, 1))
+        Publication.objects.create(title="Paper 2021 C", journal=j, published=datetime.date(2021, 9, 1))
+
+        # Setup DataSource and DataFields on Publication
+        ds = DataSource.objects.create(name="Publication Impact DS")
+        ct = ContentType.objects.get_for_model(Publication)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Publication")
+
+        df_title = DataField.objects.create(source=ds, model=dm, name="title", label="Title")
+        df_filters = DataField.objects.create(
+            source=ds, model=dm, name="impact_factor_filters", label="Impact Factor (filters)",
+            expression="Avg(Journal.Metrics.ImpactFactor, filters=(Journal.Metrics.Year = Published.Year))"
+        )
+        df_filter = DataField.objects.create(
+            source=ds, model=dm, name="impact_factor_filter", label="Impact Factor (filter)",
+            expression="Avg(Journal.Metrics.ImpactFactor, filter=(Journal.Metrics.Year = Published.Year))"
+        )
+
+        # 1. Direct ORM aggregate evaluation over Publication:
+        # Expected weighted average: (2.0*1 + 4.0*3) / 4 = 14.0 / 4 = 3.5
+        agg_res = Publication.objects.aggregate(
+            avg_filters=df_filters.get_expression(),
+            avg_filter=df_filter.get_expression(),
+        )
+        self.assertEqual(agg_res["avg_filters"], 3.5)
+        self.assertEqual(agg_res["avg_filter"], 3.5)
+
+        # 2. Evaluate per-publication via DataSource
+        data = ds.get_source_data()
+        by_title = {item["title"]: item for item in data}
+        self.assertEqual(by_title["Paper 2020"]["impact_factor_filters"], 2.0)
+        self.assertEqual(by_title["Paper 2020"]["impact_factor_filter"], 2.0)
+        self.assertEqual(by_title["Paper 2021 A"]["impact_factor_filters"], 4.0)
+        self.assertEqual(by_title["Paper 2021 B"]["impact_factor_filters"], 4.0)
+        self.assertEqual(by_title["Paper 2021 C"]["impact_factor_filters"], 4.0)
+
+        # 3. Evaluate grouped DataSource (group by journal__name)
+        ds_grouped = DataSource.objects.create(name="Grouped Publication Impact DS", group_by=["journal__name"])
+        dm_grouped = DataModel.objects.create(source=ds_grouped, model=ct, name="example.Publication")
+        DataField.objects.create(source=ds_grouped, model=dm_grouped, name="journal__name", label="Journal")
+        DataField.objects.create(
+            source=ds_grouped, model=dm_grouped, name="avg_impact", label="Avg Impact",
+            expression="Avg(Journal.Metrics.ImpactFactor, filters=(Journal.Metrics.Year = Published.Year))"
+        )
+        grouped_data = ds_grouped.get_source_data()
+        self.assertEqual(len(grouped_data), 1)
+        self.assertEqual(grouped_data[0]["journal__name"], "Journal of Examples")
+        self.assertEqual(grouped_data[0]["avg_impact"], 3.5)
 
 
 

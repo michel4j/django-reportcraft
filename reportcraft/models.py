@@ -169,18 +169,20 @@ class DataSource(models.Model):
         group_by = list(self.group_by) if self.group_by else []
         annotate_filter = {'name__in': group_by} if group_by else {}
         annotations = {
-            field.name: field.get_expression()
+            field.name: expr
             for field in self.fields.exclude(name__in=field_names).filter(model__name=model_name, **annotate_filter)
+            if (expr := field.get_expression()) is not None
         }
 
         # Add aggregations and handle grouping
         aggregations = {}
         if group_by:
             aggregations = {
-                field.name: field.get_expression()
+                field.name: expr
                 for field in self.fields.exclude(name__in=field_names).exclude(name__in=group_by).filter(
                     model__name=model_name
                 )
+                if (expr := field.get_expression()) is not None
             }
 
         # Ordering
