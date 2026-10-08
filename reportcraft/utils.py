@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from functools import wraps, reduce
 from importlib import import_module
-from inspect import getframeinfo, stack
+from inspect import signature, getframeinfo, stack
 from operator import or_
 from typing import Any, Sequence, Iterable
 
@@ -21,7 +21,7 @@ from django.conf import settings
 from django.core import serializers
 from django.core.cache import cache
 from django.db import models
-from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q
+from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q, Expression
 from django.db.models.functions import (
     Greatest, Least, Concat, Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan,
     ATan2, Mod, Sign, Trunc, Radians, Degrees, Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
@@ -170,10 +170,11 @@ class Parser:
         }.get(tokens[0], False)
 
     @staticmethod
-    def parse_kwargs(self, tokens):
+    def parse_kwargs(*args):
         """
         Parse keyword arguments for a function
         """
+        tokens = args[-1]
         return {k: v for k, v in tokens}
 
     @staticmethod
@@ -234,97 +235,16 @@ class Parser:
         elif name in FUNCTIONS:
             ordered_args = [a for a in args if not isinstance(a, dict)]
             kwargs = {k: v for a in args if isinstance(a, dict) for k, v in a.items()}
-            return FUNCTIONS[name](*ordered_args, **kwargs)
+            func = FUNCTIONS[name]
+            try:
+                sig = signature(func)
+                if 'filter' in kwargs and 'filter' not in sig.parameters and 'filters' in sig.parameters:
+                    kwargs['filters'] = kwargs.pop('filter')
+            except (ValueError, TypeError):
+                pass
+            return func(*ordered_args, **kwargs)
         else:
             raise ParseException(f'Unknown function: {name}')
-
-
-class ExpressionParser(Parser):
-    """
-    Compiles Calculation Expressions (domain formulas) into Django ORM Expression / Q objects
-    using a safe PyParsing grammar (see docs/adr/0001-pyparsing-dsl-for-expressions-and-filters.md).
-    """
-    def __init__(self):
-        self.expr = pp.Forward()
-        self.double = pp.Combine(pp.Optional('-') + pp.Word(pp.nums) + '.' + pp.Word(pp.nums)).setParseAction(
-            self.parse_float
-        )
-        self.integer = pp.Combine(pp.Optional('-') + pp.Word(pp.nums)).setParseAction(self.parse_int)
-        self.boolean = pp.oneOf('True False true false').setParseAction(self.parse_bool)
-        self.variable = pp.Word(pp.alphanums + '.').setParseAction(self.parse_var)
-        self.string = pp.quotedString.setParseAction(pp.removeQuotes)
-
-        # Define the function call
-        self.left_par = pp.Literal('(').suppress()
-        self.right_par = pp.Literal(')').suppress()
-        self.equal = pp.Literal('=').suppress()
-        self.comma = pp.Literal(',').suppress()
-        self.func_name = pp.Word(pp.alphas).setParseAction(self.parse_func_name)
-        self.func_kwargs = pp.Group(pp.Word(pp.alphas + '_') + self.equal + self.expr).setParseAction(self.parse_kwargs)
-        self.func_call = pp.Group(
-            self.func_name + self.left_par + pp.Group(pp.Optional(pp.delimitedList(self.expr))) + self.right_par
-        )
-
-        self.operand = (
-                self.double | self.integer | self.boolean | self.func_kwargs | self.func_call
-                | self.string | self.variable
-        )
-
-        self.negate = pp.Literal('-')
-        self.expr << pp.infixNotation(
-            self.operand, [
-                (self.negate, 1, pp.opAssoc.RIGHT, self.parse_negate),
-                (pp.oneOf('* /'), 2, pp.opAssoc.LEFT, self.parse_operator),
-                (pp.oneOf('+ -'), 2, pp.opAssoc.LEFT, self.parse_operator),
-            ]
-        )
-
-    def clean(self, expression, wrap_value=True):
-        """
-        Clean the parsed expression into a Django expression
-        :param expression: The parsed expression as a nested list
-        :param wrap_value: Whether to wrap values in a Value function
-        :return: A Django expression suitable for use in a QuerySet
-        """
-
-        if isinstance(expression, str) and expression.startswith('$'):
-            return self.clean_variable(expression)
-        elif isinstance(expression, bool):
-            return expression
-        elif isinstance(expression, (int, float, str)):
-            return V(expression) if wrap_value else expression
-        elif isinstance(expression, pp.ParseResults):
-            return self.clean(expression.asList())
-        elif isinstance(expression, dict):
-            return {
-                k: self.clean(v) for k, v in expression.items()
-            }
-        elif isinstance(expression, list) and len(expression) == 1:
-            return self.clean(expression[0])
-        elif not isinstance(expression, list):
-            return V(expression) if wrap_value else expression
-        elif len(expression) > 1 and isinstance(expression[0], str) and expression[0].endswith('()'):
-            func_name = expression[0].strip()[:-2]
-            args = self.clean(expression[1:])
-            if not isinstance(args, list):
-                args = [args]
-            return self.clean_function(func_name, *args)
-        else:
-            return [self.clean(sub_expr) for sub_expr in expression]
-
-    def parse(self, text):
-        """
-        Parse an expression string into a Django expression
-        :param text: The expression string to parse
-        :return: A Django expression suitable for use in a QuerySet
-        """
-        try:
-            expression = self.expr.parse_string(text, parseAll=True).as_list()
-            result = self.clean(expression)
-        except (ParseException, KeyError) as err:
-            result = V(0)
-            print(f'Error parsing expression: {err}')
-        return result
 
 
 class FilterParser:
@@ -348,9 +268,9 @@ class FilterParser:
         """
         # Define the basic elements of the grammar
         if self.identifiers:
-            identifier = pp.oneOf(self.identifiers, caseless=True).setParseAction(self._to_lowercase)
+            identifier = pp.oneOf(self.identifiers, caseless=True).setParseAction(self._clean_field)
         else:
-            identifier = pp.Word(pp.alphas, pp.alphanums + "_").setParseAction(self._to_lowercase)
+            identifier = pp.Word(pp.alphas + "_", pp.alphanums + "_.").setParseAction(self._clean_field)
         extr_operators = {
             '==': 'exact',  # alias for equality
             '=': 'exact',
@@ -389,10 +309,12 @@ class FilterParser:
         condition.setParseAction(self._make_q_object)
 
         # Define the boolean logic using an operator precedence parser
+        and_op = pp.CaselessLiteral("and") | pp.Literal("&")
+        or_op = pp.CaselessLiteral("or") | pp.Literal("|")
         q_expression = pp.infixNotation(
             condition, [
-                (pp.CaselessLiteral("and"), 2, pp.opAssoc.LEFT, self._process_and),
-                (pp.CaselessLiteral("or"), 2, pp.opAssoc.LEFT, self._process_or),
+                (and_op, 2, pp.opAssoc.LEFT, self._process_and),
+                (or_op, 2, pp.opAssoc.LEFT, self._process_or),
             ]
         )
 
@@ -407,6 +329,16 @@ class FilterParser:
             'true': True,
             'false': False,
         }.get(tokens[0].lower(), False)
+
+    @staticmethod
+    def _clean_field(tokens):
+        """Parse action to convert field names to lowercase Django lookup paths."""
+        name = tokens[0]
+        var_names = name.strip('$').split('.')
+        var_name = '__'.join(re.sub(r'(?<!^)(?=[A-Z])', '_', n) for n in var_names).lower()
+        if var_name == 'this':
+            var_name = 'id'
+        return var_name
 
     @staticmethod
     def _to_lowercase(tokens):
@@ -457,6 +389,114 @@ class FilterParser:
             if not silent:
                 raise ValueError(f"Expression `{filter_string}` is not valid.") from e
             return Q()  # Return an empty Q object if parsing fails and silent mode is on
+
+
+class ExpressionParser(Parser):
+    """
+    Compiles Calculation Expressions (domain formulas) into Django ORM Expression / Q objects
+    using a safe PyParsing grammar (see docs/adr/0001-pyparsing-dsl-for-expressions-and-filters.md).
+    """
+    def __init__(self):
+        self.filter_parser = FilterParser()
+        self.expr = pp.Forward()
+        self.double = pp.Combine(pp.Optional('-') + pp.Word(pp.nums) + '.' + pp.Word(pp.nums)).setParseAction(
+            self.parse_float
+        )
+        self.integer = pp.Combine(pp.Optional('-') + pp.Word(pp.nums)).setParseAction(self.parse_int)
+        self.boolean = pp.oneOf('True False true false').setParseAction(self.parse_bool)
+        self.variable = pp.Word(pp.alphanums + '.').setParseAction(self.parse_var)
+        self.string = pp.quotedString.setParseAction(pp.removeQuotes)
+
+        # Define the function call
+        self.left_par = pp.Literal('(').suppress()
+        self.right_par = pp.Literal(')').suppress()
+        self.equal = pp.Literal('=').suppress()
+        self.comma = pp.Literal(',').suppress()
+        self.func_name = pp.Word(pp.alphas).setParseAction(self.parse_func_name)
+        filter_kw = pp.CaselessKeyword('filters') | pp.CaselessKeyword('filter')
+        self.filter_kwarg = pp.Group(
+            filter_kw + self.equal + (self.filter_parser.q_expression | self.expr)
+        ).setParseAction(self.parse_filter_kwarg)
+        self.func_kwargs = pp.Group(pp.Word(pp.alphas + '_') + self.equal + self.expr).setParseAction(self.parse_kwargs)
+        self.func_call = pp.Group(
+            self.func_name + self.left_par + pp.Group(pp.Optional(pp.delimitedList(self.expr))) + self.right_par
+        )
+
+        self.operand = (
+                self.double | self.integer | self.boolean | self.filter_kwarg | self.func_kwargs | self.func_call
+                | self.string | self.variable
+        )
+
+        self.negate = pp.Literal('-')
+        self.expr << pp.infixNotation(
+            self.operand, [
+                (self.negate, 1, pp.opAssoc.RIGHT, self.parse_negate),
+                (pp.oneOf('* /'), 2, pp.opAssoc.LEFT, self.parse_operator),
+                (pp.oneOf('+ -'), 2, pp.opAssoc.LEFT, self.parse_operator),
+            ]
+        )
+
+    def parse_filter_kwarg(self, tokens):
+        k, v = tokens[0]
+        if isinstance(v, str):
+            v = self.filter_parser.parse(v)
+        return {'filter': v}
+
+    def clean(self, expression, wrap_value=True):
+        """
+        Clean the parsed expression into a Django expression
+        :param expression: The parsed expression as a nested list
+        :param wrap_value: Whether to wrap values in a Value function
+        :return: A Django expression suitable for use in a QuerySet
+        """
+
+        if isinstance(expression, str) and expression.startswith('$'):
+            return self.clean_variable(expression)
+        elif isinstance(expression, (bool, Q, Expression)):
+            return expression
+        elif isinstance(expression, (int, float, str)):
+            return V(expression) if wrap_value else expression
+        elif isinstance(expression, pp.ParseResults):
+            return self.clean(expression.asList())
+        elif isinstance(expression, dict):
+            res = {}
+            for k, v in expression.items():
+                if k in ('filter', 'filters'):
+                    if isinstance(v, str):
+                        res['filter'] = self.filter_parser.parse(v)
+                    elif isinstance(v, Q):
+                        res['filter'] = v
+                    else:
+                        res['filter'] = self.clean(v, wrap_value=False)
+                else:
+                    res[k] = self.clean(v)
+            return res
+        elif isinstance(expression, list) and len(expression) == 1:
+            return self.clean(expression[0])
+        elif not isinstance(expression, list):
+            return V(expression) if wrap_value else expression
+        elif len(expression) > 1 and isinstance(expression[0], str) and expression[0].endswith('()'):
+            func_name = expression[0].strip()[:-2]
+            args = self.clean(expression[1:])
+            if not isinstance(args, list):
+                args = [args]
+            return self.clean_function(func_name, *args)
+        else:
+            return [self.clean(sub_expr) for sub_expr in expression]
+
+    def parse(self, text):
+        """
+        Parse an expression string into a Django expression
+        :param text: The expression string to parse
+        :return: A Django expression suitable for use in a QuerySet
+        """
+        try:
+            expression = self.expr.parse_string(text, parseAll=True).as_list()
+            result = self.clean(expression)
+        except (ParseException, KeyError, ValueError) as err:
+            result = V(0)
+            print(f'Error parsing expression: {err}')
+        return result
 
 
 def regroup_data(

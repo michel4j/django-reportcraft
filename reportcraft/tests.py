@@ -29,6 +29,13 @@ EXPRESSIONS = {
     "Concat(Journal.Title, ' (', Journal.Issn, ')')": Concat(F('journal__title'), ' (', F('journal__issn'), ')'),
     "Avg(Journal.Metrics.ImpactFactor)": Avg('journal__metrics__impact_factor'),
     "Avg(Metrics.Citations) / Avg(Metrics.Mentions)": Avg('metrics__citations') / Avg('metrics__mentions'),
+    "Count(Journal, filter=(Journal.Metrics.ImpactFactor > 5))": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5)),
+    "Count(Journal, filter=(Journal.Metrics.ImpactFactor > 5) & (Journal.Publisher = 'Springer'))": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5) & Q(journal__publisher='Springer')),
+    "Count(Journal, filters=(Journal.Metrics.ImpactFactor > 5))": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5)),
+    "Count(Journal, filters=(Journal.Metrics.ImpactFactor > 5) & (Journal.Publisher = 'Springer'))": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5) & Q(journal__publisher='Springer')),
+    "Count(Journal, filters='Journal.Metrics.ImpactFactor > 5')": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5)),
+    "Count(Journal, filters=\"Journal.Metrics.ImpactFactor > 5 and Journal.Publisher = 'Springer'\")": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5) & Q(journal__publisher='Springer')),
+    "Count(Journal, filter='Journal.Metrics.ImpactFactor > 5')": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5)),
 }
 
 FILTERS = {
@@ -61,12 +68,40 @@ FILTERS = {
 }
 
 
+def _normalize_q(q):
+    if not isinstance(q, Q):
+        return q
+    new_q = Q()
+    new_q.connector = q.connector
+    new_q.negated = q.negated
+    new_children = []
+    for child in q.children:
+        if isinstance(child, tuple) and len(child) == 2:
+            k, v = child
+            if k.endswith('__exact'):
+                k = k[:-7]
+            new_children.append((k, v))
+        elif isinstance(child, Q):
+            new_children.append(_normalize_q(child))
+        else:
+            new_children.append(child)
+    new_q.children = new_children
+    return new_q
+
+
 def compare_expressions(expr1, expr2):
     """
     Compare two expressions for equality, ignoring whitespace and case.
     """
     for key in ['distinct', 'filter', 'default', 'source_expression', 'extra']:
-        if expr1.__dict__.get(key) != expr2.__dict__.get(key):
+        val1 = expr1.__dict__.get(key)
+        val2 = expr2.__dict__.get(key)
+        if key == 'filter' and val1 is not None and val2 is not None:
+            q1 = val1.source_expressions[0] if hasattr(val1, 'source_expressions') and val1.source_expressions else val1
+            q2 = val2.source_expressions[0] if hasattr(val2, 'source_expressions') and val2.source_expressions else val2
+            if _normalize_q(q1) == _normalize_q(q2):
+                continue
+        if val1 != val2:
             print(expr1.__dict__)
             print(expr2.__dict__)
             return False
@@ -111,6 +146,34 @@ class UtilsTestCase(TestCase):
             self.fail(f"Unexpected ValueError for silent parsing: `{expr1}`")
         else:
             self.assertEqual(result1, Q(), f"Invalid return value:`{expr1}`, {result1!r}")
+
+    def test_datafield_get_expression_with_filters(self):
+        from reportcraft.models import DataField
+        expected = Count('journal', filter=Q(journal__metrics__impact_factor__gt=5))
+
+        field = DataField(expression="Count(Journal, filters=(Journal.Metrics.ImpactFactor > 5))")
+        expr = field.get_expression()
+        self.assertTrue(compare_expressions(expr, expected), f"Failed for DataField expr: {expr!r}")
+
+        field_str = DataField(expression="Count(Journal, filters='Journal.Metrics.ImpactFactor > 5')")
+        expr_str = field_str.get_expression()
+        self.assertTrue(compare_expressions(expr_str, expected), f"Failed for DataField string expr: {expr_str!r}")
+
+        field_filter = DataField(expression="Count(Journal, filter=(Journal.Metrics.ImpactFactor > 5))")
+        expr_filter = field_filter.get_expression()
+        self.assertTrue(compare_expressions(expr_filter, expected), f"Failed for DataField filter expr: {expr_filter!r}")
+
+    def test_filter_parser_dotted_and_operators(self):
+        parser = FilterParser()
+        res1 = parser.parse("Journal.Metrics.ImpactFactor > 5")
+        self.assertEqual(res1, Q(journal__metrics__impact_factor__gt=5))
+
+        res2 = parser.parse("(Journal.Metrics.ImpactFactor > 5) & (Journal.Publisher = 'Springer')")
+        self.assertEqual(res2, Q(journal__metrics__impact_factor__gt=5) & Q(journal__publisher__exact='Springer'))
+
+        res3 = parser.parse("(Journal.Metrics.ImpactFactor > 5) | (Journal.Publisher = 'Springer')")
+        self.assertEqual(res3, Q(journal__metrics__impact_factor__gt=5) | Q(journal__publisher__exact='Springer'))
+
 
 
 TEST_REPORT_DICT = {
