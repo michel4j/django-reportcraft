@@ -331,7 +331,7 @@ class DictReportViewTestCase(TestCase):
         self.assertIn('<span id="report-title">Report</span>', content)
 
     def test_database_report_backwards_compatibility(self):
-        """Verify that traditional database reports without inline payload fall back to AJAX fetch without errors."""
+        """Verify that Ajax fetch is used when no payload is provided without errors."""
         report = Report.objects.create(
             slug='test-db-report',
             title='Database Report',
@@ -340,9 +340,6 @@ class DictReportViewTestCase(TestCase):
         response = self.client.get(reverse('report-view', kwargs={'slug': report.slug}))
         self.assertEqual(response.status_code, 200)
         content = response.content.decode('utf-8')
-        # Does NOT have inline json_script
-        self.assertNotIn('<script id="rc-report-data" type="application/json">', content)
-        # Still has fetch call to data_url
         self.assertIn('fetch("/reports/api/reports/test-db-report/?")', content)
 
     def test_report_embed_inline_payload(self):

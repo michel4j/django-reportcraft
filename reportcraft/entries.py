@@ -447,7 +447,6 @@ def generate_timeline(entry, **kwargs):
     select_fields = [field for field in [start_value, end_value, label_value, color_by] if field]
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     data = prepare_data(raw_data, select=select_fields, labels=labels, sort=start_value, sort_desc=False)
-
     return {
         'title': entry.title,
         'description': entry.description,

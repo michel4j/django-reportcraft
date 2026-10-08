@@ -84,6 +84,7 @@ class CodeEntry:
         source: Optional[DatasetProtocol] = None,
         width: Union[int, Width, str] = Width.FULL,
         style: Optional[str] = None,
+        aspect_ratio: Optional[float] = 1.8,
         description: str = "",
         notes: str = "",
         filters: Any = None,
@@ -94,6 +95,7 @@ class CodeEntry:
         self.source: Optional[DatasetProtocol] = dataset if dataset is not None else source
         self.style: str = style if style is not None else Width.resolve(width)
         self.description: str = description
+        self.aspect_ratio: float = aspect_ratio
         self.notes: str = notes
         self._filters: Any = filters
 
