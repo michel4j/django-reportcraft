@@ -7,7 +7,7 @@ from django.db.models.functions import *
 
 from reportcraft.models import Report
 from reportcraft.registry import ReportRegistry, site, CatalogItem
-from reportcraft.utils import ExpressionParser, FilterParser, merge_data
+from reportcraft.utils import ExpressionParser, FilterParser, merge_data, apply_defaults
 from reportcraft.views import DictReportView, CodeReportView, ReportIndexView
 from reportcraft.code import (
     BarChartEntry,
@@ -1454,5 +1454,55 @@ class MergeDataTestCase(TestCase):
         by_continent = {item["continent"]: item["capital"] for item in data}
         self.assertEqual(by_continent["North America"], "Unknown Capital")
         self.assertEqual(by_continent["Europe"], "Paris")
+
+    def test_apply_defaults_missing_and_none_values(self):
+        data = [
+            {'name': 'Canada', 'capital': None},
+            {'name': 'France', 'capital': 'Paris'},
+            {'name': 'Unknown'},
+        ]
+        result = apply_defaults(data, defaults={'capital': 'Unknown Capital', 'population': 0})
+        self.assertEqual(result, [
+            {'name': 'Canada', 'capital': 'Unknown Capital', 'population': 0},
+            {'name': 'France', 'capital': 'Paris', 'population': 0},
+            {'name': 'Unknown', 'capital': 'Unknown Capital', 'population': 0},
+        ])
+
+    def test_apply_defaults_preserves_falsy_values(self):
+        data = [
+            {'id': 1, 'count': 0, 'active': False, 'label': ''},
+        ]
+        result = apply_defaults(data, defaults={'count': 10, 'active': True, 'label': 'N/A'})
+        self.assertEqual(result, [
+            {'id': 1, 'count': 0, 'active': False, 'label': ''},
+        ])
+
+    def test_apply_defaults_empty_defaults_or_data(self):
+        data = [{'a': 1}]
+        self.assertEqual(apply_defaults(data, defaults=None), [{'a': 1}])
+        self.assertEqual(apply_defaults(data, defaults={}), [{'a': 1}])
+        self.assertEqual(apply_defaults([], defaults={'a': 1}), [])
+
+    def test_datasource_get_source_data_non_grouped_applies_defaults(self):
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Country
+        from reportcraft.models import DataSource, DataModel, DataField
+
+        Country.objects.create(name="Iceland", code="ISL", capital=None)
+        Country.objects.create(name="Japan", code="JPN", capital="Tokyo")
+
+        # Non-grouped data source (group_by is empty/None)
+        ds = DataSource.objects.create(name="Country Non-Grouped DS", group_by=None)
+        ct = ContentType.objects.get_for_model(Country)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Country")
+
+        DataField.objects.create(source=ds, model=dm, name="name", label="Name")
+        DataField.objects.create(source=ds, model=dm, name="capital", label="Capital", default="Default Capital")
+
+        data = ds.get_source_data()
+        self.assertEqual(len(data), 2)
+        by_name = {item["name"]: item["capital"] for item in data}
+        self.assertEqual(by_name["Iceland"], "Default Capital")
+        self.assertEqual(by_name["Japan"], "Tokyo")
 
 

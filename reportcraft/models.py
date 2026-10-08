@@ -116,10 +116,10 @@ class DataSource(models.Model):
         return Report.objects.filter(pk__in=self.entries.values_list('report__pk', flat=True)).order_by('-modified')
 
     def groups_fields(self):
-        return self.fields.filter(name__in=self.group_by)
+        return self.fields.filter(name__in=self.group_by) if self.group_by else self.fields.none()
 
     def non_group_fields(self):
-        return self.fields.exclude(name__in=self.group_by)
+        return self.fields.exclude(name__in=self.group_by) if self.group_by else self.fields.all()
 
     def get_filters(self):
         parser = utils.FilterParser()
@@ -166,7 +166,7 @@ class DataSource(models.Model):
         field_names = [f.name for f in model._meta.get_fields()]
 
         # Add grouping
-        group_by = list(self.group_by)
+        group_by = list(self.group_by) if self.group_by else []
         annotate_filter = {'name__in': group_by} if group_by else {}
         annotations = {
             field.name: field.get_expression()
@@ -225,13 +225,16 @@ class DataSource(models.Model):
             field_names = [field.name for field in self.fields.filter(model__name=model_name).all()]
             data.extend(list(queryset.values(*field_names)))
 
+        defaults = {
+            field.name: field.default
+            for field in self.fields.exclude(default__isnull=True).all()
+            if field.default is not None
+        }
+
         if self.group_by:
-            defaults = {
-                field.name: field.default
-                for field in self.fields.exclude(default__isnull=True).all()
-                if field.default is not None
-            }
             data = utils.merge_data(data, unique=self.group_by, defaults=defaults)
+        elif defaults:
+            data = utils.apply_defaults(data, defaults=defaults)
 
         return data
 
@@ -297,7 +300,7 @@ class DataModel(models.Model):
         return (self.code,)
 
     def get_group_fields(self):
-        group_names = list(self.source.group_by)
+        group_names = list(self.source.group_by) if self.source.group_by else []
         if group_names:
             fields = {
                 field.name: field for field in self.fields.all()

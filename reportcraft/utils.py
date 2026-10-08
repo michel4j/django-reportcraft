@@ -538,6 +538,32 @@ def _make_key(item, keys):
     return tuple(_key_value(item, k) for k in keys)
 
 
+def apply_defaults(
+        data: list[dict],
+        defaults: dict[str, Any] | None = None,
+) -> list[dict]:
+    """
+    Populate missing fields or replace None values in a list of data dictionaries
+    with provided default values.
+
+    :param data: list of dictionaries
+    :param defaults: Dictionary mapping field names to default values
+    :return: list of dictionaries with defaults applied
+    """
+    if not defaults:
+        return data
+
+    result = []
+    for item in data:
+        record = dict(item)
+        for field, default_val in defaults.items():
+            if record.get(field) is None:
+                record[field] = default_val
+        result.append(record)
+
+    return result
+
+
 def merge_data(
         data: list[dict],
         unique: list[str],
@@ -552,8 +578,6 @@ def merge_data(
     :param unique: Names of unique dimension keys
     :param defaults: Dictionary mapping field names to default values
     """
-    defaults = defaults or {}
-
     # make a dictionary mapping unique values to unique entries, these will be populated later
     # convert to tuple of strings to make it hashable
     unique_keys = sorted({_make_key(item, unique) for item in data})
@@ -567,13 +591,7 @@ def merge_data(
             elif v is not None:
                 raw_data[key][k] = v
 
-    if defaults:
-        for record in raw_data.values():
-            for field, default_val in defaults.items():
-                if record.get(field) is None:
-                    record[field] = default_val
-
-    return list(raw_data.values())
+    return apply_defaults(list(raw_data.values()), defaults=defaults)
 
 
 class ValueType(Enum):
