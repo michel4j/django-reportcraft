@@ -360,7 +360,8 @@ class DataModel(models.Model):
 
     def __str__(self):
         app, name = self.name.split('.')
-        return f'{app}.{name.title()}'
+        model = self.model.model_class()
+        return f'{app}.{model.__name__}'
 
 
 class DataField(models.Model):

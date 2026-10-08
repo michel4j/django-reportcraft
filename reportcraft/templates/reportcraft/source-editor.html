@@ -62,7 +62,7 @@
                     <tbody class="text-sm">
                     {% for src_model in source.models.all %}
                         <tr>
-                            <td class="font-monospace">{{ src_model.name }}</td>
+                            <td class="font-monospace">{{ src_model }}</td>
                             {% for field_name, group_field in src_model.get_group_fields.items %}
                                 {% if group_field %}
                                     <td class="font-monospace">
