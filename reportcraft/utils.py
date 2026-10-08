@@ -541,6 +541,7 @@ def _make_key(item, keys):
 def merge_data(
         data: list[dict],
         unique: list[str],
+        defaults: dict[str, Any] | None = None,
 ) -> list[dict]:
     """
     Combine aggregated data from multiple models along unique dimensional keys.
@@ -549,7 +550,9 @@ def merge_data(
 
     :param data: list of dictionaries
     :param unique: Names of unique dimension keys
+    :param defaults: Dictionary mapping field names to default values
     """
+    defaults = defaults or {}
 
     # make a dictionary mapping unique values to unique entries, these will be populated later
     # convert to tuple of strings to make it hashable
@@ -558,7 +561,17 @@ def merge_data(
     # first pass to populate raw_data
     for item in data:
         key = _make_key(item, unique)
-        raw_data[key].update(item)
+        for k, v in item.items():
+            if k not in raw_data[key] or raw_data[key][k] is None:
+                raw_data[key][k] = v
+            elif v is not None:
+                raw_data[key][k] = v
+
+    if defaults:
+        for record in raw_data.values():
+            for field, default_val in defaults.items():
+                if record.get(field) is None:
+                    record[field] = default_val
 
     return list(raw_data.values())
 

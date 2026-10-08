@@ -7,7 +7,7 @@ from django.db.models.functions import *
 
 from reportcraft.models import Report
 from reportcraft.registry import ReportRegistry, site, CatalogItem
-from reportcraft.utils import ExpressionParser, FilterParser
+from reportcraft.utils import ExpressionParser, FilterParser, merge_data
 from reportcraft.views import DictReportView, CodeReportView, ReportIndexView
 from reportcraft.code import (
     BarChartEntry,
@@ -1365,4 +1365,94 @@ class ReportIndexViewTestCase(TestCase):
         self.assertTrue(item.matches_search("audit"))
         self.assertTrue(item.matches_search("fin-q3"))
         self.assertFalse(item.matches_search("nonexistent"))
+
+
+class MergeDataTestCase(TestCase):
+    def test_merge_data_missing_fields_populated_with_defaults(self):
+        data = [
+            {'category': 'A', 'metric_1': 10},
+            {'category': 'B', 'metric_2': 20},
+        ]
+        result = merge_data(data, unique=['category'], defaults={'metric_1': 0, 'metric_2': 0})
+        self.assertEqual(result, [
+            {'category': 'A', 'metric_1': 10, 'metric_2': 0},
+            {'category': 'B', 'metric_1': 0, 'metric_2': 20},
+        ])
+
+        # Same key merged across disparate sources with partial fields
+        data_composite = [
+            {'category': 'A', 'metric_1': 10},
+            {'category': 'A', 'metric_2': 20},
+        ]
+        result_composite = merge_data(
+            data_composite, unique=['category'], defaults={'metric_1': 0, 'metric_2': 0, 'metric_3': -1}
+        )
+        self.assertEqual(result_composite, [
+            {'category': 'A', 'metric_1': 10, 'metric_2': 20, 'metric_3': -1},
+        ])
+
+    def test_merge_data_explicit_none_replaced_by_defaults(self):
+        data = [
+            {'category': 'A', 'metric_1': None, 'metric_2': 15},
+        ]
+        result = merge_data(data, unique=['category'], defaults={'metric_1': 100})
+        self.assertEqual(result, [
+            {'category': 'A', 'metric_1': 100, 'metric_2': 15},
+        ])
+
+    def test_merge_data_non_none_precedence_over_none(self):
+        # Case 1: None first, non-None second
+        data_first_none = [
+            {'category': 'A', 'metric_1': None},
+            {'category': 'A', 'metric_1': 42},
+        ]
+        result1 = merge_data(data_first_none, unique=['category'], defaults={'metric_1': 0})
+        self.assertEqual(result1, [{'category': 'A', 'metric_1': 42}])
+
+        # Case 2: Non-None first, None second
+        data_second_none = [
+            {'category': 'A', 'metric_1': 42},
+            {'category': 'A', 'metric_1': None},
+        ]
+        result2 = merge_data(data_second_none, unique=['category'], defaults={'metric_1': 0})
+        self.assertEqual(result2, [{'category': 'A', 'metric_1': 42}])
+
+    def test_merge_data_preserves_falsy_values(self):
+        data = [
+            {'category': 'A', 'count': 0, 'flag': False, 'note': ''},
+        ]
+        result = merge_data(data, unique=['category'], defaults={'count': 99, 'flag': True, 'note': 'N/A'})
+        self.assertEqual(result, [
+            {'category': 'A', 'count': 0, 'flag': False, 'note': ''},
+        ])
+
+    def test_merge_data_without_defaults_backward_compatibility(self):
+        data = [
+            {'category': 'A', 'v1': 1},
+            {'category': 'A', 'v2': 2},
+        ]
+        result = merge_data(data, unique=['category'])
+        self.assertEqual(result, [{'category': 'A', 'v1': 1, 'v2': 2}])
+
+    def test_datasource_get_source_data_applies_field_defaults(self):
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Country
+        from reportcraft.models import DataSource, DataModel, DataField
+
+        Country.objects.create(name="Canada", code="CAN", continent="North America", capital=None)
+        Country.objects.create(name="France", code="FRA", continent="Europe", capital="Paris")
+
+        ds = DataSource.objects.create(name="Country Composite DS", group_by=["continent"])
+        ct = ContentType.objects.get_for_model(Country)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Country")
+
+        DataField.objects.create(source=ds, model=dm, name="continent", label="Continent")
+        DataField.objects.create(source=ds, model=dm, name="capital", label="Capital", default="Unknown Capital")
+
+        data = ds.get_source_data()
+        self.assertEqual(len(data), 2)
+        by_continent = {item["continent"]: item["capital"] for item in data}
+        self.assertEqual(by_continent["North America"], "Unknown Capital")
+        self.assertEqual(by_continent["Europe"], "Paris")
+
 

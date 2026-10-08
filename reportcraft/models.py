@@ -226,7 +226,12 @@ class DataSource(models.Model):
             data.extend(list(queryset.values(*field_names)))
 
         if self.group_by:
-            data = utils.merge_data(data, unique=self.group_by)
+            defaults = {
+                field.name: field.default
+                for field in self.fields.exclude(default__isnull=True).all()
+                if field.default is not None
+            }
+            data = utils.merge_data(data, unique=self.group_by, defaults=defaults)
 
         return data
 
