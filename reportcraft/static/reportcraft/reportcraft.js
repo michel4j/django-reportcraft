@@ -880,8 +880,12 @@ function drawXYPlot(figure, chart, options) {
             marks.push(new Plot.lineY(chart.data, markOptions));
         } else if (mark.type === 'line-points') {
             markOptions.stroke = colorValue;
-            markOptions.marker = mark.marker || 'circle-stroke';
+            markOptions.r = mark.z || 2;
+            markOptions.stroke = colorValue;
+            markOptions.strokeWidth = 1;
             marks.push(new Plot.lineY(chart.data, markOptions));
+            markOptions.fill = "var(--bs-body-bg)";
+            marks.push(new Plot.dot(chart.data, markOptions));
         } else if (mark.type === 'points') {
             markOptions.r = mark.z || 2;
             markOptions.stroke = colorValue;
