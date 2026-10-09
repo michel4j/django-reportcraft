@@ -121,12 +121,24 @@ class DataSource(models.Model):
     def non_group_fields(self):
         return self.fields.exclude(name__in=self.group_by) if self.group_by else self.fields.all()
 
-    def get_filters(self):
+    def get_filters(self, queryset: QuerySet = None):
         parser = utils.FilterParser()
         if self.filters:
-            return parser.parse(self.filters, silent=True)
+            q = parser.parse(self.filters, silent=True)
+            if queryset is not None:
+                return utils.clean_q(q, queryset)
+            return q
         else:
             return Q()
+
+    def clean_q(self, q: Q, queryset: QuerySet) -> Q:
+        """
+        Clean a Q object to only retain filter conditions that are valid for the given queryset.
+        :param q: Q object to clean
+        :param queryset: queryset to validate against
+        :return: cleaned Q object
+        """
+        return utils.clean_q(q, queryset)
 
     def get_labels(self):
         return {field.name: field.label for field in self.fields.all()}
@@ -191,18 +203,20 @@ class DataSource(models.Model):
         ).filter(ordering__isnull=False).order_by('order_by').values_list(Sign('ordering'), 'name', )
         order_by: list = order_by or [f'-{name}' if sign < 0 else name for sign, name in order_fields]
 
-        # Apply static filters
-        static_filters = self.get_filters()
-        select_filters = (select if select else Q())
-        dynamic_filters = Q(**self.clean_filters(filters))
-
         # generate the queryset
         queryset = model.objects.values(
             *group_by,
             **annotations
         ).annotate(
             **aggregations
-        ).order_by(*order_by).filter(
+        ).order_by(*order_by)
+
+        # Apply static filters
+        static_filters = self.get_filters(queryset)
+        select_filters = utils.clean_q(select if select else Q(), queryset)
+        dynamic_filters = utils.clean_q(Q(**self.clean_filters(filters)), queryset)
+
+        queryset = queryset.filter(
             static_filters & dynamic_filters & select_filters
         )
 

@@ -1773,6 +1773,72 @@ class MergeDataTestCase(TestCase):
         self.assertEqual(by_continent["Region 2"]["alpha_or_beta"], 0)
         self.assertEqual(by_continent["Region 2"]["not_alpha"], 2)
 
+    def test_datasource_get_queryset_static_filter_multi_model(self):
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Country, Journal
+        from reportcraft.models import DataSource, DataModel, DataField
+
+        Country.objects.create(name="AlphaCountry", code="ALC", continent="Region 1", population=50)
+        Country.objects.create(name="BetaCountry", code="BEC", continent="Region 1", population=500)
+        Journal.objects.create(name="AlphaJournal")
+        Journal.objects.create(name="BetaJournal")
+
+        ds = DataSource.objects.create(name="Multi-Model Static Filter DS", filters="population > 100")
+        ct_country = ContentType.objects.get_for_model(Country)
+        ct_journal = ContentType.objects.get_for_model(Journal)
+        dm_country = DataModel.objects.create(source=ds, model=ct_country, name="example.Country")
+        dm_journal = DataModel.objects.create(source=ds, model=ct_journal, name="example.Journal")
+
+        DataField.objects.create(source=ds, model=dm_country, name="name", label="Name")
+        DataField.objects.create(source=ds, model=dm_country, name="population", label="Population")
+        DataField.objects.create(source=ds, model=dm_journal, name="name", label="Name")
+
+        # get_queryset on Country should filter by population > 100
+        country_qs = ds.get_queryset("example.Country")
+        self.assertEqual(country_qs.count(), 1)
+        self.assertEqual(country_qs.first()["name"], "BetaCountry")
+
+        # get_queryset on Journal should not raise FieldError, even though Journal has no 'population' field
+        journal_qs = ds.get_queryset("example.Journal")
+        self.assertEqual(journal_qs.count(), 2)
+
+        # get_source_data should succeed and merge records
+        data = ds.get_source_data()
+        names = {item["name"] for item in data}
+        self.assertIn("BetaCountry", names)
+        self.assertNotIn("AlphaCountry", names)
+        self.assertIn("AlphaJournal", names)
+        self.assertIn("BetaJournal", names)
+
+        # Compound static filter: AND condition where one field is shared and one is not
+        ds.filters = "name = 'BetaJournal' and population > 100"
+        ds.save()
+        # For Country: name == 'BetaJournal' and population > 100 -> 0 rows
+        self.assertEqual(ds.get_queryset("example.Country").count(), 0)
+        # For Journal: population > 100 is pruned, name == 'BetaJournal' is applied -> 1 row
+        journal_and_qs = ds.get_queryset("example.Journal")
+        self.assertEqual(journal_and_qs.count(), 1)
+        self.assertEqual(journal_and_qs.first()["name"], "BetaJournal")
+
+        # Compound static filter: OR condition where one field is shared and one is not
+        ds.filters = "name = 'AlphaJournal' or population > 100"
+        ds.save()
+        # For Country: BetaCountry has population > 100 -> 1 row
+        self.assertEqual(ds.get_queryset("example.Country").count(), 1)
+        # For Journal: population > 100 is pruned, name == 'AlphaJournal' -> 1 row
+        journal_or_qs = ds.get_queryset("example.Journal")
+        self.assertEqual(journal_or_qs.count(), 1)
+        self.assertEqual(journal_or_qs.first()["name"], "AlphaJournal")
+
+        # Static filter with negation (!=) on field not in Journal
+        ds.filters = "population != 500"
+        ds.save()
+        # Country: AlphaCountry has population 50 -> 1 row
+        self.assertEqual(ds.get_queryset("example.Country").count(), 1)
+        self.assertEqual(ds.get_queryset("example.Country").first()["name"], "AlphaCountry")
+        # Journal: population != 500 pruned -> 2 rows
+        self.assertEqual(ds.get_queryset("example.Journal").count(), 2)
+
     def test_datasource_filtered_avg_expression(self):
         from django.contrib.contenttypes.models import ContentType
         from demo.example.models import Institution, Person, Country

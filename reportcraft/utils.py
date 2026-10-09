@@ -20,6 +20,7 @@ from django.apps import apps
 from django.conf import settings
 from django.core import serializers
 from django.core.cache import cache
+from django.core.exceptions import FieldError
 from django.db import models
 from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q, Expression
 from django.db.models.functions import (
@@ -434,6 +435,43 @@ class FilterParser:
             if not silent:
                 raise ValueError(f"Expression `{filter_string}` is not valid.") from e
             return Q()  # Return an empty Q object if parsing fails and silent mode is on
+
+
+def clean_q(q: Q, queryset: Any) -> Q:
+    """
+    Prune a Q object to only retain filter conditions that are valid for the given queryset.
+    Removes conditions referencing fields that raise FieldError on the queryset.
+    """
+    if not isinstance(q, Q) or queryset is None:
+        return q
+
+    valid_children = []
+    for child in q.children:
+        if isinstance(child, Q):
+            pruned_child = clean_q(child, queryset)
+            if pruned_child.children:
+                valid_children.append(pruned_child)
+        elif isinstance(child, tuple) and len(child) == 2:
+            try:
+                queryset.filter(Q(child))
+                valid_children.append(child)
+            except FieldError:
+                pass
+        else:
+            try:
+                queryset.filter(child)
+                valid_children.append(child)
+            except FieldError:
+                pass
+
+    if not valid_children:
+        return Q()
+
+    new_q = Q()
+    new_q.connector = q.connector
+    new_q.negated = q.negated
+    new_q.children = valid_children
+    return new_q
 
 
 class ExpressionParser(Parser):
