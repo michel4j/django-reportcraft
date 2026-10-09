@@ -1169,6 +1169,9 @@ function drawTimeline(figure, chart, options) {
 
 function drawGeoChart(figure, chart, options) {
     let colorLegend = false;
+    const markerHeight = getFontSize(figure);
+    let markerOffset = chart.labels ? markerHeight : 0;
+
     let showLand = chart.map === '001' ? false : (chart["show-land"] || true);
     const plotOptions = {
         className: "rc-chart",
@@ -1191,6 +1194,8 @@ function drawGeoChart(figure, chart, options) {
         showLand ? d3.json(`${options.staticRoot}/maps/land.json`) : null,
     ]).then(function ([geoData, landData]) {
         const map = topojson.feature(geoData, geoData.objects["subunits"] || geoData.objects["countries"]);
+        const centroids = map.features.map(d => ({longitude: d.properties.longitude, latitude: d.properties.latitude}));
+        console.log(centroids);
         if (chart.map === '001') {  // World map, no need to show land
             plotOptions.projection = {
                 type: "mercator",
@@ -1219,9 +1224,9 @@ function drawGeoChart(figure, chart, options) {
 
         // add features now
         chart.features.forEach(function (feature, index) {
+            const locMap = new Map(chart.data.map(d => [d[chart.location], d[feature.value]]))
             switch (feature.type) {
                 case 'area':
-                    let locMap = new Map(chart.data.map(d => [d[chart.location], d[feature.value]]))
                     plotOptions.marks.push(
                         Plot.geo(map, {
                             fill: d => locMap.get(d.id),
@@ -1254,15 +1259,36 @@ function drawGeoChart(figure, chart, options) {
                     )
                     break;
                 case 'markers':
-                    plotOptions.marks.push(
-                        new Plot.text(chart.data, {
-                            x: chart.longitude,
-                            y: chart.latitude,
-                            text: feature.value,
-                            fill: "black",
-                            textAnchor: "middle",
-                        })
-                    )
+                    if (chart.longitude && chart.latitude && feature.value) {
+                        plotOptions.marks.push(
+                            new Plot.text(chart.data, {
+                                x: chart.longitude,
+                                y: chart.latitude,
+                                text: feature.value,
+                                textAnchor: "middle",
+                                fill: "var(--bs-body-color)",
+                                stroke: options.theme === 'default' ? "var(--bs-body-bg)" : null,
+                                strokeOpacity: 0.5,
+                                dy: markerOffset
+                            })
+                        );
+                        markerOffset += markerHeight;
+                    } else {
+                        plotOptions.marks.push(
+                            Plot.text(
+                                map.features,
+                                Plot.centroid({
+                                    text:  d => locMap.get(d.id),
+                                    textAnchor: "middle",
+                                    tip: true,
+                                    fill: "var(--bs-body-color)",
+                                    stroke: options.theme === 'default' ? "var(--bs-body-bg)" : null,
+                                    strokeOpacity: 0.5,
+                                    dy: markerOffset
+                                })
+                            )
+                        );
+                    }
                     break;
             }
         });
@@ -1280,7 +1306,7 @@ function drawGeoChart(figure, chart, options) {
                             tip: true,
                             fill: "var(--bs-body-color)",
                             stroke: options.theme === 'default' ? "var(--bs-body-bg)" : null,
-                            strokeOpacity: 0.7,
+                            strokeOpacity: 0.5,
                             dy: 3
                         })
                     )

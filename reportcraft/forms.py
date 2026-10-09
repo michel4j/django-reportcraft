@@ -958,12 +958,12 @@ class GeoCharForm(EntryConfigForm):
         if location_required and not location_defined:
             self.add_error('location', _("Location is required for the selected Area features"))
 
-        if coordinates_required and not coordinates_defined:
-            self.add_error('latitude', _("Latitude and Longitude are required for the selected feature types"))
-            self.add_error('longitude', _("Latitude and Longitude are required for the selected feature types"))
-
-        if not location_defined and not coordinates_defined:
-            self.add_error('location', _("Either Location or Latitude and Longitude are required"))
+        # if coordinates_required and not coordinates_defined:
+        #     self.add_error('latitude', _("Latitude and Longitude are required for the selected feature types"))
+        #     self.add_error('longitude', _("Latitude and Longitude are required for the selected feature types"))
+        #
+        # if not location_defined and not coordinates_defined:
+        #     self.add_error('location', _("Either Location or Latitude and Longitude are required"))
 
         return cleaned_data
 
