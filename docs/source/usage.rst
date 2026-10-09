@@ -128,12 +128,28 @@ for more information:
         ExtractYear, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute,
         ExtractSecond, ExtractWeekDay, ExtractWeek,
         Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
-        Radians, Degrees, Q, ArrayAgg, DisplayName, Interval
-        ShiftStart, ShiftEnd, Hours, Minutes, CumSum, CumCount
+        Radians, Degrees, Q, ArrayAgg, DisplayName, Interval,
+        ShiftStart, ShiftEnd, Hours, Minutes, CumSum, CumCount,
+        ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now,
+        YearBucket, Decade, Lustrum, Quadrennial, Triennial, Biennial, Century
     ]
 
-Additionally, the following custom functions functions are supported:
+Additionally, the following custom functions are supported:
 
+- `ThisYear`, `ThisMonth`, `ThisQuarter`, `ThisDay`, `ThisWeek`: Dynamic temporal functions returning the current calendar
+  number (e.g. year, month 1-12, quarter 1-4, day 1-31, ISO week 1-53) evaluated at query generation time in Django's
+  active timezone. They require no arguments (e.g. `ThisYear()`) and support compound arithmetic (e.g. `ThisYear() - 1`).
+- `Today`, `Now`: Dynamic temporal functions returning the current date (`Today()`) or current datetime (`Now()`)
+  evaluated in the active timezone.
+- `YearBucket`: Categorize a date, datetime, or integer year field into standardized multi-year intervals formatted as
+  closed non-overlapping ranges (e.g. `YearBucket(Published, size=5, anchor=2000)`). Accepts optional `size` (span in years, default 10)
+  and `anchor` (reference base year, default 2000). Polymorphic: works directly on Date fields, DateTime fields, or integer fields.
+- `Decade`: Bucket years into 10-year intervals with a suffix (e.g. `Decade(Published)` produces `'1990s'`, `'2020s'`).
+- `Lustrum`: Bucket years into 5-year intervals with closed discrete ranges (e.g. `Lustrum(Published)` produces `'2020-2024'`).
+- `Quadrennial`: Bucket years into 4-year intervals with closed discrete ranges (e.g. `Quadrennial(Published)` produces `'2020-2023'`).
+- `Triennial`: Bucket years into 3-year intervals with closed discrete ranges (e.g. `Triennial(Published)` produces `'2022-2024'`, `'2025-2027'`, default anchor 2022).
+- `Biennial`: Bucket years into 2-year intervals with closed discrete ranges (e.g. `Biennial(Published)` produces `'2022-2023'`).
+- `Century`: Bucket years into 100-year intervals with a suffix (e.g. `Century(Published)` produces `'1900s'`, `'2000s'`).
 - `ShiftStart`: Round down the time of a DateTime field to the nearest hour. An extra `size` keyword argument
   can be used to specify the shift size, by default 8 Hrs (00:00, 08:00, 16:00).
 - `ShiftEnd`: Round up the time of a DateTime field to the nearest 8 Hrs (08:00, 16:00, 00:00). Also takes the optional
@@ -150,8 +166,7 @@ Additionally, the following custom functions functions are supported:
 - `CumCount`: Calculate the cumulative count of rows over an ordered set of rows. Takes two parameters. The
   first is the field to count, and the second is the order. For example, `CumCount(Item, Date)` would calculate the
   cumulative count of items ordered by the `Date` field.
-  sum of the `Sales` field ordered by the `Date` field.
-- `Interval`:  categorize a numeric field's value into dynamically generated intervals. For example:
+- `Interval`: Categorize a numeric field's value into dynamically generated intervals. For example:
 
 .. code-block:: python
 
@@ -162,6 +177,7 @@ Will generate a string annotation with four categories '<18', '18-40', '40-65', 
 .. note::
     The `Join` and `ArrayAgg` functions are only available on PostgreSQL databases. If you are using a different
     database, you can implement a custom function to achieve similar functionality.
+
 
 For date based fields, you can use subfields to extract parts of the date. For example, instead of using a function to
 extract the year from a date field like `ExtractYear(Date)` in the expression. It is valid and much easier to use
@@ -553,7 +569,7 @@ You can specify the report dictionary in three ways:
 3. **Method override**: Override ``get_report_dict(self, request=None)`` for dynamic, user-dependent payloads.
 
 Example: KPI Report View
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 

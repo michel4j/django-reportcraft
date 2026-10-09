@@ -84,3 +84,37 @@ class Country(models.Model):
     def __str__(self):
         return self.name
 
+
+class Journal(models.Model):
+    name = models.CharField(max_length=200)
+
+    class Meta:
+        ordering = ('name',)
+
+    def __str__(self):
+        return self.name
+
+
+class Metric(models.Model):
+    journal = models.ForeignKey(Journal, related_name='metrics', on_delete=models.CASCADE)
+    year = models.IntegerField()
+    impact_factor = models.FloatField()
+
+    class Meta:
+        ordering = ('journal', 'year')
+
+    def __str__(self):
+        return f"{self.journal.name} ({self.year}): {self.impact_factor}"
+
+
+class Publication(models.Model):
+    title = models.CharField(max_length=200)
+    journal = models.ForeignKey(Journal, related_name='articles', on_delete=models.CASCADE)
+    published = models.DateField()
+
+    class Meta:
+        ordering = ('title',)
+
+    def __str__(self):
+        return self.title
+

@@ -56,7 +56,7 @@ blocks into which ReportCraft will render it's content:
 .. code-block:: django
 
    {% block page-styles %}{% endblock %}
-   {% block page-pretitle %}{% endblock %}
+   {% block page-pre-title %}{% endblock %}
    {% block page-title %}{% endblock %}
    {% block page-content %}{% endblock %}
    {% block page-tools %}{% endblock %}
@@ -65,7 +65,7 @@ blocks into which ReportCraft will render it's content:
 
 
 - `page-styles`: This optional block is used to render additional stylesheets required by the page.
-- `page-pretitle`: This optional block is used to render a small description above the title.
+- `page-pre-title`: This optional block is used to render a small description above the title.
 - `page-title`: This block is used to render the title of the page.
 - `page-tools`: This block is used to render additional context-dependent tools for the page.
 - `page-content`: This block is used to render the main content of the page.

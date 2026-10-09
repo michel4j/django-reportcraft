@@ -17,6 +17,33 @@ export const figureTypes = [
     'likert',
 ];
 
+class ObjectRegistry  {
+    constructor() {
+        this._store = new Map();
+        this._counter = 0;
+    }
+
+    /**
+    * Stores an object and returns a unique key.
+    * @param {Object} obj - The object to store.
+    * @returns {string} Unique identifier key.
+    */
+    encode(obj) {
+        const key = `entry-${this._counter++}`;
+        this._store.set(key, obj);
+        return key;
+    }
+
+    /**
+    * Retrieves the object associated with the key.
+    * @param {string} key - The key returned by encode.
+    * @returns {Object|undefined} The original object, or undefined if not found.
+    */
+    decode(key) {
+        return this._store.get(key);
+    }
+};
+
 // Define custom color schemes
 const ColorSchemes = {
     "Live4": [
@@ -63,7 +90,7 @@ const contentTemplate = _.template(
     '       <% }); %>' +
     '   <% } else if (figureTypes.includes(entry.kind)) { %>' +
     '       <figure id="figure-<%= entry.id || id %>" data-type="<%= entry.kind %>" ' +
-    '           data-rc-theme="<%= theme || null %>" data-chart="<%= encodeObj(entry) %>" >' +
+    '           data-rc-theme="<%= theme || null %>" data-chart="<%= entry.data_id %>" >' +
     '       </figure>' +
     '   <% }%>' +
     '   <% if (entry.notes) { %>' +
@@ -103,7 +130,7 @@ const tableTemplate = _.template(
     '           <% if (entry.header.includes("column") && (i==0)) { %>' +
     '               <th><%= cell %></th>' +
     '           <% } else { %>' +
-    '               <td class="table-cell-<%= typeof cell %>" ><%= cell %></td>' +
+    '               <td class="table-cell-<%= typeof cell %>"><%= cell %></td>' +
     '           <% } %>' +
     '       <% }); %>' +
     '       </tr>' +
@@ -119,7 +146,6 @@ function renderMarkdown(text) {
     return markdown.makeHtml(text);
 }
 
-
 function renderContent(options) {
     return contentTemplate({
         id: options.id,
@@ -128,13 +154,15 @@ function renderContent(options) {
         tableTemplate: tableTemplate,
         figureTypes: figureTypes,
         theme: options.theme,
-        encodeObj: encodeObj,
-        decodeObj: decodeObj
     });
 }
 
 
 function renderSection(options) {
+    // loop through the content and store entries in a registry to avoid storing large data in the DOM
+    options.section.content.forEach(entry => {
+        entry.data_id = options.registry.encode(entry);
+    });
     return sectionTemplate({
         id: options.id,
         section: options.section,
@@ -142,26 +170,6 @@ function renderSection(options) {
         figureTypes: options.figureTypes,
         renderMarkdown: renderMarkdown,
     });
-}
-
-
-function encodeObj(obj) {
-    // encode object as base64 string
-    const utf8Bytes = encodeURIComponent(JSON.stringify(obj)).replace(/%([0-9A-F]{2})/g,
-        function toSolidBytes(match, p1) {
-            return String.fromCharCode(`0x${p1}`);
-        });
-    return btoa(utf8Bytes);
-}
-
-
-function decodeObj(base64Str) {
-    // decode base64 string to object
-    const binaryString = atob(base64Str);
-    const percentEncodedStr = binaryString.split('').map(function (c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join('');
-    return JSON.parse(decodeURIComponent(percentEncodedStr));
 }
 
 function Likert(responses) {
@@ -182,8 +190,134 @@ function Likert(responses) {
     };
 }
 
+/**
+ * Fills in missing combinations of categories and time series steps in a dataset.
+ *
+ * @param {Array<Object>} rawData - The array of raw data objects.
+ * @param {Object} config - Configuration options for field mappings.
+ * @param {string} config.timeField - The field name representing time/x-axis (e.g., "Year").
+ * @param {string} config.categoryField - The field name representing the breakdown (e.g., "Project Type").
+ * @param {string} config.valueField - The field name representing the numeric value (e.g., "Projects").
+ * @param {*} [config.defaultValue=0] - The value to fill missing entries with (e.g., 0, null, "N/A").
+ * @returns {Array<Object>} A complete, sorted data array with no missing combinations.
+ */
+function fillMissingCombinations(rawData, config) {
+  const {
+    timeField,
+    categoryField,
+    valueField,
+    defaultValue = 0
+  } = config;
+
+  // Extract unique time coordinates and unique categories
+  const uniqueTimes = [...new Set(rawData.map(d => d[timeField]))];
+  const uniqueCategories = [...new Set(rawData.map(d => d[categoryField]))];
+
+  // Map existing entries to a Quick-Lookup Map using a unified key
+  const dataMap = new Map(
+    rawData.map(d => [`${d[timeField]}|${d[categoryField]}`, d])
+  );
+
+  const completeData = [];
+
+  // Evaluate every permutation
+  for (const time of uniqueTimes) {
+    for (const category of uniqueCategories) {
+      const key = `${time}|${category}`;
+      if (dataMap.has(key)) {
+        completeData.push(dataMap.get(key));
+      } else {
+        // Construct a dynamic missing record object
+        completeData.push({
+          [timeField]: time,
+          [categoryField]: category,
+          [valueField]: defaultValue
+        });
+      }
+    }
+  }
+
+  // Return data sorted sequentially by the time axis
+  return completeData.sort((a, b) => a[timeField] - b[timeField]);
+}
+
+/**
+ * Fills missing combinations and optionally calculates cumulative values over time.
+ *
+ * @param {Array<Object>} rawData - The array of raw data objects.
+ * @param {Object} config - Configuration options for field mappings and calculations.
+ * @param {string} config.timeField - The field name representing time/x-axis (e.g., "Year").
+ * @param {string} config.categoryField - The field name representing the breakdown (e.g., "Project Type").
+ * @param {string} config.valueField - The field name representing the numeric value (e.g., "Projects").
+ * @param {*} [config.defaultValue=0] - The value to fill missing entries with if cumulative is false.
+ * @param {boolean} [config.cumulative=false] - If true, values will accumulate sequentially over time per category.
+ * @returns {Array<Object>} A complete, chronologically sorted data array.
+ */
+function processChartData(rawData, config) {
+  const {
+    timeField,
+    categoryField,
+    valueField,
+    defaultValue = 0,
+    cumulative = false
+  } = config;
+
+  // Extract and sort unique time coordinates to guarantee chronological accumulation
+  const uniqueTimes = [...new Set(rawData.map(d => d[timeField]))].sort((a, b) => a - b);
+  const uniqueCategories = [...new Set(rawData.map(d => d[categoryField]))];
+
+  // Map existing entries to a Quick-Lookup Map
+  const dataMap = new Map(
+    rawData.map(d => [`${d[timeField]}|${d[categoryField]}`, d])
+  );
+
+  const completeData = [];
+
+  // Track running totals for each category if cumulative mode is enabled
+  const runningTotals = {};
+  if (cumulative) {
+    uniqueCategories.forEach(cat => runningTotals[cat] = 0);
+  }
+
+  // Evaluate every permutation chronologically
+  for (const time of uniqueTimes) {
+    for (const category of uniqueCategories) {
+      const key = `${time}|${category}`;
+      let finalValue;
+
+      if (dataMap.has(key)) {
+        const originalValue = dataMap.get(key)[valueField];
+
+        if (cumulative) {
+          runningTotals[category] += (Number(originalValue) || 0);
+          finalValue = runningTotals[category];
+        } else {
+          finalValue = originalValue;
+        }
+      } else {
+        if (cumulative) {
+          // If a year is missing an entry, it adds 0 to the current running total
+          finalValue = runningTotals[category];
+        } else {
+          finalValue = defaultValue;
+        }
+      }
+
+      completeData.push({
+        [timeField]: time,
+        [categoryField]: category,
+        [valueField]: finalValue
+      });
+    }
+  }
+
+  return completeData;
+}
+
+
 export function showReport(selector, sections, staticRoot = "/static/reportcraft/") {
     const target = document.querySelector(selector);
+    const entryRegistry = new ObjectRegistry();
 
     if (!target) {
         console.error("Container Not found");
@@ -195,6 +329,7 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
     sections.forEach(function (section, i) {
         const sectionHTML = renderSection({
             id: i,
+            registry: entryRegistry,
             section: section,
         });
         target.insertAdjacentHTML('beforeend', sectionHTML);
@@ -202,24 +337,25 @@ export function showReport(selector, sections, staticRoot = "/static/reportcraft
 
     // now fill the content with each section
     target.querySelectorAll('figure').forEach(function (figure, index) {
-        const chart = decodeObj(figure.getAttribute('data-chart'));
-        let aspectRatio = chart.data['aspect-ratio'] || 16 / 9;
+        const chart = entryRegistry.decode(figure.getAttribute('data-chart'));
+        let aspectRatio = chart['aspect-ratio'] || 16 / 9;
         let scheme;
 
         if (chart.scheme in ColorSchemes) {
             scheme = ColorSchemes[chart.scheme];
         } else if (`scheme${chart.scheme}` in d3) {
+            // scheme = d3[`scheme${chart.scheme}`];
             scheme = chart.scheme;
         } else if (`interpolate${chart.scheme}` in d3) {
             scheme = d3[`interpolate${chart.scheme}`];
         } else {
-            scheme = d3.Observable10;
+            scheme = d3.schemeObservable10;
         }
+
         const targetWidth = figure.offsetWidth;
         const options = {
             uid: (index + Date.now()).toString(36),
             width: targetWidth,
-            fontSize: scaleFontSize(targetWidth, 0.75, 2, 400, 1200),
             height: targetWidth / aspectRatio,
             scheme: scheme,
             theme: figure.getAttribute('data-rc-theme') || 'default',
@@ -284,32 +420,44 @@ function formatTick(value, i, ticksEvery = 1, ticksInterval = undefined) {
     } else if (typeof (value) === 'string') {
         return value; // Return string as it is
     } else if (typeof (value) === 'number') {
-        if (Number.isInteger(value)) {
-            // Format integers with commas if they are larger than 10,000. This avoids
-            // messing up years which are < 1e4
+        if ((Number.isInteger(value) && (Math.abs(value) < 5e3 ))) {
             return Math.abs(value) >= 1e4 ? value.toLocaleString() : value.toString();
         } else {
-            return ""
+            const formatter = new Intl.NumberFormat('en-US', {
+                notation: 'compact',
+                maximumFractionDigits: 2
+            });
+            return formatter.format(value);
         }
     }
 }
 
-function setColorScheme(plotOptions, chartOptions) {
-    switch (typeof chartOptions.scheme) {
-        case 'string':
-            plotOptions.color.scheme = chartOptions.scheme;
-            break;
-        case 'function':
-            plotOptions.color.interpolate = chartOptions.scheme;
-            plotOptions.color.type = 'quantize';
-            break;
-        case 'object':
-            if (Array.isArray(chartOptions.scheme)) {
-                plotOptions.color.range = chartOptions.scheme;
-            }
-            break;
-        default:
-            console.warn("Unknown color scheme format");
+function setColorScheme(plotOptions, chartOptions, chart) {
+    if ((chart.scheme === null) && (chart.colors) && (chart.data.some(d => "Color" in d))) {
+        const colorMap = new Map(chart.data.map(d => [d[chart.colors], d.Color]));
+        plotOptions.color.domain = [...colorMap.keys()];
+        plotOptions.color.range = [...colorMap.values()];
+    } else {
+        switch (typeof chartOptions.scheme) {
+            case 'string':
+                plotOptions.color.scheme = chartOptions.scheme;
+                break;
+            case 'function':
+                plotOptions.color.interpolate = chartOptions.scheme;
+                plotOptions.color.type = 'quantize';
+                break;
+            case 'object':
+                if (Array.isArray(chartOptions.scheme)) {
+                    if (Array.isArray(chartOptions.scheme) && chartOptions.scheme.some(Array.isArray)) {
+                        plotOptions.color.range = chartOptions.scheme[6];
+                    } else {
+                        plotOptions.color.range = chartOptions.scheme;
+                    }
+                }
+                break;
+            default:
+                console.warn("Unknown color scheme format");
+        }
     }
 }
 
@@ -382,7 +530,7 @@ const getTextWidth = (() => {
             }
             width += charWidth;
         }
-        return Math.round(width);
+        return Math.round(0.8 * width);
     };
 })();
 
@@ -481,7 +629,8 @@ function setAxisScale(axisOptions, scale) {
             axisOptions.base = 2;
             break;
         case 'inverse':
-            axisOptions.transform = d => 1 / d;
+            axisOptions.type = "pow";
+            axisOptions.exponent = -1;
             break;
         case 'square':
             axisOptions.type = "pow";
@@ -496,9 +645,9 @@ function setAxisScale(axisOptions, scale) {
             axisOptions.exponent = 3;
             break;
         case 'inv-square':
+            axisOptions.reverse = true;
             axisOptions.type = "pow";
             axisOptions.exponent = -2;
-            axisOptions.reverse = true;
             break;
         case 'inv-cube':
             axisOptions.type = "pow";
@@ -577,7 +726,8 @@ function drawBarChart(figure, chart, options) {
         },
         marks: marks
     };
-    setColorScheme(plotOptions, options);
+
+    setColorScheme(plotOptions, options, chart);
     setAxisScale(plotOptions[valueAxis], valueScale);
 
     maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => getTextWidth(`${d[chart.y]}`, figure)));
@@ -602,6 +752,8 @@ function drawBarChart(figure, chart, options) {
         markOptions[`f${valueAxis}`] = chart.facets;
         if (valueAxis === 'x') {
             plotOptions.marginTop = fontSizePix * 3;
+        } else {
+            plotOptions.marginRight = fontSizePix * 5;
         }
     }
 
@@ -631,13 +783,22 @@ function drawBarChart(figure, chart, options) {
     addFigurePlot(figure, plot);
 }
 
+function formatXYTicks(value, index) {
+    const formatter = new Intl.NumberFormat('en-US', {
+        notation: 'compact',
+        maximumFractionDigits: 2
+    });
+    const formatted = formatter.format(value);
+    return formatted;
+}
+
 function drawXYPlot(figure, chart, options) {
     let marks = [];
     const markTypes = chart.features || [];
     const colorScale = d3.scaleOrdinal(options.scheme);
     const xScale = chart["x-scale"] || 'linear';
     const yScale = chart["y-scale"] || 'linear';
-    let maxLabelLength = 1;
+    let maxLabelLength = 3;
     const colorDomain = [];
     const colorRange = [];
 
@@ -645,8 +806,8 @@ function drawXYPlot(figure, chart, options) {
         className: "rc-chart",
         width: options.width || 800,
         height: options.height || 600,
-        marginLeft: 40,
-        marginRight: 40,
+        marginLeft: 50,
+        marginRight: 50,
         marginTop: 40,
         marginBottom: 40,
         style: {
@@ -663,6 +824,7 @@ function drawXYPlot(figure, chart, options) {
         y: {
             grid: true,
             label: chart["y-label"] || undefined,
+            tickFormat: formatXYTicks,
         },
         r: {
             transform: (r) => Math.pow(r, 2), // Square the radius so that area is proportional to value
@@ -671,17 +833,37 @@ function drawXYPlot(figure, chart, options) {
     };
 
     // Set scales
-    setColorScheme(plotOptions, options);
+    setColorScheme(plotOptions, options, chart);
     setAxisScale(plotOptions.x, xScale);
     setAxisScale(plotOptions.y, yScale);
 
+    // Get array of x values to determine scale for x-axis
+    if (xScale === 'inv-square') {
+        const xValues = chart.data.map(d => d[markTypes[0].x]);
+        const xDomain = [Math.min(...xValues), Math.max(...xValues)];
+        let niceTicks = d3.ticks(Math.pow(xDomain[0], -2), Math.pow(xDomain[1], -2), 7); // Generate 7 nice ticks
+        plotOptions.x.ticks = niceTicks.map(tick => Math.pow(tick, -0.5)); // Convert back to original scale
+    }
+
+    if (chart.facets && (chart.facets.x || chart.facets.y)) {
+        plotOptions.facet = {
+            data: chart.data,
+        }
+        // Add x and y facets if they are defined in the chart configuration
+        if (chart.facets.x !== undefined) {
+            plotOptions.facet.x = chart.facets.x;
+            plotOptions.marginTop = 80;
+        }
+        if (chart.facets.y !== undefined) {
+            plotOptions.facet.y = chart.facets.y;
+            plotOptions.marginRight = 80;
+        }
+    }
 
     markTypes.forEach(function (mark, index) {
-        maxLabelLength = Math.max(maxLabelLength, ...chart.data.map(d => `${d[mark.y]}`.length || 0));
         const markOptions = {
             x: mark.x,
             y: mark.y,
-            r: mark.z || undefined,
             curve: mark.curve || "linear",
             tip: true,
         };
@@ -698,19 +880,34 @@ function drawXYPlot(figure, chart, options) {
             marks.push(new Plot.lineY(chart.data, markOptions));
         } else if (mark.type === 'line-points') {
             markOptions.stroke = colorValue;
-            markOptions.marker = mark.marker || 'circle-stroke';
+            markOptions.r = mark.z || 2;
+            markOptions.stroke = colorValue;
+            markOptions.strokeWidth = 1;
             marks.push(new Plot.lineY(chart.data, markOptions));
+            markOptions.fill = "var(--bs-body-bg)";
+            marks.push(new Plot.dot(chart.data, markOptions));
         } else if (mark.type === 'points') {
+            markOptions.r = mark.z || 2;
             markOptions.stroke = colorValue;
             markOptions.strokeWidth = 1;
             marks.push(new Plot.dot(chart.data, markOptions));
         } else if (mark.type === 'points-filled') {
+            markOptions.r = mark.z || undefined;
             markOptions.fill = colorValue;
             markOptions.stroke = "var(--bs-body-color)";
             markOptions.strokeWidth = 0.5;
-        } else if (mark.type === 'area') {
+            marks.push(new Plot.dot(chart.data, markOptions));
+        } else if (mark.type === 'area' || mark.type === 'cumarea') {
             markOptions.fill = colorValue;
-            marks.push(new Plot.areaY(chart.data, markOptions));
+            const filledData = processChartData(
+                chart.data, {
+                    timeField: markOptions.x,
+                    categoryField: markOptions.fill,
+                    valueField: markOptions.y,
+                    defaultValue: 0,
+                    cumulative: mark.type === 'cumarea',
+                }); // Fill missing values with 0 and optionally calculate cumulative values
+            marks.push(new Plot.areaY(filledData, markOptions));
         } else {
             console.warn(`Unknown XY Plot: ${mark.type}`);
         }
@@ -719,7 +916,7 @@ function drawXYPlot(figure, chart, options) {
         }
     });
     // Create chart
-    plotOptions.marginLeft = Math.max(20, maxLabelLength * getFontSize(figure));
+    plotOptions.marginLeft = maxLabelLength * getFontSize(figure);
     if (colorDomain.length > 1) {
         plotOptions.color = {
             domain: colorDomain,
@@ -733,7 +930,9 @@ function drawXYPlot(figure, chart, options) {
 
 
 function drawHistogram(figure, chart, options) {
-    const binInput = {y: "count"};
+    chart.density = true;
+    const reducer = chart.density ? "proportion" : "count";
+    const binInput = {y: reducer};
     const binOutput = {x: {value: chart.values, thresholds: chart.bins || 'auto'}};
     const plotOptions = {
         className: "rc-chart",
@@ -742,8 +941,8 @@ function drawHistogram(figure, chart, options) {
         },
         width: options.width || 800,
         height: options.height || 600,
-        marginLeft: 40,
-        marginRight: 40,
+        marginLeft: 50,
+        marginRight: 50,
         marginTop: 40,
         marginBottom: 40,
         color: {
@@ -758,8 +957,23 @@ function drawHistogram(figure, chart, options) {
         if (!(chart.stack)) {
             binOutput.nudge = 1; // Avoid bars overlapping
             binInput.y = undefined;
-            binInput.y2 = "count";
+            binInput.y2 = reducer;
             binOutput.mixBlendMode = "multiply";
+        }
+    }
+
+    if (chart.facets && (chart.facets.x || chart.facets.y)) {
+        plotOptions.facet = {
+            data: chart.data,
+        }
+        // Add x and y facets if they are defined in the chart configuration
+        if (chart.facets.x !== undefined) {
+            plotOptions.facet.x = chart.facets.x;
+            plotOptions.marginTop = 80;
+        }
+        if (chart.facets.y !== undefined) {
+            plotOptions.facet.y = chart.facets.y;
+            plotOptions.marginRight = 80;
         }
     }
     plotOptions.marks = [
@@ -776,10 +990,22 @@ function drawHistogram(figure, chart, options) {
 function drawPieChart(figure, chart, options) {
     // Placeholder for pie chart implementation
     const uniqueLabels = [...d3.union(chart.data.map(d => d.label))];
-    const color = d3.scaleOrdinal(options.scheme);
-    const outerRadius = Math.min(options.width, options.height) / 2 - 15;
+
+    const outerRadius = Math.min(options.width, options.height) / 2 - 35;
     const innerRadius = (chart.kind === 'donut') ? outerRadius / 2 : 0;
     const total = d3.sum(chart.data, d => d.value);
+    const plotOptions = {
+        color: {
+            legend: true,
+        }
+    }
+    let color;
+    setColorScheme(plotOptions, options, chart);
+    if (plotOptions.color.range && plotOptions.color.domain) {
+        color = d3.scaleOrdinal(plotOptions.color.range).domain(plotOptions.color.domain);
+    } else {
+        color = d3.scaleOrdinal(options.scheme);
+    }
 
     // Add plot
     const plot = document.createElement("figure");
@@ -802,7 +1028,7 @@ function drawPieChart(figure, chart, options) {
         .attr("class", "rc-chart-swatch")
         .style("display", "inline-flex")
         .style("align-items", "center")
-        .style("font-size", '1rem')
+        // .style("font-size", '1rem')
         .style("margin-right", "10px")
         .style("margin-bottom", "5px")
         .html(d => `<svg width="15" height="15" fill="${color(d)}">
@@ -821,33 +1047,68 @@ function drawPieChart(figure, chart, options) {
     const pie = d3.pie()
         .value(d => d.value);
 
-    let dataReady = pie(chart.data);
-    let arcGenerator = d3.arc()
+    const arc = d3.arc()
         .innerRadius(innerRadius)
         .outerRadius(outerRadius);
+    const labelRadius = outerRadius + 20;
+    const arcLabel = d3.arc()
+        .innerRadius(labelRadius)
+        .outerRadius(labelRadius);
+    const arcs = pie(chart.data);
 
-    svg.selectAll("pieSlices")
-        .data(dataReady)
-        .enter()
-        .append("path")
-        .attr("d", arcGenerator)
-        .attr("fill", d => color(d.data.label))
+    // Add pie slices
+    svg.append("g")
         .attr("stroke", "var(--bs-body-bg)")
-        .style("stroke-width", "1px")
-        .style("opacity", 1)
-        .append("text")
-        .attr("class", "pie-label")
-        .attr("transform", function (d) {
-            const centroid = arcGenerator.centroid(d);
-            return `translate(${centroid[0]}, ${centroid[1]})`;
-        })
+      .selectAll("path")
+      .data(arcs)
+      .join("path")
+        .attr("fill", d => color(d.data.label))
+        .attr("d", arc)
+      .append("title")
+        .text(d => `${d.data.label}: ${d.data.value.toLocaleString("en-US")}`);
+
+    // Add labels
+    svg.append("g")
         .attr("text-anchor", "middle")
-        .attr("stroke", "var(--bs-body-color)")
-        .text(function (d) {
-            console.log('calculating percentage', d);
-            const percent = (100 * d.value / total);
-            return d3.format(".1f")(percent) + "%";
-        });
+        .attr("fill", "var(--bs-body-color)")
+        .attr("font-size", "1rem")
+        .selectAll()
+        .data(arcs)
+        .join("text")
+          .attr("transform", d => `translate(${arcLabel.centroid(d)})`)
+          .call(text => text.filter(d => (d.endAngle - d.startAngle) > 0.15).append("tspan")
+              .attr("y", "-0.4em")
+              .attr("font-weight", "bold")
+              .text(d => d3.format(".1f")(100 * d.data.value / total) + "%")
+          )
+          .call(text => text.filter(d => (d.endAngle - d.startAngle) > 0.15).append("tspan")
+              .attr("x", 0)
+              .attr("y", "0.7em")
+              .attr("fill-opacity", 0.7)
+              .attr("font-weight", "300")
+              .text(d => d.data.value.toLocaleString("en-US")));
+
+    // svg.selectAll("pieSlices")
+    //     .data(dataReady)
+    //     .enter()
+    //     .append("path")
+    //     .attr("d", arcGenerator)
+    //     .attr("fill", d => color(d.data.label))
+    //     .attr("stroke", "var(--bs-body-bg)")
+    //     .style("stroke-width", "1px")
+    //     .style("opacity", 1)
+    //     .append("text")
+    //     .attr("class", "pie-label")
+    //     .attr("transform", function (d) {
+    //         const centroid = arcGenerator.centroid(d);
+    //         return `translate(${centroid[0]}, ${centroid[1]})`;
+    //     })
+    //     .attr("text-anchor", "middle")
+    //     .attr("stroke", "var(--bs-body-color)")
+    //     .text(function (d) {
+    //         const percent = (100 * d.value / total);
+    //         return d3.format(".1f")(percent) + "%";
+    //     });
 
     addFigurePlot(figure, plot);
 }
@@ -862,8 +1123,8 @@ function drawTimeline(figure, chart, options) {
         },
         width: options.width || 800,
         height: options.height || 600,
-        marginLeft: 40,
-        marginRight: 40,
+        marginLeft: 50,
+        marginRight: 50,
         marginTop: 40,
         marginBottom: 40,
         color: {
@@ -908,27 +1169,36 @@ function drawTimeline(figure, chart, options) {
 
 function drawGeoChart(figure, chart, options) {
     let colorLegend = false;
+    const markerHeight = getFontSize(figure) *  0.8;
+    let markerOffset = chart.labels ? markerHeight : 0;
+
     let showLand = chart.map === '001' ? false : (chart["show-land"] || true);
     const plotOptions = {
         className: "rc-chart",
         style: {
-            fontSize: '1rem',
+            fontSize: '0.95rem',
         },
         width: options.width || 800,
         height: options.height || 600,
         color: {
             type: "quantize",
+            tickFormat: '.2s'
         },
         projection: {},
         marks: []
     };
 
-    setColorScheme(plotOptions, options);
+    setColorScheme(plotOptions, options, chart);
     Promise.all([
         d3.json(`${options.staticRoot}/maps/${chart.map}.json`),
         showLand ? d3.json(`${options.staticRoot}/maps/land.json`) : null,
     ]).then(function ([geoData, landData]) {
         const map = topojson.feature(geoData, geoData.objects["subunits"] || geoData.objects["countries"]);
+        const centroids = new Map(
+            map.features.map(
+                d => [d.id, {longitude: d.properties.longitude, latitude: d.properties.latitude}]
+            )
+        );
         if (chart.map === '001') {  // World map, no need to show land
             plotOptions.projection = {
                 type: "mercator",
@@ -957,9 +1227,9 @@ function drawGeoChart(figure, chart, options) {
 
         // add features now
         chart.features.forEach(function (feature, index) {
+            const locMap = new Map(chart.data.map(d => [d[chart.location], d[feature.value]]))
             switch (feature.type) {
                 case 'area':
-                    let locMap = new Map(chart.data.map(d => [d[chart.location], d[feature.value]]))
                     plotOptions.marks.push(
                         Plot.geo(map, {
                             fill: d => locMap.get(d.id),
@@ -972,20 +1242,37 @@ function drawGeoChart(figure, chart, options) {
                 case 'bubble':
                     plotOptions.marks.push(
                         new Plot.dot(chart.data, {
-                            x: chart.longitude,
-                            y: chart.latitude,
+                            x: chart.longitude || (d => centroids.get(d[chart.location]).longitude),
+                            y: chart.latitude || (d => centroids.get(d[chart.location]).latitude),
                             r: feature.value,
                             strokeWidth: 0.5,
-                            stroke: feature.value,
+                            stroke: "var(--bs-body-color)",
+                            fill: feature.value,
                             opacity: 0.7
                         })
+                    );
+                    colorLegend = true;
+                    break;
+                case 'hex-bin':
+                    plotOptions.marks.push(
+                        new Plot.dot(chart.data,
+                            Plot.hexbin({
+                                r: feature.value,
+                                fill: feature.value,
+                            }, {
+                                x: chart.longitude || (d => centroids.get(d[chart.location]).longitude),
+                                y: chart.latitude || (d => centroids.get(d[chart.location]).latitude),
+                                fill: feature.value,
+                                opacity: 0.7
+                            })
+                        )
                     );
                     break;
                 case 'density':
                     plotOptions.marks.push(
                         new Plot.density(chart.data, {
-                            x: chart.longitude,
-                            y: chart.latitude,
+                            x: chart.longitude || (d => centroids.get(d[chart.location]).longitude),
+                            y: chart.latitude || (d => centroids.get(d[chart.location]).latitude),
                             weight: feature.value,
                             opacity: 0.7,
                         })
@@ -994,13 +1281,17 @@ function drawGeoChart(figure, chart, options) {
                 case 'markers':
                     plotOptions.marks.push(
                         new Plot.text(chart.data, {
-                            x: chart.longitude,
-                            y: chart.latitude,
+                            x: chart.longitude || (d => centroids.get(d[chart.location]).longitude),
+                            y: chart.latitude || (d => centroids.get(d[chart.location]).latitude),
                             text: feature.value,
-                            fill: "black",
                             textAnchor: "middle",
+                            fill: "var(--bs-body-color)",
+                            stroke: options.theme === 'default' ? "var(--bs-body-bg)" : null,
+                            strokeOpacity: 0.5,
+                            dy: markerOffset
                         })
-                    )
+                    );
+                    markerOffset += markerHeight;
                     break;
             }
         });
@@ -1010,18 +1301,17 @@ function drawGeoChart(figure, chart, options) {
             case 'codes':
                 const isCode = (chart.labels === 'codes') || false;
                 plotOptions.marks.push(
-                    Plot.text(
-                        map.features,
-                        Plot.centroid({
-                            text: (d) => isCode ? d.id : d.properties.name,
-                            textAnchor: "middle",
-                            tip: true,
-                            fill: "var(--bs-body-color)",
-                            stroke: options.theme === 'default' ? "var(--bs-body-bg)" : null,
-                            strokeOpacity: 0.7,
-                            dy: 3
-                        })
-                    )
+                    Plot.text(map.features, {
+                        text: (d) => isCode ? d.id : d.properties.name,
+                        x: (d) => d.properties.longitude,
+                        y: (d) => d.properties.latitude,
+                        textAnchor: "middle",
+                        tip: true,
+                        fill: "var(--bs-body-color)",
+                        stroke: options.theme === 'default' ? "var(--bs-body-bg)" : null,
+                        strokeOpacity: 0.5,
+                        dy: 3
+                    })
                 );
                 break;
             case 'places':
@@ -1095,10 +1385,23 @@ function drawLikertChart(figure, chart, options) {
             Plot.ruleX([0])
         ]
     };
-
-    // Create the bar chart
     plotOptions.marginLeft = Math.max(30, maxLabelLength);
     plotOptions.marginBottom = 50;
+
+    if (chart.facets && (chart.facets.x || chart.facets.y)) {
+        plotOptions.facet = {
+            data: chart.data,
+        }
+        // Add x and y facets if they are defined in the chart configuration
+        if (chart.facets.x !== undefined) {
+            plotOptions.facet.x = chart.facets.x;
+            plotOptions.marginTop = 80;
+        }
+        if (chart.facets.y !== undefined) {
+            plotOptions.facet.y = chart.facets.y;
+            plotOptions.marginRight = 80;
+        }
+    }
     const plot = Plot.plot(plotOptions);
     addFigurePlot(figure, plot);
 }

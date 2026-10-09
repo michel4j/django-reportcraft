@@ -61,7 +61,7 @@ def data_snippet(source):
     if isinstance(data, str):
         return mark_safe(f"<pre>{data}</pre>")
 
-    headers = data[0].keys()
+    headers = labels.keys()
     table_html = '<table class="table table-sm rc-snippet-table"><thead><tr>'
     for header in headers:
         name = labels.get(header, header)
@@ -71,7 +71,7 @@ def data_snippet(source):
     for row in data:
         table_html += '<tr>'
         for header in headers:
-            table_html += f'<td class="text-nowrap">{row.get(header, "")}</td>'
+            table_html += f'<td class="text-nowrap">{row.get(header, "-")}</td>'
         table_html += '</tr>'
 
     table_html += f'</tbody></table><code>... of {count} items</code>'

@@ -9,7 +9,7 @@
     </style>
 {% endblock %}
 
-{% block editor-pretitle %}Edit Dataset{% endblock %}
+{% block editor-pre-title %}Edit Dataset{% endblock %}
 {% block editor-title %}{{ object.name }}{% endblock %}
 
 {% block editor-tools %}
@@ -47,7 +47,7 @@
                         </a>
                     </div>
                 </div>
-                <table class="table">
+                <table class="table table-sm">
                     <thead>
                     <tr>
                         <th>Model</th>
@@ -62,7 +62,7 @@
                     <tbody class="text-sm">
                     {% for src_model in source.models.all %}
                         <tr>
-                            <td class="font-monospace">{{ src_model.name }}</td>
+                            <td class="font-monospace">{{ src_model }}</td>
                             {% for field_name, group_field in src_model.get_group_fields.items %}
                                 {% if group_field %}
                                     <td class="font-monospace">
@@ -107,7 +107,7 @@
                     </div>
                 </div>
                 <div class="flex-scrollable">
-                <table class="table">
+                <table class="table table-sm">
                     <thead>
                     <tr>
                         <th>Name</th>
@@ -180,12 +180,12 @@
     </div>
     <div class="card flex-scrollable d-flex flex-column" >
         <div class="card-header">
-            <h5 class="my-0"><span class="text-body-secondary">Records</span></h5>
+            <input type="text" id="record-list-search" class="form-control form-control-sm mt-2" placeholder="Record Types ...">
         </div>
         <div class="flex-scrollable">
-        <ul class="list-group-flush list-group text-condensed">
+        <ul class="list-group-flush list-group text-condensed" id="record-list-items">
             {% for model in source.models.all %}
-                <li class="fs-6 list-group-item bg-body-secondary">
+                <li class="fs-6 list-group-item bg-body-secondary record-class">
                 {{ model }}
                 </li>
                 {% for name, type in model.get_model_specs %}

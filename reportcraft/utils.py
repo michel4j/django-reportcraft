@@ -10,8 +10,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from functools import wraps, reduce
 from importlib import import_module
-from inspect import getframeinfo, stack
-from io import StringIO
+from inspect import signature, getframeinfo, stack
 from operator import or_
 from typing import Any, Sequence, Iterable
 
@@ -21,9 +20,9 @@ from django.apps import apps
 from django.conf import settings
 from django.core import serializers
 from django.core.cache import cache
-from django.core.management import call_command
+from django.core.exceptions import FieldError
 from django.db import models
-from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q
+from django.db.models import Count, Avg, Sum, Max, Min, F, Value as V, Q, Expression
 from django.db.models.functions import (
     Greatest, Least, Concat, Abs, Ceil, Floor, Exp, Ln, Log, Power, Sqrt, Sin, Cos, Tan, ASin, ACos, ATan,
     ATan2, Mod, Sign, Trunc, Radians, Degrees, Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim,
@@ -34,7 +33,12 @@ from django.http import HttpResponse
 from pyparsing.exceptions import ParseException
 
 from . import countries
-from .functions import DisplayName, Hours, Minutes, ShiftStart, ShiftEnd, Interval, CumSum, CumCount
+from .functions import (
+    DisplayName, Hours, Minutes, ShiftStart, ShiftEnd, Interval, CumSum, CumCount,
+    ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now,
+    YearBucket, Decade, Lustrum, Quadrennial, Triennial, Biennial, Century,
+    Age, AgeInYears, AgeInMonths, AgeInDays, YearMonth, YearQuarter
+)
 
 FIELD_TYPES = {
     'CharField': 'STRING',
@@ -109,8 +113,13 @@ ALLOWED_FUNCTIONS = {
     Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim, JSONArray, Radians, Degrees, Q,
 
     # Custom functions
-    Interval, DisplayName, CumSum, Hours, Minutes, ShiftStart, ShiftEnd, CumCount
+    Interval, DisplayName, CumSum, Hours, Minutes, ShiftStart, ShiftEnd, CumCount,
+    ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now,
+    YearBucket, Decade, Lustrum, Quadrennial, Triennial, Biennial, Century,
+    Age, AgeInYears, AgeInMonths, AgeInDays, YearMonth, YearQuarter,
 }
+
+
 
 REPORTCRAFT_FUNCTIONS = getattr(settings, 'REPORTCRAFT_FUNCTIONS', [])  # list of string paths to importable functions
 for func_path in REPORTCRAFT_FUNCTIONS:
@@ -172,10 +181,11 @@ class Parser:
         }.get(tokens[0], False)
 
     @staticmethod
-    def parse_kwargs(self, tokens):
+    def parse_kwargs(*args):
         """
         Parse keyword arguments for a function
         """
+        tokens = args[-1]
         return {k: v for k, v in tokens}
 
     @staticmethod
@@ -236,97 +246,18 @@ class Parser:
         elif name in FUNCTIONS:
             ordered_args = [a for a in args if not isinstance(a, dict)]
             kwargs = {k: v for a in args if isinstance(a, dict) for k, v in a.items()}
-            return FUNCTIONS[name](*ordered_args, **kwargs)
+            func = FUNCTIONS[name]
+            try:
+                sig = signature(func)
+                if 'filter' in kwargs and 'filter' not in sig.parameters and 'filters' in sig.parameters:
+                    kwargs['filters'] = kwargs.pop('filter')
+                elif 'filters' in kwargs and 'filters' not in sig.parameters and 'filter' in sig.parameters:
+                    kwargs['filter'] = kwargs.pop('filters')
+            except (ValueError, TypeError):
+                pass
+            return func(*ordered_args, **kwargs)
         else:
             raise ParseException(f'Unknown function: {name}')
-
-
-class ExpressionParser(Parser):
-    """
-    Compiles Calculation Expressions (domain formulas) into Django ORM Expression / Q objects
-    using a safe PyParsing grammar (see docs/adr/0001-pyparsing-dsl-for-expressions-and-filters.md).
-    """
-    def __init__(self):
-        self.expr = pp.Forward()
-        self.double = pp.Combine(pp.Optional('-') + pp.Word(pp.nums) + '.' + pp.Word(pp.nums)).setParseAction(
-            self.parse_float
-        )
-        self.integer = pp.Combine(pp.Optional('-') + pp.Word(pp.nums)).setParseAction(self.parse_int)
-        self.boolean = pp.oneOf('True False true false').setParseAction(self.parse_bool)
-        self.variable = pp.Word(pp.alphanums + '.').setParseAction(self.parse_var)
-        self.string = pp.quotedString.setParseAction(pp.removeQuotes)
-
-        # Define the function call
-        self.left_par = pp.Literal('(').suppress()
-        self.right_par = pp.Literal(')').suppress()
-        self.equal = pp.Literal('=').suppress()
-        self.comma = pp.Literal(',').suppress()
-        self.func_name = pp.Word(pp.alphas).setParseAction(self.parse_func_name)
-        self.func_kwargs = pp.Group(pp.Word(pp.alphas + '_') + self.equal + self.expr).setParseAction(self.parse_kwargs)
-        self.func_call = pp.Group(
-            self.func_name + self.left_par + pp.Group(pp.Optional(pp.delimitedList(self.expr))) + self.right_par
-        )
-
-        self.operand = (
-                self.double | self.integer | self.boolean | self.func_kwargs | self.func_call
-                | self.string | self.variable
-        )
-
-        self.negate = pp.Literal('-')
-        self.expr << pp.infixNotation(
-            self.operand, [
-                (self.negate, 1, pp.opAssoc.RIGHT, self.parse_negate),
-                (pp.oneOf('* /'), 2, pp.opAssoc.LEFT, self.parse_operator),
-                (pp.oneOf('+ -'), 2, pp.opAssoc.LEFT, self.parse_operator),
-            ]
-        )
-
-    def clean(self, expression, wrap_value=True):
-        """
-        Clean the parsed expression into a Django expression
-        :param expression: The parsed expression as a nested list
-        :param wrap_value: Whether to wrap values in a Value function
-        :return: A Django expression suitable for use in a QuerySet
-        """
-
-        if isinstance(expression, str) and expression.startswith('$'):
-            return self.clean_variable(expression)
-        elif isinstance(expression, bool):
-            return expression
-        elif isinstance(expression, (int, float, str)):
-            return V(expression) if wrap_value else expression
-        elif isinstance(expression, pp.ParseResults):
-            return self.clean(expression.asList())
-        elif isinstance(expression, dict):
-            return {
-                k: self.clean(v) for k, v in expression.items()
-            }
-        elif isinstance(expression, list) and len(expression) == 1:
-            return self.clean(expression[0])
-        elif not isinstance(expression, list):
-            return V(expression) if wrap_value else expression
-        elif len(expression) > 1 and isinstance(expression[0], str) and expression[0].endswith('()'):
-            func_name = expression[0].strip()[:-2]
-            args = self.clean(expression[1:])
-            if not isinstance(args, list):
-                args = [args]
-            return self.clean_function(func_name, *args)
-        else:
-            return [self.clean(sub_expr) for sub_expr in expression]
-
-    def parse(self, text):
-        """
-        Parse an expression string into a Django expression
-        :param text: The expression string to parse
-        :return: A Django expression suitable for use in a QuerySet
-        """
-        try:
-            expression = self.expr.parse_string(text, parseAll=True).as_list()
-            result = self.clean(expression)
-        except (ParseException, KeyError) as err:
-            result = V(0)
-            print(f'Error parsing expression: {err}')
-        return result
 
 
 class FilterParser:
@@ -350,9 +281,9 @@ class FilterParser:
         """
         # Define the basic elements of the grammar
         if self.identifiers:
-            identifier = pp.oneOf(self.identifiers, caseless=True).setParseAction(self._to_lowercase)
+            identifier = pp.oneOf(self.identifiers, caseless=True).setParseAction(self._clean_field)
         else:
-            identifier = pp.Word(pp.alphas, pp.alphanums + "_").setParseAction(self._to_lowercase)
+            identifier = pp.Word(pp.alphas + "_", pp.alphanums + "_.").setParseAction(self._clean_field)
         extr_operators = {
             '==': 'exact',  # alias for equality
             '=': 'exact',
@@ -380,21 +311,33 @@ class FilterParser:
             ]
         )
 
-        # Values
+        # Values and RHS expressions
         number = pp.pyparsing_common.number
         quoted_string = pp.QuotedString("'") | pp.QuotedString('"')
         boolean = pp.oneOf('True False', caseless=True).setParseAction(self._parse_bool)
-        value = number | quoted_string | boolean
+        if self.identifiers:
+            rhs_field = pp.oneOf(self.identifiers, caseless=True).setParseAction(self._make_f_object)
+        else:
+            rhs_field = pp.Word(pp.alphas + "_", pp.alphanums + "_.").setParseAction(self._make_f_object)
+        rhs_operand = quoted_string | boolean | number | rhs_field
+        rhs_expr = pp.infixNotation(
+            rhs_operand, [
+                (pp.oneOf('* /'), 2, pp.opAssoc.LEFT, self._eval_binary_op),
+                (pp.oneOf('+ -'), 2, pp.opAssoc.LEFT, self._eval_binary_op),
+            ]
+        )
 
-        # A single condition (e.g., "Citations > 100")
-        condition = pp.Group(identifier + operator + value)
+        # A single condition (e.g., "Citations > 100", "Journal.Metrics.Year = Published.Year")
+        condition = pp.Group(identifier + operator + rhs_expr)
         condition.setParseAction(self._make_q_object)
 
         # Define the boolean logic using an operator precedence parser
+        and_op = pp.CaselessLiteral("and") | pp.Literal("&")
+        or_op = pp.CaselessLiteral("or") | pp.Literal("|")
         q_expression = pp.infixNotation(
             condition, [
-                (pp.CaselessLiteral("and"), 2, pp.opAssoc.LEFT, self._process_and),
-                (pp.CaselessLiteral("or"), 2, pp.opAssoc.LEFT, self._process_or),
+                (and_op, 2, pp.opAssoc.LEFT, self._process_and),
+                (or_op, 2, pp.opAssoc.LEFT, self._process_or),
             ]
         )
 
@@ -409,6 +352,39 @@ class FilterParser:
             'true': True,
             'false': False,
         }.get(tokens[0].lower(), False)
+
+    @classmethod
+    def _make_f_object(cls, tokens):
+        """Parse action to convert field identifiers into Django F expressions."""
+        return F(cls._clean_field(tokens))
+
+    @staticmethod
+    def _eval_binary_op(tokens):
+        """Parse action to evaluate binary arithmetic operations on RHS operands."""
+        elems = tokens[0]
+        res = elems[0]
+        for i in range(1, len(elems), 2):
+            op = elems[i]
+            rhs = elems[i + 1]
+            if op == '+':
+                res = res + rhs
+            elif op == '-':
+                res = res - rhs
+            elif op == '*':
+                res = res * rhs
+            elif op == '/':
+                res = res / rhs
+        return res
+
+    @staticmethod
+    def _clean_field(tokens):
+        """Parse action to convert field names to lowercase Django lookup paths."""
+        name = tokens[0]
+        var_names = name.strip('$').split('.')
+        var_name = '__'.join(re.sub(r'(?<!^)(?=[A-Z])', '_', n) for n in var_names).lower()
+        if var_name == 'this':
+            var_name = 'id'
+        return var_name
 
     @staticmethod
     def _to_lowercase(tokens):
@@ -459,6 +435,151 @@ class FilterParser:
             if not silent:
                 raise ValueError(f"Expression `{filter_string}` is not valid.") from e
             return Q()  # Return an empty Q object if parsing fails and silent mode is on
+
+
+def clean_q(q: Q, queryset: Any) -> Q:
+    """
+    Prune a Q object to only retain filter conditions that are valid for the given queryset.
+    Removes conditions referencing fields that raise FieldError on the queryset.
+    """
+    if not isinstance(q, Q) or queryset is None:
+        return q
+
+    valid_children = []
+    for child in q.children:
+        if isinstance(child, Q):
+            pruned_child = clean_q(child, queryset)
+            if pruned_child.children:
+                valid_children.append(pruned_child)
+        elif isinstance(child, tuple) and len(child) == 2:
+            try:
+                queryset.filter(Q(child))
+                valid_children.append(child)
+            except FieldError:
+                pass
+        else:
+            try:
+                queryset.filter(child)
+                valid_children.append(child)
+            except FieldError:
+                pass
+
+    if not valid_children:
+        return Q()
+
+    new_q = Q()
+    new_q.connector = q.connector
+    new_q.negated = q.negated
+    new_q.children = valid_children
+    return new_q
+
+
+class ExpressionParser(Parser):
+    """
+    Compiles Calculation Expressions (domain formulas) into Django ORM Expression / Q objects
+    using a safe PyParsing grammar (see docs/adr/0001-pyparsing-dsl-for-expressions-and-filters.md).
+    """
+    def __init__(self):
+        self.filter_parser = FilterParser()
+        self.expr = pp.Forward()
+        self.double = pp.Combine(pp.Optional('-') + pp.Word(pp.nums) + '.' + pp.Word(pp.nums)).setParseAction(
+            self.parse_float
+        )
+        self.integer = pp.Combine(pp.Optional('-') + pp.Word(pp.nums)).setParseAction(self.parse_int)
+        self.boolean = pp.oneOf('True False true false').setParseAction(self.parse_bool)
+        self.variable = pp.Word(pp.alphanums + '.').setParseAction(self.parse_var)
+        self.string = pp.quotedString.setParseAction(pp.removeQuotes)
+
+        # Define the function call
+        self.left_par = pp.Literal('(').suppress()
+        self.right_par = pp.Literal(')').suppress()
+        self.equal = pp.Literal('=').suppress()
+        self.comma = pp.Literal(',').suppress()
+        self.func_name = pp.Word(pp.alphas).setParseAction(self.parse_func_name)
+        filter_kw = pp.CaselessKeyword('filters') | pp.CaselessKeyword('filter')
+        self.filter_kwarg = pp.Group(
+            filter_kw + self.equal + (self.filter_parser.q_expression | self.expr)
+        ).setParseAction(self.parse_filter_kwarg)
+        self.func_kwargs = pp.Group(pp.Word(pp.alphas + '_') + self.equal + self.expr).setParseAction(self.parse_kwargs)
+        self.func_call = pp.Group(
+            self.func_name + self.left_par + pp.Group(pp.Optional(pp.delimitedList(self.expr))) + self.right_par
+        )
+
+        self.operand = (
+                self.double | self.integer | self.boolean | self.filter_kwarg | self.func_kwargs | self.func_call
+                | self.string | self.variable
+        )
+
+        self.negate = pp.Literal('-')
+        self.expr << pp.infixNotation(
+            self.operand, [
+                (self.negate, 1, pp.opAssoc.RIGHT, self.parse_negate),
+                (pp.oneOf('* /'), 2, pp.opAssoc.LEFT, self.parse_operator),
+                (pp.oneOf('+ -'), 2, pp.opAssoc.LEFT, self.parse_operator),
+            ]
+        )
+
+    def parse_filter_kwarg(self, tokens):
+        k, v = tokens[0]
+        if isinstance(v, str):
+            v = self.filter_parser.parse(v)
+        return {'filter': v}
+
+    def clean(self, expression, wrap_value=True):
+        """
+        Clean the parsed expression into a Django expression
+        :param expression: The parsed expression as a nested list
+        :param wrap_value: Whether to wrap values in a Value function
+        :return: A Django expression suitable for use in a QuerySet
+        """
+
+        if isinstance(expression, str) and expression.startswith('$'):
+            return self.clean_variable(expression)
+        elif isinstance(expression, (bool, Q, Expression)):
+            return expression
+        elif isinstance(expression, (int, float, str)):
+            return V(expression) if wrap_value else expression
+        elif isinstance(expression, pp.ParseResults):
+            return self.clean(expression.asList())
+        elif isinstance(expression, dict):
+            res = {}
+            for k, v in expression.items():
+                if k in ('filter', 'filters'):
+                    if isinstance(v, str):
+                        res['filter'] = self.filter_parser.parse(v)
+                    elif isinstance(v, Q):
+                        res['filter'] = v
+                    else:
+                        res['filter'] = self.clean(v, wrap_value=False)
+                else:
+                    res[k] = self.clean(v)
+            return res
+        elif isinstance(expression, list) and len(expression) == 1:
+            return self.clean(expression[0])
+        elif not isinstance(expression, list):
+            return V(expression) if wrap_value else expression
+        elif len(expression) > 1 and isinstance(expression[0], str) and expression[0].endswith('()'):
+            func_name = expression[0].strip()[:-2]
+            args = self.clean(expression[1:])
+            if not isinstance(args, list):
+                args = [args]
+            return self.clean_function(func_name, *args)
+        else:
+            return [self.clean(sub_expr) for sub_expr in expression]
+
+    def parse(self, text):
+        """
+        Parse an expression string into a Django expression
+        :param text: The expression string to parse
+        :return: A Django expression suitable for use in a QuerySet
+        """
+        try:
+            expression = self.expr.parse_string(text, parseAll=True).as_list()
+            result = self.clean(expression)
+        except (ParseException, KeyError, ValueError) as err:
+            result = V(0)
+            print(f'Error parsing expression: {err}')
+        return result
 
 
 def regroup_data(
@@ -540,9 +661,36 @@ def _make_key(item, keys):
     return tuple(_key_value(item, k) for k in keys)
 
 
+def apply_defaults(
+        data: list[dict],
+        defaults: dict[str, Any] | None = None,
+) -> list[dict]:
+    """
+    Populate missing fields or replace None values in a list of data dictionaries
+    with provided default values.
+
+    :param data: list of dictionaries
+    :param defaults: Dictionary mapping field names to default values
+    :return: list of dictionaries with defaults applied
+    """
+    if not defaults:
+        return data
+
+    result = []
+    for item in data:
+        record = dict(item)
+        for field, default_val in defaults.items():
+            if record.get(field) is None:
+                record[field] = default_val
+        result.append(record)
+
+    return result
+
+
 def merge_data(
         data: list[dict],
         unique: list[str],
+        defaults: dict[str, Any] | None = None,
 ) -> list[dict]:
     """
     Combine aggregated data from multiple models along unique dimensional keys.
@@ -551,8 +699,8 @@ def merge_data(
 
     :param data: list of dictionaries
     :param unique: Names of unique dimension keys
+    :param defaults: Dictionary mapping field names to default values
     """
-
     # make a dictionary mapping unique values to unique entries, these will be populated later
     # convert to tuple of strings to make it hashable
     unique_keys = sorted({_make_key(item, unique) for item in data})
@@ -560,9 +708,13 @@ def merge_data(
     # first pass to populate raw_data
     for item in data:
         key = _make_key(item, unique)
-        raw_data[key].update(item)
+        for k, v in item.items():
+            if k not in raw_data[key] or raw_data[key][k] is None:
+                raw_data[key][k] = v
+            elif v is not None:
+                raw_data[key][k] = v
 
-    return list(raw_data.values())
+    return apply_defaults(list(raw_data.values()), defaults=defaults)
 
 
 class ValueType(Enum):
@@ -582,7 +734,8 @@ def prepare_data(
         sort_desc: bool = False
 ) -> list[dict]:
     """
-    Prepare a dataset for plotting, label data according to the labels dictionary, if provided, and sort it by a field if specified.
+    Prepare a dataset for plotting, label data according to the labels dictionary, if provided, and sort it by a field
+    if specified.
 
     :param data: list of dictionaries
     :param select: an iterable of field names to select from the data, selects all fields if None
@@ -595,6 +748,12 @@ def prepare_data(
     if select is None:
         # if no fields are selected, select all fields from the data
         select = {key for item in data for key in item.keys()}
+    else:
+        select = set(select)
+
+    # Always select "color" field if they exist in the data, even if not in select
+    if any('color' in item for item in data):
+        select.add('color')
 
     fill_missing = default != ValueType.IGNORE
 
@@ -685,13 +844,28 @@ def cached_model_method(duration: int = 30):
 
                 # Compute and store the fresh result
                 return _update_cache(self, func, cache_key, args, kwargs, duration)
-            except Exception as e:
-                print(f"Cache error: {e}")
+            except Exception as err:
+                print(f"Cache error: {err}")
                 return func(self, *args, **kwargs)
 
         return wrapper
 
     return decorator
+
+
+def _fetch_cache(self, func, cache_key, args, kwargs, duration):
+    """Fetches the cache value, computing and storing it if not present."""
+    result = cache.get(cache_key)
+    if result is None:
+        result = func(self, *args, **kwargs)
+        cache_expiry_key = f"{cache_key}:expiry"
+        cache.set_many(
+            {
+                cache_key: result,
+                cache_expiry_key: datetime.now() + timedelta(seconds=duration)
+            }, timeout=CACHE_TIMEOUT
+        )
+    return result
 
 
 def _update_cache(self, func, cache_key, args, kwargs, duration):
@@ -759,24 +933,36 @@ DIVERGENT_SCHEME_NAMES = [
 CYCLICAL_SCHEME_NAMES = ['Rainbow', 'Sinebow']
 
 
-def _make_scheme_choices(schemes):
+def _make_scheme_choices(schemes, blank: bool = True):
+    """
+    Make a list of tuples for use in Django ChoiceField, with an optional blank choice at the beginning.
+    :param schemes: List of scheme names
+    :param blank: Whether to include a blank choice at the beginning
+    :return: List of tuples of (scheme_name, scheme_name)
+    """
+    if blank:
+        return [('', 'Select...')] + [(scheme, scheme) for scheme in schemes]
     return [(scheme, scheme) for scheme in schemes]
 
 
 CATEGORICAL_SCHEMES = _make_scheme_choices(CATEGORICAL)
 DIVERGENT_SCHEMES = _make_scheme_choices(DIVERGENT_SCHEME_NAMES)
 CYCLICAL_SCHEMES = _make_scheme_choices(CYCLICAL_SCHEME_NAMES)
+SEQUENTIAL_MULTI = _make_scheme_choices(SEQUENTIAL_MULTI)
+SEQUENTIAL_SINGLE = _make_scheme_choices(SEQUENTIAL_SINGLE)
+
 SEQUENTIAL_SCHEMES = [
-    ('Single Hue', _make_scheme_choices(SEQUENTIAL_SINGLE)),
-    ('Multi Hue', _make_scheme_choices(SEQUENTIAL_MULTI)),
-    ('Diverging', DIVERGENT_SCHEMES),
-    ('Cyclical', CYCLICAL_SCHEMES),
+    ('', 'Select...'),
+    ('Single Hue', SEQUENTIAL_SINGLE[1:]),
+    ('Multi Hue', SEQUENTIAL_MULTI[1:]),
+    ('Diverging', DIVERGENT_SCHEMES[1:]),
+    ('Cyclical', CYCLICAL_SCHEMES[1:]),
 ]
 
 COLOR_SCHEMES = [
     ('', 'Select...'),
-    ('Categorical', CATEGORICAL_SCHEMES),
-    *SEQUENTIAL_SCHEMES
+    ('Categorical', CATEGORICAL_SCHEMES[1:]),
+    *SEQUENTIAL_SCHEMES[1:]
 ]
 
 AXIS_CHOICES = [('', 'Select...'), ('y', 'Y1-Axis'), ('y2', 'Y2-Axis')]
@@ -806,13 +992,15 @@ def get_models(exclude: Sequence = ('django', 'rest_framework')) -> dict:
         info[app_name] = {}
         for model in app.get_models():
             info[app_name][model.__name__] = {
-                field.name: re.sub(r'Field$', '', field.get_internal_type()) for field in model._meta.get_fields() if
-                not field.is_relation
+                field.name: re.sub(r'Field$', '', field.get_internal_type())
+                for field in model._meta.get_fields()
+                if not field.is_relation
             }
-            info[app_name][model.__name__].update(
-                {field.name: f"{get_model_name(field.related_model)}" for field in model._meta.get_fields() if
-                 field.is_relation and field.related_model}
-            )
+            info[app_name][model.__name__].update({
+                field.name: f"{get_model_name(field.related_model)}"
+                for field in model._meta.get_fields()
+                if field.is_relation and field.related_model
+            })
         if not info[app_name]:
             del info[app_name]
     return info
@@ -1004,3 +1192,10 @@ def import_report(yaml_string: str):
 
     # Return the imported report if any
     return Report.objects.last()
+
+
+def nice_sum(values):
+    value = sum(v for v in values if v is not None)
+    if isinstance(value, float):
+        return round(value, 2)
+    return value

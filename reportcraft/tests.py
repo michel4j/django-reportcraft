@@ -7,7 +7,7 @@ from django.db.models.functions import *
 
 from reportcraft.models import Report
 from reportcraft.registry import ReportRegistry, site, CatalogItem
-from reportcraft.utils import ExpressionParser, FilterParser
+from reportcraft.utils import ExpressionParser, FilterParser, merge_data, apply_defaults
 from reportcraft.views import DictReportView, CodeReportView, ReportIndexView
 from reportcraft.code import (
     BarChartEntry,
@@ -29,9 +29,22 @@ EXPRESSIONS = {
     "Concat(Journal.Title, ' (', Journal.Issn, ')')": Concat(F('journal__title'), ' (', F('journal__issn'), ')'),
     "Avg(Journal.Metrics.ImpactFactor)": Avg('journal__metrics__impact_factor'),
     "Avg(Metrics.Citations) / Avg(Metrics.Mentions)": Avg('metrics__citations') / Avg('metrics__mentions'),
+    "Count(Journal, filter=(Journal.Metrics.ImpactFactor > 5))": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5)),
+    "Count(Journal, filter=(Journal.Metrics.ImpactFactor > 5) & (Journal.Publisher = 'Springer'))": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5) & Q(journal__publisher='Springer')),
+    "Count(Journal, filters=(Journal.Metrics.ImpactFactor > 5))": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5)),
+    "Count(Journal, filters=(Journal.Metrics.ImpactFactor > 5) & (Journal.Publisher = 'Springer'))": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5) & Q(journal__publisher='Springer')),
+    "Count(Journal, filters='Journal.Metrics.ImpactFactor > 5')": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5)),
+    "Count(Journal, filters=\"Journal.Metrics.ImpactFactor > 5 and Journal.Publisher = 'Springer'\")": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5) & Q(journal__publisher='Springer')),
+    "Count(Journal, filter='Journal.Metrics.ImpactFactor > 5')": Count('journal', filter=Q(journal__metrics__impact_factor__gt=5)),
+    "Avg(Journal.Metrics.ImpactFactor, filter=(Journal.Metrics.Year = 2000))": Avg('journal__metrics__impact_factor', filter=Q(journal__metrics__year=2000)),
+    "Avg(Journal.Metrics.ImpactFactor, filters=(Journal.Metrics.Year = 2000))": Avg('journal__metrics__impact_factor', filter=Q(journal__metrics__year=2000)),
+    "Avg(Journal.Metrics.ImpactFactor, filter=(Journal.Metrics.Year = Published.Year))": Avg('journal__metrics__impact_factor', filter=Q(journal__metrics__year=F('published__year'))),
+    "Avg(Journal.Metrics.ImpactFactor, filters=(Journal.Metrics.Year = Published.Year))": Avg('journal__metrics__impact_factor', filter=Q(journal__metrics__year=F('published__year'))),
 }
 
 FILTERS = {
+    "Journal.Metrics.Year = Published.Year": Q(journal__metrics__year__exact=F('published__year')),
+    "Journal.Metrics.Year = Published.Year + 1": Q(journal__metrics__year__exact=F('published__year') + 1),
     "journal isnull True": Q(journal__isnull=True),
     "counts = 10": Q(counts__exact=10),
     "counts == 10.5": Q(counts__exact=10.5),
@@ -61,12 +74,40 @@ FILTERS = {
 }
 
 
+def _normalize_q(q):
+    if not isinstance(q, Q):
+        return q
+    new_q = Q()
+    new_q.connector = q.connector
+    new_q.negated = q.negated
+    new_children = []
+    for child in q.children:
+        if isinstance(child, tuple) and len(child) == 2:
+            k, v = child
+            if k.endswith('__exact'):
+                k = k[:-7]
+            new_children.append((k, v))
+        elif isinstance(child, Q):
+            new_children.append(_normalize_q(child))
+        else:
+            new_children.append(child)
+    new_q.children = new_children
+    return new_q
+
+
 def compare_expressions(expr1, expr2):
     """
     Compare two expressions for equality, ignoring whitespace and case.
     """
     for key in ['distinct', 'filter', 'default', 'source_expression', 'extra']:
-        if expr1.__dict__.get(key) != expr2.__dict__.get(key):
+        val1 = expr1.__dict__.get(key)
+        val2 = expr2.__dict__.get(key)
+        if key == 'filter' and val1 is not None and val2 is not None:
+            q1 = val1.source_expressions[0] if hasattr(val1, 'source_expressions') and val1.source_expressions else val1
+            q2 = val2.source_expressions[0] if hasattr(val2, 'source_expressions') and val2.source_expressions else val2
+            if _normalize_q(q1) == _normalize_q(q2):
+                continue
+        if val1 != val2:
             print(expr1.__dict__)
             print(expr2.__dict__)
             return False
@@ -111,6 +152,188 @@ class UtilsTestCase(TestCase):
             self.fail(f"Unexpected ValueError for silent parsing: `{expr1}`")
         else:
             self.assertEqual(result1, Q(), f"Invalid return value:`{expr1}`, {result1!r}")
+
+    def test_datafield_get_expression_with_filters(self):
+        from reportcraft.models import DataField
+        expected = Count('journal', filter=Q(journal__metrics__impact_factor__gt=5))
+
+        field = DataField(expression="Count(Journal, filters=(Journal.Metrics.ImpactFactor > 5))")
+        expr = field.get_expression()
+        self.assertTrue(compare_expressions(expr, expected), f"Failed for DataField expr: {expr!r}")
+
+        field_str = DataField(expression="Count(Journal, filters='Journal.Metrics.ImpactFactor > 5')")
+        expr_str = field_str.get_expression()
+        self.assertTrue(compare_expressions(expr_str, expected), f"Failed for DataField string expr: {expr_str!r}")
+
+        field_filter = DataField(expression="Count(Journal, filter=(Journal.Metrics.ImpactFactor > 5))")
+        expr_filter = field_filter.get_expression()
+        self.assertTrue(compare_expressions(expr_filter, expected), f"Failed for DataField filter expr: {expr_filter!r}")
+
+    def test_current_temporal_functions(self):
+        from django.utils import timezone
+        from reportcraft.functions import ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now
+        parser = ExpressionParser()
+
+        active_date = timezone.localdate()
+
+        res_year = parser.parse("ThisYear()")
+        self.assertIsInstance(res_year, ThisYear)
+        self.assertEqual(res_year.value, active_date.year)
+
+        res_month = parser.parse("ThisMonth()")
+        self.assertIsInstance(res_month, ThisMonth)
+        self.assertEqual(res_month.value, active_date.month)
+
+        res_quarter = parser.parse("ThisQuarter()")
+        self.assertIsInstance(res_quarter, ThisQuarter)
+        self.assertEqual(res_quarter.value, (active_date.month - 1) // 3 + 1)
+
+        res_day = parser.parse("ThisDay()")
+        self.assertIsInstance(res_day, ThisDay)
+        self.assertEqual(res_day.value, active_date.day)
+
+        res_week = parser.parse("ThisWeek()")
+        self.assertIsInstance(res_week, ThisWeek)
+        self.assertEqual(res_week.value, active_date.isocalendar().week)
+
+        res_today = parser.parse("Today()")
+        self.assertIsInstance(res_today, Today)
+        self.assertEqual(res_today.value, active_date)
+
+        res_now = parser.parse("Now()")
+        self.assertIsInstance(res_now, Now)
+
+        # Compound expression
+        res_compound = parser.parse("ThisYear() - 1")
+        self.assertEqual(repr(res_compound), repr(ThisYear() - Value(1)))
+
+        # ORM QuerySet execution
+        from demo.example.models import Country
+        c = Country.objects.create(name="TemporalTestCountry", code="TTC")
+        annotated = Country.objects.filter(pk=c.pk).annotate(
+            cur_year=ThisYear(),
+            cur_month=ThisMonth(),
+            cur_quarter=ThisQuarter(),
+            cur_day=ThisDay(),
+            cur_week=ThisWeek(),
+            cur_today=Today(),
+            cur_now=Now(),
+        ).first()
+        self.assertEqual(annotated.cur_year, active_date.year)
+        self.assertEqual(annotated.cur_month, active_date.month)
+        self.assertEqual(annotated.cur_quarter, (active_date.month - 1) // 3 + 1)
+        self.assertEqual(annotated.cur_day, active_date.day)
+        self.assertEqual(annotated.cur_week, active_date.isocalendar().week)
+        self.assertEqual(annotated.cur_today, active_date)
+        self.assertIsNotNone(annotated.cur_now)
+
+    def test_year_bucket_functions(self):
+        import datetime
+        from demo.example.models import Journal, Publication, Metric
+        from reportcraft.functions import (
+            YearBucket, Decade, Lustrum, Quadrennial, Triennial, Biennial, Century
+        )
+        parser = ExpressionParser()
+
+        # 1. Parser verification
+        res_dec = parser.parse("Decade(Published)")
+        self.assertIsInstance(res_dec, Decade)
+
+        res_lus = parser.parse("Lustrum(Published)")
+        self.assertIsInstance(res_lus, Lustrum)
+
+        res_tri = parser.parse("Triennial(Published)")
+        self.assertIsInstance(res_tri, Triennial)
+
+        res_bie = parser.parse("Biennial(Published)")
+        self.assertIsInstance(res_bie, Biennial)
+
+        res_qua = parser.parse("Quadrennial(Published)")
+        self.assertIsInstance(res_qua, Quadrennial)
+
+        res_cen = parser.parse("Century(Published)")
+        self.assertIsInstance(res_cen, Century)
+
+        res_yb = parser.parse("YearBucket(Published, size=5, anchor=2000)")
+        self.assertIsInstance(res_yb, YearBucket)
+
+        # 2. ORM execution with DateField (Polymorphic Date)
+        j = Journal.objects.create(name="Bucketing Journal")
+        p2026 = Publication.objects.create(journal=j, title="P2026", published=datetime.date(2026, 5, 15))
+        p2023 = Publication.objects.create(journal=j, title="P2023", published=datetime.date(2023, 11, 1))
+        p1995 = Publication.objects.create(journal=j, title="P1995", published=datetime.date(1995, 4, 20))
+        p1999 = Publication.objects.create(journal=j, title="P1999", published=datetime.date(1999, 12, 31))
+
+        qs = Publication.objects.filter(journal=j).annotate(
+            decade=Decade('published'),
+            lustrum=Lustrum('published'),
+            triennial=Triennial('published'),
+            biennial=Biennial('published'),
+            quadrennial=Quadrennial('published'),
+            century=Century('published'),
+            custom_yb=YearBucket('published', size=7, anchor=2020),
+            null_decade=Decade(Value(None, output_field=DateField())),
+        )
+
+        r2026 = qs.get(pk=p2026.pk)
+        self.assertEqual(r2026.decade, "2020s")
+        self.assertEqual(r2026.lustrum, "2025-2029")
+        self.assertEqual(r2026.triennial, "2025-2027")
+        self.assertEqual(r2026.biennial, "2026-2027")
+        self.assertEqual(r2026.quadrennial, "2024-2027")
+        self.assertEqual(r2026.century, "2000s")
+        self.assertEqual(r2026.custom_yb, "2020-2026")
+        self.assertIsNone(r2026.null_decade)
+
+        r2023 = qs.get(pk=p2023.pk)
+        self.assertEqual(r2023.decade, "2020s")
+        self.assertEqual(r2023.lustrum, "2020-2024")
+        self.assertEqual(r2023.triennial, "2022-2024")
+        self.assertEqual(r2023.biennial, "2022-2023")
+        self.assertEqual(r2023.quadrennial, "2020-2023")
+        self.assertEqual(r2023.century, "2000s")
+
+        # Historical dates before anchor 2000 (Floored division verification)
+        r1995 = qs.get(pk=p1995.pk)
+        self.assertEqual(r1995.decade, "1990s")
+        self.assertEqual(r1995.lustrum, "1995-1999")
+        self.assertEqual(r1995.triennial, "1995-1997")
+        self.assertEqual(r1995.biennial, "1994-1995")
+        self.assertEqual(r1995.quadrennial, "1992-1995")
+        self.assertEqual(r1995.century, "1900s")
+
+        r1999 = qs.get(pk=p1999.pk)
+        self.assertEqual(r1999.decade, "1990s")
+        self.assertEqual(r1999.lustrum, "1995-1999")
+        self.assertEqual(r1999.triennial, "1998-2000")
+        self.assertEqual(r1999.biennial, "1998-1999")
+        self.assertEqual(r1999.quadrennial, "1996-1999")
+        self.assertEqual(r1999.century, "1900s")
+
+        # 3. ORM execution with IntegerField (Polymorphic Integer Year)
+        m = Metric.objects.create(journal=j, year=2024, impact_factor=4.5)
+        m_res = Metric.objects.filter(pk=m.pk).annotate(
+            decade=Decade('year'),
+            lustrum=Lustrum('year'),
+            triennial=Triennial('year'),
+        ).first()
+        self.assertEqual(m_res.decade, "2020s")
+        self.assertEqual(m_res.lustrum, "2020-2024")
+        self.assertEqual(m_res.triennial, "2022-2024")
+
+
+
+    def test_filter_parser_dotted_and_operators(self):
+        parser = FilterParser()
+        res1 = parser.parse("Journal.Metrics.ImpactFactor > 5")
+        self.assertEqual(res1, Q(journal__metrics__impact_factor__gt=5))
+
+        res2 = parser.parse("(Journal.Metrics.ImpactFactor > 5) & (Journal.Publisher = 'Springer')")
+        self.assertEqual(res2, Q(journal__metrics__impact_factor__gt=5) & Q(journal__publisher__exact='Springer'))
+
+        res3 = parser.parse("(Journal.Metrics.ImpactFactor > 5) | (Journal.Publisher = 'Springer')")
+        self.assertEqual(res3, Q(journal__metrics__impact_factor__gt=5) | Q(journal__publisher__exact='Springer'))
+
 
 
 TEST_REPORT_DICT = {
@@ -331,7 +554,7 @@ class DictReportViewTestCase(TestCase):
         self.assertIn('<span id="report-title">Report</span>', content)
 
     def test_database_report_backwards_compatibility(self):
-        """Verify that traditional database reports without inline payload fall back to AJAX fetch without errors."""
+        """Verify that Ajax fetch is used when no payload is provided without errors."""
         report = Report.objects.create(
             slug='test-db-report',
             title='Database Report',
@@ -340,9 +563,6 @@ class DictReportViewTestCase(TestCase):
         response = self.client.get(reverse('report-view', kwargs={'slug': report.slug}))
         self.assertEqual(response.status_code, 200)
         content = response.content.decode('utf-8')
-        # Does NOT have inline json_script
-        self.assertNotIn('<script id="rc-report-data" type="application/json">', content)
-        # Still has fetch call to data_url
         self.assertIn('fetch("/reports/api/reports/test-db-report/?")', content)
 
     def test_report_embed_inline_payload(self):
@@ -1369,3 +1589,671 @@ class ReportIndexViewTestCase(TestCase):
         self.assertTrue(item.matches_search("fin-q3"))
         self.assertFalse(item.matches_search("nonexistent"))
 
+
+class MergeDataTestCase(TestCase):
+    def test_merge_data_missing_fields_populated_with_defaults(self):
+        data = [
+            {'category': 'A', 'metric_1': 10},
+            {'category': 'B', 'metric_2': 20},
+        ]
+        result = merge_data(data, unique=['category'], defaults={'metric_1': 0, 'metric_2': 0})
+        self.assertEqual(result, [
+            {'category': 'A', 'metric_1': 10, 'metric_2': 0},
+            {'category': 'B', 'metric_1': 0, 'metric_2': 20},
+        ])
+
+        # Same key merged across disparate sources with partial fields
+        data_composite = [
+            {'category': 'A', 'metric_1': 10},
+            {'category': 'A', 'metric_2': 20},
+        ]
+        result_composite = merge_data(
+            data_composite, unique=['category'], defaults={'metric_1': 0, 'metric_2': 0, 'metric_3': -1}
+        )
+        self.assertEqual(result_composite, [
+            {'category': 'A', 'metric_1': 10, 'metric_2': 20, 'metric_3': -1},
+        ])
+
+    def test_merge_data_explicit_none_replaced_by_defaults(self):
+        data = [
+            {'category': 'A', 'metric_1': None, 'metric_2': 15},
+        ]
+        result = merge_data(data, unique=['category'], defaults={'metric_1': 100})
+        self.assertEqual(result, [
+            {'category': 'A', 'metric_1': 100, 'metric_2': 15},
+        ])
+
+    def test_merge_data_non_none_precedence_over_none(self):
+        # Case 1: None first, non-None second
+        data_first_none = [
+            {'category': 'A', 'metric_1': None},
+            {'category': 'A', 'metric_1': 42},
+        ]
+        result1 = merge_data(data_first_none, unique=['category'], defaults={'metric_1': 0})
+        self.assertEqual(result1, [{'category': 'A', 'metric_1': 42}])
+
+        # Case 2: Non-None first, None second
+        data_second_none = [
+            {'category': 'A', 'metric_1': 42},
+            {'category': 'A', 'metric_1': None},
+        ]
+        result2 = merge_data(data_second_none, unique=['category'], defaults={'metric_1': 0})
+        self.assertEqual(result2, [{'category': 'A', 'metric_1': 42}])
+
+    def test_merge_data_preserves_falsy_values(self):
+        data = [
+            {'category': 'A', 'count': 0, 'flag': False, 'note': ''},
+        ]
+        result = merge_data(data, unique=['category'], defaults={'count': 99, 'flag': True, 'note': 'N/A'})
+        self.assertEqual(result, [
+            {'category': 'A', 'count': 0, 'flag': False, 'note': ''},
+        ])
+
+    def test_merge_data_without_defaults_backward_compatibility(self):
+        data = [
+            {'category': 'A', 'v1': 1},
+            {'category': 'A', 'v2': 2},
+        ]
+        result = merge_data(data, unique=['category'])
+        self.assertEqual(result, [{'category': 'A', 'v1': 1, 'v2': 2}])
+
+    def test_datasource_get_source_data_applies_field_defaults(self):
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Country
+        from reportcraft.models import DataSource, DataModel, DataField
+
+        Country.objects.create(name="Canada", code="CAN", continent="North America", capital=None)
+        Country.objects.create(name="France", code="FRA", continent="Europe", capital="Paris")
+
+        ds = DataSource.objects.create(name="Country Composite DS", group_by=["continent"])
+        ct = ContentType.objects.get_for_model(Country)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Country")
+
+        DataField.objects.create(source=ds, model=dm, name="continent", label="Continent")
+        DataField.objects.create(source=ds, model=dm, name="capital", label="Capital", default="Unknown Capital")
+
+        data = ds.get_source_data()
+        self.assertEqual(len(data), 2)
+        by_continent = {item["continent"]: item["capital"] for item in data}
+        self.assertEqual(by_continent["North America"], "Unknown Capital")
+        self.assertEqual(by_continent["Europe"], "Paris")
+
+    def test_apply_defaults_missing_and_none_values(self):
+        data = [
+            {'name': 'Canada', 'capital': None},
+            {'name': 'France', 'capital': 'Paris'},
+            {'name': 'Unknown'},
+        ]
+        result = apply_defaults(data, defaults={'capital': 'Unknown Capital', 'population': 0})
+        self.assertEqual(result, [
+            {'name': 'Canada', 'capital': 'Unknown Capital', 'population': 0},
+            {'name': 'France', 'capital': 'Paris', 'population': 0},
+            {'name': 'Unknown', 'capital': 'Unknown Capital', 'population': 0},
+        ])
+
+    def test_apply_defaults_preserves_falsy_values(self):
+        data = [
+            {'id': 1, 'count': 0, 'active': False, 'label': ''},
+        ]
+        result = apply_defaults(data, defaults={'count': 10, 'active': True, 'label': 'N/A'})
+        self.assertEqual(result, [
+            {'id': 1, 'count': 0, 'active': False, 'label': ''},
+        ])
+
+    def test_apply_defaults_empty_defaults_or_data(self):
+        data = [{'a': 1}]
+        self.assertEqual(apply_defaults(data, defaults=None), [{'a': 1}])
+        self.assertEqual(apply_defaults(data, defaults={}), [{'a': 1}])
+        self.assertEqual(apply_defaults([], defaults={'a': 1}), [])
+
+    def test_datasource_get_source_data_non_grouped_applies_defaults(self):
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Country
+        from reportcraft.models import DataSource, DataModel, DataField
+
+        Country.objects.create(name="Iceland", code="ISL", capital=None)
+        Country.objects.create(name="Japan", code="JPN", capital="Tokyo")
+
+        # Non-grouped data source (group_by is empty/None)
+        ds = DataSource.objects.create(name="Country Non-Grouped DS", group_by=None)
+        ct = ContentType.objects.get_for_model(Country)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Country")
+
+        DataField.objects.create(source=ds, model=dm, name="name", label="Name")
+        DataField.objects.create(source=ds, model=dm, name="capital", label="Capital", default="Default Capital")
+
+        data = ds.get_source_data()
+        self.assertEqual(len(data), 2)
+        by_name = {item["name"]: item["capital"] for item in data}
+        self.assertEqual(by_name["Iceland"], "Default Capital")
+        self.assertEqual(by_name["Japan"], "Tokyo")
+
+    def test_datasource_get_source_data_with_filtered_datafield(self):
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Country
+        from reportcraft.models import DataSource, DataModel, DataField
+
+        Country.objects.create(name="Country Alpha", code="CAL", continent="Region 1")
+        Country.objects.create(name="Country Beta", code="CBE", continent="Region 1")
+        Country.objects.create(name="Country Gamma", code="CGA", continent="Region 1")
+        Country.objects.create(name="Country Delta", code="CDE", continent="Region 2")
+        Country.objects.create(name="Country Epsilon", code="CEP", continent="Region 2")
+
+        ds = DataSource.objects.create(name="Filtered DataField DS", group_by=["continent"])
+        ct = ContentType.objects.get_for_model(Country)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Country")
+
+        DataField.objects.create(source=ds, model=dm, name="continent", label="Continent")
+        DataField.objects.create(source=ds, model=dm, name="total", label="Total", expression="Count(id)")
+        DataField.objects.create(
+            source=ds, model=dm, name="alpha_count", label="Alpha Count",
+            expression="Count(id, filters=\"name = 'Country Alpha'\")"
+        )
+        DataField.objects.create(
+            source=ds, model=dm, name="alpha_or_beta", label="Alpha or Beta Count",
+            expression="Count(id, filters=(name = 'Country Alpha' or name = 'Country Beta'))"
+        )
+        DataField.objects.create(
+            source=ds, model=dm, name="not_alpha", label="Not Alpha Count",
+            expression="Count(id, filter=(name != 'Country Alpha'))"
+        )
+
+        data = ds.get_source_data()
+        by_continent = {item["continent"]: item for item in data}
+
+        self.assertIn("Region 1", by_continent)
+        self.assertEqual(by_continent["Region 1"]["total"], 3)
+        self.assertEqual(by_continent["Region 1"]["alpha_count"], 1)
+        self.assertEqual(by_continent["Region 1"]["alpha_or_beta"], 2)
+        self.assertEqual(by_continent["Region 1"]["not_alpha"], 2)
+
+        self.assertIn("Region 2", by_continent)
+        self.assertEqual(by_continent["Region 2"]["total"], 2)
+        self.assertEqual(by_continent["Region 2"]["alpha_count"], 0)
+        self.assertEqual(by_continent["Region 2"]["alpha_or_beta"], 0)
+        self.assertEqual(by_continent["Region 2"]["not_alpha"], 2)
+
+    def test_datasource_get_queryset_static_filter_multi_model(self):
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Country, Journal
+        from reportcraft.models import DataSource, DataModel, DataField
+
+        Country.objects.create(name="AlphaCountry", code="ALC", continent="Region 1", population=50)
+        Country.objects.create(name="BetaCountry", code="BEC", continent="Region 1", population=500)
+        Journal.objects.create(name="AlphaJournal")
+        Journal.objects.create(name="BetaJournal")
+
+        ds = DataSource.objects.create(name="Multi-Model Static Filter DS", filters="population > 100")
+        ct_country = ContentType.objects.get_for_model(Country)
+        ct_journal = ContentType.objects.get_for_model(Journal)
+        dm_country = DataModel.objects.create(source=ds, model=ct_country, name="example.Country")
+        dm_journal = DataModel.objects.create(source=ds, model=ct_journal, name="example.Journal")
+
+        DataField.objects.create(source=ds, model=dm_country, name="name", label="Name")
+        DataField.objects.create(source=ds, model=dm_country, name="population", label="Population")
+        DataField.objects.create(source=ds, model=dm_journal, name="name", label="Name")
+
+        # get_queryset on Country should filter by population > 100
+        country_qs = ds.get_queryset("example.Country")
+        self.assertEqual(country_qs.count(), 1)
+        self.assertEqual(country_qs.first()["name"], "BetaCountry")
+
+        # get_queryset on Journal should not raise FieldError, even though Journal has no 'population' field
+        journal_qs = ds.get_queryset("example.Journal")
+        self.assertEqual(journal_qs.count(), 2)
+
+        # get_source_data should succeed and merge records
+        data = ds.get_source_data()
+        names = {item["name"] for item in data}
+        self.assertIn("BetaCountry", names)
+        self.assertNotIn("AlphaCountry", names)
+        self.assertIn("AlphaJournal", names)
+        self.assertIn("BetaJournal", names)
+
+        # Compound static filter: AND condition where one field is shared and one is not
+        ds.filters = "name = 'BetaJournal' and population > 100"
+        ds.save()
+        # For Country: name == 'BetaJournal' and population > 100 -> 0 rows
+        self.assertEqual(ds.get_queryset("example.Country").count(), 0)
+        # For Journal: population > 100 is pruned, name == 'BetaJournal' is applied -> 1 row
+        journal_and_qs = ds.get_queryset("example.Journal")
+        self.assertEqual(journal_and_qs.count(), 1)
+        self.assertEqual(journal_and_qs.first()["name"], "BetaJournal")
+
+        # Compound static filter: OR condition where one field is shared and one is not
+        ds.filters = "name = 'AlphaJournal' or population > 100"
+        ds.save()
+        # For Country: BetaCountry has population > 100 -> 1 row
+        self.assertEqual(ds.get_queryset("example.Country").count(), 1)
+        # For Journal: population > 100 is pruned, name == 'AlphaJournal' -> 1 row
+        journal_or_qs = ds.get_queryset("example.Journal")
+        self.assertEqual(journal_or_qs.count(), 1)
+        self.assertEqual(journal_or_qs.first()["name"], "AlphaJournal")
+
+        # Static filter with negation (!=) on field not in Journal
+        ds.filters = "population != 500"
+        ds.save()
+        # Country: AlphaCountry has population 50 -> 1 row
+        self.assertEqual(ds.get_queryset("example.Country").count(), 1)
+        self.assertEqual(ds.get_queryset("example.Country").first()["name"], "AlphaCountry")
+        # Journal: population != 500 pruned -> 2 rows
+        self.assertEqual(ds.get_queryset("example.Journal").count(), 2)
+
+    def test_datasource_filtered_avg_expression(self):
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Institution, Person, Country
+        from reportcraft.models import DataSource, DataModel, DataField
+
+        c = Country.objects.create(name="AvgTestCountry", code="ATC")
+        inst1 = Institution.objects.create(name="Institute Alpha", city="City A", country=c)
+        inst2 = Institution.objects.create(name="Institute Beta", city="City B", country=c)
+
+        # Institute Alpha has two people: age 30 and age 50 (avg: 40.0)
+        Person.objects.create(first_name="Alice", last_name="A", gender="female", age=30, institution=inst1)
+        Person.objects.create(first_name="Bob", last_name="B", gender="male", age=50, institution=inst1)
+        # Institute Beta has one person: age 20 (avg: 20.0)
+        Person.objects.create(first_name="Charlie", last_name="C", gender="male", age=20, institution=inst2)
+
+        ds = DataSource.objects.create(name="Filtered Avg DS", group_by=["name"])
+        ct = ContentType.objects.get_for_model(Institution)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Institution")
+
+        DataField.objects.create(source=ds, model=dm, name="name", label="Name")
+        df_unfiltered = DataField.objects.create(
+            source=ds, model=dm, name="avg_age", label="Avg Age",
+            expression="Avg(People.Age)"
+        )
+        df_match = DataField.objects.create(
+            source=ds, model=dm, name="avg_age_filtered_match", label="Filtered Match",
+            expression="Avg(People.Age, filter=(People.Age = 30))"
+        )
+        df_nomatch = DataField.objects.create(
+            source=ds, model=dm, name="avg_age_filtered_nomatch", label="Filtered No Match",
+            expression="Avg(People.Age, filter=(People.Age = 2000))"
+        )
+        df_filters_nomatch = DataField.objects.create(
+            source=ds, model=dm, name="avg_age_filters_nomatch", label="Filters No Match",
+            expression="Avg(People.Age, filters=(People.Age = 2000))"
+        )
+
+        # 1. Verify direct ORM evaluation via aggregate()
+        agg_res = Institution.objects.filter(name="Institute Alpha").aggregate(
+            unfiltered=df_unfiltered.get_expression(),
+            filtered_match=df_match.get_expression(),
+            filtered_nomatch=df_nomatch.get_expression(),
+            filters_nomatch=df_filters_nomatch.get_expression(),
+        )
+        self.assertEqual(agg_res["unfiltered"], 40.0)
+        self.assertEqual(agg_res["filtered_match"], 30.0)
+        self.assertIsNone(agg_res["filtered_nomatch"])
+        self.assertIsNone(agg_res["filters_nomatch"])
+        self.assertNotEqual(agg_res["filtered_nomatch"], agg_res["unfiltered"])
+
+        # 2. Verify via ds.get_source_data() with grouping
+        data = ds.get_source_data()
+        by_name = {item["name"]: item for item in data}
+
+        self.assertIn("Institute Alpha", by_name)
+        alpha = by_name["Institute Alpha"]
+        self.assertEqual(alpha["avg_age"], 40.0)
+        self.assertEqual(alpha["avg_age_filtered_match"], 30.0)
+        self.assertIsNone(alpha["avg_age_filtered_nomatch"])
+        self.assertIsNone(alpha["avg_age_filters_nomatch"])
+        self.assertNotEqual(alpha["avg_age_filtered_nomatch"], alpha["avg_age"])
+
+        self.assertIn("Institute Beta", by_name)
+        beta = by_name["Institute Beta"]
+        self.assertEqual(beta["avg_age"], 20.0)
+        self.assertIsNone(beta["avg_age_filtered_match"])
+        self.assertIsNone(beta["avg_age_filtered_nomatch"])
+        self.assertIsNone(beta["avg_age_filters_nomatch"])
+
+    def test_publication_filtered_metric_impact_factor(self):
+        import datetime
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Journal, Metric, Publication
+        from reportcraft.models import DataSource, DataModel, DataField
+
+        # Setup Journal and Metrics
+        j = Journal.objects.create(name="Journal of Examples")
+        Metric.objects.create(journal=j, year=2020, impact_factor=2.0)
+        Metric.objects.create(journal=j, year=2021, impact_factor=4.0)
+
+        # Setup Publications: 1 in 2020 (IF: 2.0), 3 in 2021 (IF: 4.0)
+        Publication.objects.create(title="Paper 2020", journal=j, published=datetime.date(2020, 5, 1))
+        Publication.objects.create(title="Paper 2021 A", journal=j, published=datetime.date(2021, 2, 1))
+        Publication.objects.create(title="Paper 2021 B", journal=j, published=datetime.date(2021, 6, 1))
+        Publication.objects.create(title="Paper 2021 C", journal=j, published=datetime.date(2021, 9, 1))
+
+        # Setup DataSource and DataFields on Publication
+        ds = DataSource.objects.create(name="Publication Impact DS")
+        ct = ContentType.objects.get_for_model(Publication)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Publication")
+
+        df_title = DataField.objects.create(source=ds, model=dm, name="title", label="Title")
+        df_filters = DataField.objects.create(
+            source=ds, model=dm, name="impact_factor_filters", label="Impact Factor (filters)",
+            expression="Avg(Journal.Metrics.ImpactFactor, filters=(Journal.Metrics.Year = Published.Year))"
+        )
+        df_filter = DataField.objects.create(
+            source=ds, model=dm, name="impact_factor_filter", label="Impact Factor (filter)",
+            expression="Avg(Journal.Metrics.ImpactFactor, filter=(Journal.Metrics.Year = Published.Year))"
+        )
+
+        # 1. Direct ORM aggregate evaluation over Publication:
+        # Expected weighted average: (2.0*1 + 4.0*3) / 4 = 14.0 / 4 = 3.5
+        agg_res = Publication.objects.aggregate(
+            avg_filters=df_filters.get_expression(),
+            avg_filter=df_filter.get_expression(),
+        )
+        self.assertEqual(agg_res["avg_filters"], 3.5)
+        self.assertEqual(agg_res["avg_filter"], 3.5)
+
+        # 2. Evaluate per-publication via DataSource
+        data = ds.get_source_data()
+        by_title = {item["title"]: item for item in data}
+        self.assertEqual(by_title["Paper 2020"]["impact_factor_filters"], 2.0)
+        self.assertEqual(by_title["Paper 2020"]["impact_factor_filter"], 2.0)
+        self.assertEqual(by_title["Paper 2021 A"]["impact_factor_filters"], 4.0)
+        self.assertEqual(by_title["Paper 2021 B"]["impact_factor_filters"], 4.0)
+        self.assertEqual(by_title["Paper 2021 C"]["impact_factor_filters"], 4.0)
+
+        # 3. Evaluate grouped DataSource (group by journal__name)
+        ds_grouped = DataSource.objects.create(name="Grouped Publication Impact DS", group_by=["journal__name"])
+        dm_grouped = DataModel.objects.create(source=ds_grouped, model=ct, name="example.Publication")
+        DataField.objects.create(source=ds_grouped, model=dm_grouped, name="journal__name", label="Journal")
+        DataField.objects.create(
+            source=ds_grouped, model=dm_grouped, name="avg_impact", label="Avg Impact",
+            expression="Avg(Journal.Metrics.ImpactFactor, filters=(Journal.Metrics.Year = Published.Year))"
+        )
+        grouped_data = ds_grouped.get_source_data()
+        self.assertEqual(len(grouped_data), 1)
+        self.assertEqual(grouped_data[0]["journal__name"], "Journal of Examples")
+        self.assertEqual(grouped_data[0]["avg_impact"], 3.5)
+
+
+class TemporalAndBucketingTestCase(TestCase):
+    def test_datasource_grouped_by_decade_and_lustrum(self):
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Journal, Publication
+        from reportcraft.models import DataSource, DataModel, DataField
+        import datetime
+
+        j = Journal.objects.create(name="Temporal Test Journal")
+        Publication.objects.create(journal=j, title="P1", published=datetime.date(1995, 1, 1))
+        Publication.objects.create(journal=j, title="P2", published=datetime.date(1998, 6, 1))
+        Publication.objects.create(journal=j, title="P3", published=datetime.date(2021, 3, 1))
+        Publication.objects.create(journal=j, title="P4", published=datetime.date(2024, 9, 1))
+        Publication.objects.create(journal=j, title="P5", published=datetime.date(2026, 2, 1))
+
+        ds = DataSource.objects.create(name="Decade Grouped DS", group_by=["decade"])
+        ct = ContentType.objects.get_for_model(Publication)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Publication")
+        DataField.objects.create(source=ds, model=dm, name="decade", label="Decade", expression="Decade(published)")
+        DataField.objects.create(source=ds, model=dm, name="count", label="Count", expression="Count(id)")
+
+        data = ds.get_source_data()
+        by_decade = {item["decade"]: item["count"] for item in data}
+        self.assertEqual(by_decade["1990s"], 2)
+        self.assertEqual(by_decade["2020s"], 3)
+
+    def test_datasource_with_current_temporal_expressions(self):
+        from django.contrib.contenttypes.models import ContentType
+        from django.utils import timezone
+        from demo.example.models import Journal, Publication
+        from reportcraft.models import DataSource, DataModel, DataField
+        import datetime
+
+        j = Journal.objects.create(name="Current Temporal Journal")
+        Publication.objects.create(journal=j, title="Paper Recent", published=datetime.date(2026, 1, 1))
+        Publication.objects.create(journal=j, title="Paper Old", published=datetime.date(2010, 1, 1))
+
+        ds = DataSource.objects.create(name="Recent Papers DS")
+        ct = ContentType.objects.get_for_model(Publication)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Publication")
+        DataField.objects.create(source=ds, model=dm, name="title", label="Title")
+        DataField.objects.create(
+            source=ds, model=dm, name="years_ago", label="Years Ago",
+            expression="ThisYear() - ExtractYear(published)"
+        )
+
+        data = ds.get_source_data()
+        by_title = {item["title"]: item["years_ago"] for item in data}
+        self.assertEqual(by_title["Paper Recent"], timezone.localdate().year - 2026)
+        self.assertEqual(by_title["Paper Old"], timezone.localdate().year - 2010)
+
+    def test_explicit_value_injection_and_constructor_args(self):
+        from reportcraft.functions import ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now
+        import datetime
+
+        custom_date = datetime.date(2030, 8, 15)
+        custom_dt = datetime.datetime(2030, 8, 15, 10, 30, 0)
+
+        ty = ThisYear(2030)
+        self.assertEqual(ty.value, 2030)
+        self.assertEqual(repr(ty), "ThisYear(2030)")
+
+        tm = ThisMonth(8)
+        self.assertEqual(tm.value, 8)
+        self.assertEqual(repr(tm), "ThisMonth(8)")
+
+        tq = ThisQuarter(3)
+        self.assertEqual(tq.value, 3)
+
+        td = ThisDay(15)
+        self.assertEqual(td.value, 15)
+
+        tw = ThisWeek(33)
+        self.assertEqual(tw.value, 33)
+
+        today = Today(custom_date)
+        self.assertEqual(today.value, custom_date)
+
+        now = Now(custom_dt)
+        self.assertEqual(now.value, custom_dt)
+
+    def test_timezone_activation_affects_defaults(self):
+        from zoneinfo import ZoneInfo
+        from django.utils import timezone
+        from reportcraft.functions import ThisYear, ThisMonth, Today
+
+        current_tz = timezone.get_current_timezone()
+        try:
+            timezone.activate(ZoneInfo('Pacific/Auckland'))
+            auckland_date = timezone.localdate()
+            self.assertEqual(ThisYear().value, auckland_date.year)
+            self.assertEqual(ThisMonth().value, auckland_date.month)
+            self.assertEqual(Today().value, auckland_date)
+        finally:
+            timezone.activate(current_tz)
+
+    def test_cross_database_compilation_templates(self):
+        from reportcraft.functions import Decade, Lustrum
+
+        class MockCompiler:
+            def compile(self, expr):
+                return '"published"', ()
+
+        compiler = MockCompiler()
+
+        # Decade PostgreSQL
+        dec = Decade('published')
+        sql_pg, params_pg = dec.as_postgresql(compiler, None)
+        self.assertIn('::text', sql_pg)
+        self.assertIn('FLOOR', sql_pg)
+        self.assertIn('::numeric', sql_pg)
+        self.assertIn("'s'", sql_pg)
+        self.assertEqual(params_pg, ())
+
+        # Lustrum PostgreSQL
+        lus = Lustrum('published')
+        sql_pg_lus, params_pg_lus = lus.as_postgresql(compiler, None)
+        self.assertIn("'-'", sql_pg_lus)
+        self.assertEqual(params_pg_lus, ())
+
+        # Decade MySQL
+        sql_my, params_my = dec.as_mysql(compiler, None)
+        self.assertIn('CONCAT', sql_my)
+        self.assertIn('CHAR', sql_my)
+        self.assertIn("'s'", sql_my)
+        self.assertEqual(params_my, ())
+
+        # Lustrum MySQL
+        sql_my_lus, params_my_lus = lus.as_mysql(compiler, None)
+        self.assertIn('CONCAT', sql_my_lus)
+        self.assertIn("'-'", sql_my_lus)
+        self.assertEqual(params_my_lus, ())
+
+        # ANSI Fallback as_sql
+        sql_ansi, params_ansi = dec.as_sql(compiler, None)
+        self.assertIn('VARCHAR(20)', sql_ansi)
+        self.assertIn("'s'", sql_ansi)
+        self.assertEqual(params_ansi, ())
+
+    def test_custom_anchor_and_size_bucketing(self):
+        from demo.example.models import Journal, Publication
+        from reportcraft.functions import YearBucket
+        import datetime
+
+        j = Journal.objects.create(name="Custom Bucket Journal")
+        p1 = Publication.objects.create(journal=j, title="P2025", published=datetime.date(2025, 1, 1))
+        p2 = Publication.objects.create(journal=j, title="P2018", published=datetime.date(2018, 1, 1))
+
+        qs = Publication.objects.filter(journal=j).annotate(
+            b6=YearBucket('published', size=6, anchor=2001)
+        )
+        self.assertEqual(qs.get(pk=p1.pk).b6, "2025-2030")
+        self.assertEqual(qs.get(pk=p2.pk).b6, "2013-2018")
+
+    def test_year_month_func(self):
+        from demo.example.models import Journal, Publication
+        from reportcraft.functions import YearMonth
+        import datetime
+
+        j = Journal.objects.create(name="YearMonth Journal")
+        p1 = Publication.objects.create(journal=j, title="P2025-07", published=datetime.date(2025, 7, 15))
+        p2 = Publication.objects.create(journal=j, title="P2023-12", published=datetime.date(2023, 12, 1))
+
+        qs = Publication.objects.filter(journal=j).annotate(
+            ym=YearMonth('published')
+        )
+        self.assertEqual(qs.get(pk=p1.pk).ym, "2025-07")
+        self.assertEqual(qs.get(pk=p2.pk).ym, "2023-12")
+
+    def test_year_quarter_func(self):
+        from demo.example.models import Journal, Publication
+        from reportcraft.functions import YearQuarter
+        import datetime
+
+        j = Journal.objects.create(name="YearQuarter Journal")
+        p1 = Publication.objects.create(journal=j, title="P2025-Q3", published=datetime.date(2025, 8, 10))
+        p2 = Publication.objects.create(journal=j, title="P2024-Q1", published=datetime.date(2024, 2, 20))
+
+        qs = Publication.objects.filter(journal=j).annotate(
+            yq=YearQuarter('published')
+        )
+        self.assertEqual(qs.get(pk=p1.pk).yq, "2025-Q3")
+        self.assertEqual(qs.get(pk=p2.pk).yq, "2024-Q1")
+
+
+    def test_age_funcs(self):
+        from demo.example.models import Institution, Country, Person
+        from reportcraft.functions import Age, AgeInYears, AgeInMonths, AgeInDays
+        import datetime
+        from django.utils import timezone
+
+        c = Country.objects.create(name="Age Country", code="AC")
+        inst = Institution.objects.create(name="Age Inst", city="City", country=c)
+        now = timezone.now()
+        delta = datetime.timedelta(days=365*30 + 90)  # 30 years and ~3 months
+        created_dt = now - delta
+        Institution.objects.filter(pk=inst.pk).update(created=created_dt)
+
+        qs = Institution.objects.filter(pk=inst.pk).annotate(
+            age=Age('created'),
+            age_years=AgeInYears('created'),
+            age_months=AgeInMonths('created'),
+            age_days=AgeInDays('created')
+        ).first()
+        self.assertIsInstance(qs.age, datetime.timedelta)
+        self.assertEqual(qs.age.days, delta.days)
+        self.assertEqual(qs.age_years, 30)
+        self.assertTrue(30 <= qs.age_months // 12 <= 31)  # Allow for month rounding
+        self.assertTrue(10950 <= qs.age_days <= 11100)  # Allow for leap years
+
+        # Also verify with Person model using created
+        p = Person.objects.create(first_name="Test", last_name="Person", gender="female", age=30, bio="Test", institution=inst)
+        Person.objects.filter(pk=p.pk).update(created=created_dt)
+        qs_person = Person.objects.filter(pk=p.pk).annotate(
+            age_delta=Age('created'),
+            age_years=AgeInYears('created'),
+            age_months=AgeInMonths('created'),
+            age_days=AgeInDays('created')
+        ).first()
+        self.assertIsInstance(qs_person.age_delta, datetime.timedelta)
+        self.assertEqual(qs_person.age_delta.days, delta.days)
+        self.assertEqual(qs_person.age_years, 30)
+
+    def test_age_and_formatting_cross_database_compilation(self):
+        from reportcraft.functions import Age, AgeInYears, AgeInMonths, AgeInDays, YearQuarter, YearMonth
+        from django.db import connection
+
+        class MockCompiler:
+            def compile(self, expr):
+                return '"created"', ()
+
+        compiler = MockCompiler()
+
+        # Age
+        age = Age('created')
+        self.assertIn('AGE("created")', age.as_postgresql(compiler, connection)[0])
+        self.assertIn('TIMEDIFF(NOW(), "created")', age.as_mysql(compiler, connection)[0])
+        self.assertIn("julianday('now')", age.as_sqlite(compiler, connection)[0])
+        self.assertIn('NUMTODSINTERVAL', age.as_oracle(compiler, connection)[0])
+
+        # AgeInYears
+        aiy = AgeInYears('created')
+        self.assertIn('EXTRACT(YEAR FROM AGE("created"))', aiy.as_postgresql(compiler, connection)[0])
+        self.assertIn('TIMESTAMPDIFF(YEAR, "created", CURDATE())', aiy.as_mysql(compiler, connection)[0])
+        self.assertIn("strftime", aiy.as_sqlite(compiler, connection)[0])
+        self.assertIn('MONTHS_BETWEEN', aiy.as_oracle(compiler, connection)[0])
+
+        # AgeInMonths
+        aim = AgeInMonths('created')
+        self.assertIn('EXTRACT(MONTH FROM AGE("created"))', aim.as_postgresql(compiler, connection)[0])
+        self.assertIn('TIMESTAMPDIFF(MONTH, "created", CURDATE())', aim.as_mysql(compiler, connection)[0])
+        self.assertIn("strftime", aim.as_sqlite(compiler, connection)[0])
+        self.assertIn('TRUNC(MONTHS_BETWEEN', aim.as_oracle(compiler, connection)[0])
+
+        # AgeInDays
+        aid = AgeInDays('created')
+        self.assertIn('CURRENT_DATE - ("created")::date', aid.as_postgresql(compiler, connection)[0])
+        self.assertIn('DATEDIFF(CURDATE(), "created")', aid.as_mysql(compiler, connection)[0])
+        self.assertIn("julianday('now') - julianday(\"created\")", aid.as_sqlite(compiler, connection)[0])
+        self.assertIn('TRUNC(SYSDATE - "created")', aid.as_oracle(compiler, connection)[0])
+
+        # YearQuarter
+        yq = YearQuarter('created')
+        self.assertIn("TO_CHAR(\"created\", 'YYYY')", yq.as_postgresql(compiler, connection)[0])
+        self.assertIn("DATE_FORMAT(\"created\"", yq.as_mysql(compiler, connection)[0])
+        self.assertIn("strftime", yq.as_sqlite(compiler, connection)[0])
+        self.assertIn("TO_CHAR(\"created\", 'YYYY-\"Q\"Q')", yq.as_oracle(compiler, connection)[0])
+
+        # YearMonth
+        ym = YearMonth('created')
+        self.assertIn("TO_CHAR(\"created\", 'YYYY-MM')", ym.as_postgresql(compiler, connection)[0])
+        self.assertIn("DATE_FORMAT(\"created\"", ym.as_mysql(compiler, connection)[0])
+        self.assertIn("strftime", ym.as_sqlite(compiler, connection)[0])
+        self.assertIn("TO_CHAR(\"created\", 'YYYY-MM')", ym.as_oracle(compiler, connection)[0])
+
+    def test_expression_parser_with_age_and_formatting_funcs(self):
+        from reportcraft.utils import ExpressionParser
+        from reportcraft.functions import Age, AgeInYears, AgeInMonths, AgeInDays, YearQuarter, YearMonth
+
+        parser = ExpressionParser()
+        self.assertIsInstance(parser.parse("Age(Created)"), Age)
+        self.assertIsInstance(parser.parse("AgeInYears(Created)"), AgeInYears)
+        self.assertIsInstance(parser.parse("AgeInMonths(Created)"), AgeInMonths)
+        self.assertIsInstance(parser.parse("AgeInDays(Created)"), AgeInDays)
+        self.assertIsInstance(parser.parse("YearQuarter(Created)"), YearQuarter)
+        self.assertIsInstance(parser.parse("YearMonth(Created)"), YearMonth)

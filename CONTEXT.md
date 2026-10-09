@@ -78,6 +78,14 @@ _Avoid_: Computed field, virtual field, formula field
 A domain formula specifying arithmetic and database functions applied to model fields and metrics.
 _Avoid_: Expression, formula, script, query
 
+**Temporal Function**:
+A calculation expression function that dynamically evaluates current date or time values (such as `ThisYear()`, `ThisMonth()`, `Today()`, or `Now()`) relative to the active session timezone at query generation time.
+_Avoid_: Clock function, date macro, dynamic timestamp
+
+**Period Bucketing Function**:
+A database function that groups dates or integer years into standardized multi-year temporal intervals (such as `Decade()`, `Lustrum()`, `Triennial()`, `Biennial()`, `Quadrennial()`, or `Century()`) for dimension slicing.
+_Avoid_: Date binner, year grouper, time slicer
+
 **Filter Expression**:
 A boolean predicate defining comparison conditions used to restrict dataset records.
 _Avoid_: Filter, query clause, condition

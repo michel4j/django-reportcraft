@@ -10,7 +10,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
 from crisp_modals.forms import (
-    ModalModelForm, HalfWidth, FullWidth, Row, ThirdWidth, QuarterWidth, ThreeQuarterWidth, TwoThirdWidth, ModalForm
+    ModalModelForm, HalfWidth, FullWidth, Row, ThirdWidth, QuarterWidth, ThreeQuarterWidth, TwoThirdWidth, ModalForm,
+    FiveSixthWidth, SixthWidth
 )
 
 from . import models, utils
@@ -18,6 +19,10 @@ from .models import DataSource
 from .utils import MAP_CHOICES, AXIS_CHOICES, COLOR_SCHEMES
 
 disabled_widget = forms.HiddenInput(attrs={'readonly': True})
+
+
+def human_title(text):
+    return text.replace('_', ' ').title()
 
 
 class AutoPopulatedSlugField(forms.TextInput):
@@ -216,16 +221,18 @@ class DataModelForm(ModalModelForm):
             group_fields = self.instance.get_group_fields()
             for field_name, field in group_fields.items():
                 group_name = f'{field_name}__group'
-                self.fields[group_name] = forms.CharField(label=_(f'{field_name.title()} Dimension'), required=True)
-                self.fields[group_name].help_text = f'Enter calculation expression for {field_name} dimension'
+                field_label = human_title(field_name)
+                self.fields[group_name] = forms.CharField(label=_(f'{field_label} Dimension'), required=True)
+                self.fields[group_name].help_text = f'Enter calculation expression for {field_label} dimension'
                 if field:
                     self.fields[group_name].initial = field.expression
                 self.extra_fields[field_name] = group_name
         else:
             for field_name in self.source.group_by:
                 group_name = f'{field_name}__group'
-                self.fields[group_name] = forms.CharField(label=_(f'{field_name.title()} Dimension'), required=True)
-                self.fields[group_name].help_text = f'Enter calculation expression for {field_name} dimension'
+                field_label = human_title(field_name)
+                self.fields[group_name] = forms.CharField(label=_(f'{field_label} Dimension'), required=True)
+                self.fields[group_name].help_text = f'Enter calculation expression for {field_label} dimension'
                 self.extra_fields[field_name] = group_name
 
         extra_div = Div(*[Div(field, css_class='col-12') for field in self.extra_fields.values()], css_class='row')
@@ -273,7 +280,7 @@ class ImportEntryForm(ModalModelForm):
         cleaned_data = super().clean()
         copy_fields = (
             'title', 'description', 'notes', 'style', 'kind', 'source', 'position',
-            'filters', 'attrs'
+            'filters', 'aspect_ratio', 'attrs'
         )
         entry = cleaned_data.pop('entry')
         for field in copy_fields:
@@ -286,7 +293,7 @@ class EntryForm(ModalModelForm):
         model = models.Entry
         fields = (
             'title', 'description', 'notes', 'style', 'kind', 'source', 'report', 'position',
-            'filters'
+            'filters', 'aspect_ratio'
         )
         labels = {
             'style': _("Width"),
@@ -309,27 +316,17 @@ class EntryForm(ModalModelForm):
         super().__init__(*args, **kwargs)
 
         self.body.append(
-            Div(
-                Div('title', css_class='col-10'),
-                Div('position', css_class='col-2'),
-                css_class='row'
+            Row(
+                HalfWidth('title'), QuarterWidth('position'), QuarterWidth('aspect_ratio'),
+                FullWidth('description'),
+                ThirdWidth('kind'), ThirdWidth('source'), ThirdWidth('style'),
+                FullWidth('notes'),
+                FullWidth(Field('filters', css_class="font-monospace")),
+                style="g-2"
             ),
-            Div(
-                Div('description', css_class='col-12'),
-                css_class='row'
-            ),
-            Div(
-                Div('kind', css_class='col-4'),
-                Div('source', css_class='col-4'),
-                Div('style', css_class='col-4'),
-                css_class='row'
-            ),
-            Div(
-                Div('notes', css_class='col-12'),
-                Div(Field('filters', css_class="font-monospace"), css_class='col-12'),
-                Field('report'),
-                css_class='row'
-            ),
+            Row(
+                Field('report')
+            )
         )
 
     def clean(self):
@@ -342,7 +339,6 @@ class EntryForm(ModalModelForm):
         filters = cleaned_data.get('filters')
         if filters.strip() and source:
             source_fields = set(source.fields.values_list('name', flat=True))
-            print(source_fields)
             try:
                 parser = utils.FilterParser(identifiers=source_fields)
                 parser.parse(filters)
@@ -358,7 +354,8 @@ PLOT_TYPES = [
     ('points-filled', 'Filled Points'),
     ('line', 'Line'),
     ('line-points', 'Line & Points'),
-    ('area', 'Area')
+    ('area', 'Area'),
+    ('cumarea', 'Cumulative Area')
 ]
 
 SCALE_CHOICES = [
@@ -498,9 +495,9 @@ class EntryConfigForm(ModalModelForm):
 
 
 class TableForm(EntryConfigForm):
-    columns = forms.ModelChoiceField(label=_('Columns (Dimension)'), required=True, queryset=models.DataField.objects.none())
-    rows = forms.ModelMultipleChoiceField(label=_('Rows (Dimensions)'), required=True, queryset=models.DataField.objects.none())
-    values = forms.ModelChoiceField(label=_('Metrics (Values)'), required=False, queryset=models.DataField.objects.none())
+    columns = forms.ModelChoiceField(label=_('Columns'), required=True, queryset=models.DataField.objects.none())
+    rows = forms.ModelMultipleChoiceField(label=_('Rows'), required=True, queryset=models.DataField.objects.none())
+    values = forms.ModelChoiceField(label=_('Values'), required=False, queryset=models.DataField.objects.none())
     total_column = forms.BooleanField(label="Row Totals", required=False)
     total_row = forms.BooleanField(label="Column Totals", required=False)
     force_strings = forms.BooleanField(label="Force Strings", required=False)
@@ -549,8 +546,8 @@ class TableForm(EntryConfigForm):
 
 
 class BarsForm(EntryConfigForm):
-    categories = forms.ModelChoiceField(label=_('Dimension (Categories)'), required=True, queryset=models.DataField.objects.none())
-    values = forms.ModelMultipleChoiceField(label=_('Metrics (Values)'), required=True, queryset=models.DataField.objects.none())
+    categories = forms.ModelChoiceField(label=_('Categories'), required=True, queryset=models.DataField.objects.none())
+    values = forms.ModelMultipleChoiceField(label=_('Values'), required=True, queryset=models.DataField.objects.none())
     color_by = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
     sort_by = forms.ModelChoiceField(label='Sort By', required=False, queryset=models.DataField.objects.none())
     grouped = forms.BooleanField(
@@ -558,7 +555,7 @@ class BarsForm(EntryConfigForm):
         widget=forms.Select(choices=((True, 'Grouped'), (False, 'Stacked'))),
     )
     facets = forms.ModelChoiceField(label='Facets', required=False, queryset=models.DataField.objects.none())
-    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.COLOR_SCHEMES, initial='Live8')
+    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.COLOR_SCHEMES)
     ticks_every = forms.IntegerField(label='Ticks Every', required=False, initial=1)
     sort_desc = forms.BooleanField(
         label="Sort Order", required=False, widget=forms.Select(choices=((True, 'Descending'), (False, 'Ascending'))),
@@ -618,13 +615,15 @@ class PlotForm(EntryConfigForm):
     x_label = forms.CharField(label='X Label', required=False)
     y_label = forms.CharField(label='Y Label', required=False)
     x_value = forms.ModelChoiceField(label='X-Value', required=True, queryset=models.DataField.objects.none())
-    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
-    group_by = forms.ModelChoiceField(label=_('Group By Dimension'), required=False, queryset=models.DataField.objects.none())
+    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES)
+    group_by = forms.ModelChoiceField(label=_('Group By'), required=False, queryset=models.DataField.objects.none())
     precision = forms.IntegerField(label="Precision", required=False)
     x_scale = forms.ChoiceField(label='X Scale', required=False, choices=SCALE_CHOICES, initial='linear')
     y_scale = forms.ChoiceField(label='Y Scale', required=False, choices=SCALE_CHOICES, initial='linear')
+    x_facet = forms.ModelChoiceField(label='X Facet', required=False, queryset=models.DataField.objects.none())
+    y_facet = forms.ModelChoiceField(label='Y Facet', required=False, queryset=models.DataField.objects.none())
 
-    SINGLE_FIELDS = ['group_by', 'x_value']
+    SINGLE_FIELDS = ['group_by', 'x_value', 'x_facet', 'y_facet']
     OTHER_FIELDS = ['x_label', 'y_label', 'scheme', 'precision', 'x_scale', 'y_scale']
 
     class Meta:
@@ -643,17 +642,13 @@ class PlotForm(EntryConfigForm):
                 ThirdWidth('x_value'),
                 ThirdWidth('x_label'),
                 ThirdWidth('y_label'),
-                style='g-3'
-            ),
-            Row(
                 ThirdWidth('group_by'),
                 ThirdWidth('scheme'),
                 ThirdWidth('precision'),
-                style='g-3'
-            ),
-            Row(
-                HalfWidth('x_scale'),
-                HalfWidth('y_scale'),
+                QuarterWidth('x_scale'),
+                QuarterWidth('y_scale'),
+                QuarterWidth('x_facet'),
+                QuarterWidth('y_facet'),
                 style='g-2'
             ),
         )
@@ -663,7 +658,7 @@ class PlotForm(EntryConfigForm):
                     ThirdWidth(f'groups__{i}__y'),
                     ThirdWidth(f'groups__{i}__z'),
                     ThirdWidth(f'groups__{i}__type'),
-                    style='g-3'
+                    style='g-2 bg-cat-6 mt-0'
                 ),
             )
 
@@ -720,60 +715,33 @@ class ListForm(EntryConfigForm):
         )
 
 
-class PieForm(ModalModelForm):
-    value = forms.ModelChoiceField(label=_('Metric (Value)'), required=True, queryset=models.DataField.objects.none())
-    label = forms.ModelChoiceField(label=_('Dimension (Label)'), required=True, queryset=models.DataField.objects.none())
-    colors = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
+class PieForm(EntryConfigForm):
+    value = forms.ModelChoiceField(label=_('Value'), required=True, queryset=models.DataField.objects.none())
+    label = forms.ModelChoiceField(label=_('Label'), required=True, queryset=models.DataField.objects.none())
+    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES)
+
+    SINGLE_FIELDS = ['value', 'label']
+    OTHER_FIELDS = ['scheme']
 
     class Meta:
         model = models.Entry
-        fields = ('attrs', 'value', 'label', 'colors')
+        fields = ('attrs',)
         widgets = {
             'attrs': forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body.title = _(f"Configure {self.instance.get_kind_display()}")
-        self.update_initial()
         self.body.append(
             Row(
-                ThirdWidth(Field('value', css_class='select')),
-                ThirdWidth(Field('label', css_class='select')),
-                ThirdWidth(Field('colors', css_class='select')),
+                ThirdWidth('value'),
+                ThirdWidth('label'),
+                ThirdWidth('scheme'),
             ),
             Div(
                 Field('attrs'),
             ),
         )
-
-    def update_initial(self):
-        attrs = self.instance.attrs
-        field_ids = {field['name']: field['pk'] for field in self.instance.source.fields.values('name', 'pk')}
-        field_queryset = self.instance.source.fields.filter(pk__in=field_ids.values())
-        for field in ['value', 'label']:
-            self.fields[field].queryset = field_queryset
-
-        for field in ['value', 'label']:
-            if field in attrs:
-                self.fields[field].initial = field_queryset.filter(name=attrs[field]).first()
-        for field in ['colors']:
-            if field in attrs:
-                self.fields[field].initial = attrs[field]
-
-    def clean(self):
-        cleaned_data = super().clean()
-        new_attrs = {}
-
-        for field in ['value', 'label']:
-            if field in cleaned_data and cleaned_data[field] is not None:
-                new_attrs[field] = cleaned_data[field].name
-        for field in ['colors']:
-            if field in cleaned_data:
-                new_attrs[field] = cleaned_data[field]
-
-        cleaned_data['attrs'] = {k: v for k, v in new_attrs.items() if v not in [None, []]}
-        return cleaned_data
 
 
 class TimelineForm(EntryConfigForm):
@@ -783,7 +751,7 @@ class TimelineForm(EntryConfigForm):
     end_value = forms.ModelChoiceField(label='Event End', required=True, queryset=models.DataField.objects.none())
     labels = forms.ModelChoiceField(label='Labels', required=False, queryset=models.DataField.objects.none())
     color_by = forms.ModelChoiceField(label='Color By', required=False, queryset=models.DataField.objects.none())
-    scheme = forms.ChoiceField(label='Color Scheme', required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
+    scheme = forms.ChoiceField(label='Palette', required=False, choices=utils.CATEGORICAL_SCHEMES)
 
     SINGLE_FIELDS = ['start_value', 'end_value', 'labels', 'color_by',]
     OTHER_FIELDS = ['min_time', 'max_time', 'scheme']
@@ -843,15 +811,17 @@ class RichTextForm(EntryConfigForm):
 
 
 class HistogramForm(EntryConfigForm):
-    values = forms.ModelChoiceField(label=_('Metric (Values)'), required=True, queryset=models.DataField.objects.none())
-    group_by = forms.ModelChoiceField(label=_('Group By Dimension'), required=False, queryset=models.DataField.objects.none())
+    values = forms.ModelChoiceField(label=_('Values'), required=True, queryset=models.DataField.objects.none())
+    group_by = forms.ModelChoiceField(label=_('Group By'), required=False, queryset=models.DataField.objects.none())
     stack = forms.BooleanField(
         label='Stack Groups', required=False, initial=True,
         widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
     )
-    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES, initial='Live8')
+    scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.CATEGORICAL_SCHEMES)
     bins = forms.IntegerField(label='Bins', required=False)
     scale = forms.ChoiceField(label='Y-Scale', required=False, choices=SCALE_CHOICES, initial='linear')
+    x_facet = forms.ModelChoiceField(label='X Facet', required=False, queryset=models.DataField.objects.none())
+    y_facet = forms.ModelChoiceField(label='Y Facet', required=False, queryset=models.DataField.objects.none())
     binning = forms.ChoiceField(
         label='Binning', required=False, initial='auto',
         choices=(
@@ -863,7 +833,7 @@ class HistogramForm(EntryConfigForm):
         ),
     )
 
-    SINGLE_FIELDS = ['values', 'group_by']
+    SINGLE_FIELDS = ['values', 'group_by', 'x_facet', 'y_facet']
     OTHER_FIELDS = ['bins', 'scheme', 'binning', 'stack', 'scale']
 
     class Meta:
@@ -879,12 +849,12 @@ class HistogramForm(EntryConfigForm):
         super().__init__(*args, **kwargs)
         self.body.append(
             Row(
-                HalfWidth('values'),HalfWidth('scale'),
-                ThirdWidth('group_by'), ThirdWidth('scheme'), ThirdWidth('stack'),
-                HalfWidth('binning'), HalfWidth('bins'),
+                ThirdWidth('values'),  ThirdWidth('group_by'), ThirdWidth('stack'),
+                ThirdWidth('scale'), ThirdWidth('binning'), ThirdWidth('bins'),
+                ThirdWidth('x_facet'), ThirdWidth('y_facet'),  ThirdWidth('scheme'),
+                style='g-2'
             ),
             Row(
-
                 Field('attrs'),
             ),
         )
@@ -980,7 +950,7 @@ class GeoCharForm(EntryConfigForm):
         coordinates_required = any(
             group.get('type') in ['bubble', 'hex-bin', 'density', 'markers']
             for group in groups
-        )
+        ) and not location_defined
         location_required = any(
             group.get('type') in ['area']
             for group in groups
@@ -989,11 +959,8 @@ class GeoCharForm(EntryConfigForm):
             self.add_error('location', _("Location is required for the selected Area features"))
 
         if coordinates_required and not coordinates_defined:
-            self.add_error('latitude', _("Latitude and Longitude are required for the selected feature types"))
-            self.add_error('longitude', _("Latitude and Longitude are required for the selected feature types"))
-
-        if not location_defined and not coordinates_defined:
-            self.add_error('location', _("Either Location or Latitude and Longitude are required"))
+            self.add_error('latitude', _("Latitude and Longitude required if Location is not provided"))
+            self.add_error('longitude', _("Latitude and Longitude required if Location is not provided"))
 
         return cleaned_data
 
@@ -1003,23 +970,19 @@ class LikertForm(EntryConfigForm):
     answers = forms.ModelChoiceField(label='Answers', required=True, queryset=models.DataField.objects.none())
     counts = forms.ModelChoiceField(label='Counts', required=False, queryset=models.DataField.objects.none())
     scores = forms.ModelChoiceField(label='Scores', required=False, queryset=models.DataField.objects.none())
-
-    facets = forms.ModelChoiceField(label='Facets', required=False, queryset=models.DataField.objects.none())
     scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.DIVERGENT_SCHEMES, initial='RdBu')
+    x_facet = forms.ModelChoiceField(label='X Facet', required=False, queryset=models.DataField.objects.none())
+    y_facet = forms.ModelChoiceField(label='Y Facet', required=False, queryset=models.DataField.objects.none())
     normalize = forms.BooleanField(
         label='Normalize', required=False, initial=False, widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
     )
 
-    SINGLE_FIELDS = ['questions', 'answers', 'counts', 'scores', 'facets']
-    OTHER_FIELDS = [
-        'scheme',
-    ]
+    SINGLE_FIELDS = ['questions', 'answers', 'counts', 'scores', 'x_facet', 'y_facet']
+    OTHER_FIELDS = ['scheme' ]
 
     class Meta:
         model = models.Entry
-        fields = (
-            'attrs',
-        )
+        fields = ('attrs',)
         widgets = {
             'attrs': forms.HiddenInput(),
         }
@@ -1029,11 +992,10 @@ class LikertForm(EntryConfigForm):
         self.body.append(
             Row(
                 HalfWidth('questions'), HalfWidth('answers'),
-                HalfWidth('counts'), HalfWidth('scores'),
+                ThirdWidth('counts'), ThirdWidth('scores'), ThirdWidth('scheme')
             ),
             Row(
-
-                ThirdWidth('facets'), ThirdWidth('scheme'), ThirdWidth('normalize'),
+                ThirdWidth('x_facet'), ThirdWidth('y_facet'), ThirdWidth('normalize'),
             ),
             Div(
                 Field('attrs'),

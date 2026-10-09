@@ -1,0 +1,1745 @@
+[
+{
+  "model": "example.journal",
+  "pk": 1,
+  "fields": {
+    "name": "Nature"
+  }
+},
+{
+  "model": "example.journal",
+  "pk": 2,
+  "fields": {
+    "name": "Science"
+  }
+},
+{
+  "model": "example.journal",
+  "pk": 3,
+  "fields": {
+    "name": "Cell"
+  }
+},
+{
+  "model": "example.journal",
+  "pk": 4,
+  "fields": {
+    "name": "The Lancet"
+  }
+},
+{
+  "model": "example.journal",
+  "pk": 5,
+  "fields": {
+    "name": "Journal of Machine Learning Research"
+  }
+},
+{
+  "model": "example.journal",
+  "pk": 6,
+  "fields": {
+    "name": "Physical Review Letters"
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 1,
+  "fields": {
+    "journal": 1,
+    "year": 2018,
+    "impact_factor": 43.07
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 2,
+  "fields": {
+    "journal": 1,
+    "year": 2019,
+    "impact_factor": 42.78
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 3,
+  "fields": {
+    "journal": 1,
+    "year": 2020,
+    "impact_factor": 49.96
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 4,
+  "fields": {
+    "journal": 1,
+    "year": 2021,
+    "impact_factor": 69.5
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 5,
+  "fields": {
+    "journal": 1,
+    "year": 2022,
+    "impact_factor": 64.78
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 6,
+  "fields": {
+    "journal": 1,
+    "year": 2023,
+    "impact_factor": 50.5
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 7,
+  "fields": {
+    "journal": 1,
+    "year": 2024,
+    "impact_factor": 58.2
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 8,
+  "fields": {
+    "journal": 2,
+    "year": 2018,
+    "impact_factor": 41.04
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 9,
+  "fields": {
+    "journal": 2,
+    "year": 2019,
+    "impact_factor": 41.85
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 10,
+  "fields": {
+    "journal": 2,
+    "year": 2020,
+    "impact_factor": 47.73
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 11,
+  "fields": {
+    "journal": 2,
+    "year": 2021,
+    "impact_factor": 63.71
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 12,
+  "fields": {
+    "journal": 2,
+    "year": 2022,
+    "impact_factor": 56.9
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 13,
+  "fields": {
+    "journal": 2,
+    "year": 2023,
+    "impact_factor": 44.7
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 14,
+  "fields": {
+    "journal": 2,
+    "year": 2024,
+    "impact_factor": 51.4
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 15,
+  "fields": {
+    "journal": 3,
+    "year": 2018,
+    "impact_factor": 36.22
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 16,
+  "fields": {
+    "journal": 3,
+    "year": 2019,
+    "impact_factor": 38.64
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 17,
+  "fields": {
+    "journal": 3,
+    "year": 2020,
+    "impact_factor": 41.58
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 18,
+  "fields": {
+    "journal": 3,
+    "year": 2021,
+    "impact_factor": 66.85
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 19,
+  "fields": {
+    "journal": 3,
+    "year": 2022,
+    "impact_factor": 64.5
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 20,
+  "fields": {
+    "journal": 3,
+    "year": 2023,
+    "impact_factor": 45.5
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 21,
+  "fields": {
+    "journal": 3,
+    "year": 2024,
+    "impact_factor": 48.9
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 22,
+  "fields": {
+    "journal": 4,
+    "year": 2018,
+    "impact_factor": 59.1
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 23,
+  "fields": {
+    "journal": 4,
+    "year": 2019,
+    "impact_factor": 60.39
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 24,
+  "fields": {
+    "journal": 4,
+    "year": 2020,
+    "impact_factor": 79.32
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 25,
+  "fields": {
+    "journal": 4,
+    "year": 2021,
+    "impact_factor": 202.73
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 26,
+  "fields": {
+    "journal": 4,
+    "year": 2022,
+    "impact_factor": 168.9
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 27,
+  "fields": {
+    "journal": 4,
+    "year": 2023,
+    "impact_factor": 98.4
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 28,
+  "fields": {
+    "journal": 4,
+    "year": 2024,
+    "impact_factor": 112.0
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 29,
+  "fields": {
+    "journal": 5,
+    "year": 2018,
+    "impact_factor": 3.82
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 30,
+  "fields": {
+    "journal": 5,
+    "year": 2019,
+    "impact_factor": 4.01
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 31,
+  "fields": {
+    "journal": 5,
+    "year": 2020,
+    "impact_factor": 5.18
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 32,
+  "fields": {
+    "journal": 5,
+    "year": 2021,
+    "impact_factor": 6.12
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 33,
+  "fields": {
+    "journal": 5,
+    "year": 2022,
+    "impact_factor": 5.8
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 34,
+  "fields": {
+    "journal": 5,
+    "year": 2023,
+    "impact_factor": 6.5
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 35,
+  "fields": {
+    "journal": 5,
+    "year": 2024,
+    "impact_factor": 7.2
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 36,
+  "fields": {
+    "journal": 6,
+    "year": 2018,
+    "impact_factor": 9.23
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 37,
+  "fields": {
+    "journal": 6,
+    "year": 2019,
+    "impact_factor": 8.39
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 38,
+  "fields": {
+    "journal": 6,
+    "year": 2020,
+    "impact_factor": 9.16
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 39,
+  "fields": {
+    "journal": 6,
+    "year": 2021,
+    "impact_factor": 9.18
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 40,
+  "fields": {
+    "journal": 6,
+    "year": 2022,
+    "impact_factor": 8.83
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 41,
+  "fields": {
+    "journal": 6,
+    "year": 2023,
+    "impact_factor": 8.3
+  }
+},
+{
+  "model": "example.metric",
+  "pk": 42,
+  "fields": {
+    "journal": 6,
+    "year": 2024,
+    "impact_factor": 8.6
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 1,
+  "fields": {
+    "title": "A global map of human impact on marine ecosystems",
+    "journal": 1,
+    "published": "2018-02-14"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 2,
+  "fields": {
+    "title": "Deep residual learning for image recognition",
+    "journal": 1,
+    "published": "2018-06-20"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 3,
+  "fields": {
+    "title": "Global warming of 1.5 C and anthropogenic forcing",
+    "journal": 1,
+    "published": "2018-11-05"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 4,
+  "fields": {
+    "title": "CRISPR-Cas9 genome editing in human stem cells",
+    "journal": 1,
+    "published": "2019-03-12"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 5,
+  "fields": {
+    "title": "Observation of gravitational waves from binary black holes",
+    "journal": 1,
+    "published": "2019-05-18"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 6,
+  "fields": {
+    "title": "Synaptic plasticity in neural network computation",
+    "journal": 1,
+    "published": "2019-08-30"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 7,
+  "fields": {
+    "title": "Quantum supremacy using a programmable superconducting processor",
+    "journal": 1,
+    "published": "2019-10-23"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 8,
+  "fields": {
+    "title": "A pneumonia outbreak associated with a new coronavirus of probable bat origin",
+    "journal": 1,
+    "published": "2020-02-03"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 9,
+  "fields": {
+    "title": "Structure of the SARS-CoV-2 spike glycoprotein in the prefusion conformation",
+    "journal": 1,
+    "published": "2020-02-19"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 10,
+  "fields": {
+    "title": "Global carbon cycle feedback uncertainties under climate warming",
+    "journal": 1,
+    "published": "2020-04-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 11,
+  "fields": {
+    "title": "High-throughput sequencing analysis of microbiome diversity",
+    "journal": 1,
+    "published": "2020-06-22"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 12,
+  "fields": {
+    "title": "Mapping global indigenous land stewardship and conservation",
+    "journal": 1,
+    "published": "2020-09-10"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 13,
+  "fields": {
+    "title": "Room-temperature superconductivity in a carbonaceous sulfur hydride",
+    "journal": 1,
+    "published": "2020-10-14"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 14,
+  "fields": {
+    "title": "A highly conserved neutralizing epitope on the SARS-CoV-2 spike protein",
+    "journal": 1,
+    "published": "2021-01-20"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 15,
+  "fields": {
+    "title": "Global trends in glacier mass loss during the twenty-first century",
+    "journal": 1,
+    "published": "2021-04-28"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 16,
+  "fields": {
+    "title": "Neural circuit mechanisms of visual perception",
+    "journal": 1,
+    "published": "2021-05-19"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 17,
+  "fields": {
+    "title": "Highly accurate protein structure prediction with AlphaFold",
+    "journal": 1,
+    "published": "2021-07-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 18,
+  "fields": {
+    "title": "The global tree restoration potential and carbon sequestration",
+    "journal": 1,
+    "published": "2021-08-11"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 19,
+  "fields": {
+    "title": "Superconducting circuits for quantum error correction",
+    "journal": 1,
+    "published": "2021-09-22"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 20,
+  "fields": {
+    "title": "Global distribution of biodiversity and conservation priorities",
+    "journal": 1,
+    "published": "2021-11-03"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 21,
+  "fields": {
+    "title": "Atomic-resolution structure of mammalian respiratory complex I",
+    "journal": 1,
+    "published": "2021-12-08"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 22,
+  "fields": {
+    "title": "Structural basis of CRISPR-Cas12a target recognition",
+    "journal": 1,
+    "published": "2022-01-19"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 23,
+  "fields": {
+    "title": "Global burden of bacterial antimicrobial resistance in 2019",
+    "journal": 1,
+    "published": "2022-03-09"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 24,
+  "fields": {
+    "title": "Climate change increases the risk of infectious disease emergence",
+    "journal": 1,
+    "published": "2022-04-28"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 25,
+  "fields": {
+    "title": "Mapping global urban heat islands from satellite observations",
+    "journal": 1,
+    "published": "2022-06-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 26,
+  "fields": {
+    "title": "Universal quantum computing with neutral atoms in optical tweezers",
+    "journal": 1,
+    "published": "2022-08-24"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 27,
+  "fields": {
+    "title": "Genome-wide association studies identify polygenic risk scores",
+    "journal": 1,
+    "published": "2022-10-12"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 28,
+  "fields": {
+    "title": "Evidence for a subsurface ocean on Enceladus",
+    "journal": 1,
+    "published": "2022-12-01"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 29,
+  "fields": {
+    "title": "Single-cell transcriptomic atlas of the human brain",
+    "journal": 1,
+    "published": "2023-03-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 30,
+  "fields": {
+    "title": "Superconductivity in infinite-layer nickelates under pressure",
+    "journal": 1,
+    "published": "2023-05-10"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 31,
+  "fields": {
+    "title": "Global soil carbon response to permafrost thaw",
+    "journal": 1,
+    "published": "2023-07-26"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 32,
+  "fields": {
+    "title": "An artificial intelligence system that masters complex strategic games",
+    "journal": 1,
+    "published": "2023-09-14"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 33,
+  "fields": {
+    "title": "Observation of non-Abelian anyons in quantum processors",
+    "journal": 1,
+    "published": "2023-11-20"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 34,
+  "fields": {
+    "title": "High-precision cosmological parameters from gravitational lensing",
+    "journal": 1,
+    "published": "2024-01-17"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 35,
+  "fields": {
+    "title": "Spatial transcriptomics reveals tumor microenvironment heterogeneity",
+    "journal": 1,
+    "published": "2024-02-28"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 36,
+  "fields": {
+    "title": "Scalable photonic quantum computing architecture",
+    "journal": 1,
+    "published": "2024-04-10"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 37,
+  "fields": {
+    "title": "Ocean circulation slowdown and global climate feedbacks",
+    "journal": 1,
+    "published": "2024-05-22"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 38,
+  "fields": {
+    "title": "Deep generative models for de novo molecular design",
+    "journal": 1,
+    "published": "2024-07-03"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 39,
+  "fields": {
+    "title": "Neural dynamics of memory consolidation during sleep",
+    "journal": 1,
+    "published": "2024-08-21"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 40,
+  "fields": {
+    "title": "Cryo-EM unveils architecture of human telomerase holoenzyme",
+    "journal": 2,
+    "published": "2018-04-20"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 41,
+  "fields": {
+    "title": "Radar evidence of subglacial liquid water on Mars",
+    "journal": 2,
+    "published": "2018-08-03"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 42,
+  "fields": {
+    "title": "Ancient human DNA from Neanderthal and Denisovan lineages",
+    "journal": 2,
+    "published": "2018-12-07"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 43,
+  "fields": {
+    "title": "Image-guided robotic surgery for microsurgery procedures",
+    "journal": 2,
+    "published": "2019-02-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 44,
+  "fields": {
+    "title": "First M87 event horizon telescope observations",
+    "journal": 2,
+    "published": "2019-04-12"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 45,
+  "fields": {
+    "title": "Perovskite solar cells with certified efficiency over 25 percent",
+    "journal": 2,
+    "published": "2019-07-26"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 46,
+  "fields": {
+    "title": "Forest restoration at planetary scale",
+    "journal": 2,
+    "published": "2019-11-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 47,
+  "fields": {
+    "title": "Cryo-EM structure of the SARS-CoV-2 RNA polymerase",
+    "journal": 2,
+    "published": "2020-03-27"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 48,
+  "fields": {
+    "title": "Rapid reduction in black carbon emissions during pandemic lockdowns",
+    "journal": 2,
+    "published": "2020-05-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 49,
+  "fields": {
+    "title": "Twistronics and correlated insulator states in bilayer graphene",
+    "journal": 2,
+    "published": "2020-07-31"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 50,
+  "fields": {
+    "title": "Prehistoric human migration routes across North America",
+    "journal": 2,
+    "published": "2020-09-25"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 51,
+  "fields": {
+    "title": "Quantum advantage with photon sampling",
+    "journal": 2,
+    "published": "2020-12-18"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 52,
+  "fields": {
+    "title": "Structural basis of antibody neutralization of SARS-CoV-2 variants",
+    "journal": 2,
+    "published": "2021-02-19"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 53,
+  "fields": {
+    "title": "Global ocean warming and extreme marine heatwaves",
+    "journal": 2,
+    "published": "2021-04-09"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 54,
+  "fields": {
+    "title": "De novo design of protein switches for biosensing",
+    "journal": 2,
+    "published": "2021-06-18"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 55,
+  "fields": {
+    "title": "The origin of modern human behavioral complexity in Africa",
+    "journal": 2,
+    "published": "2021-08-27"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 56,
+  "fields": {
+    "title": "Deep learning enables design of functional synthetic proteins",
+    "journal": 2,
+    "published": "2021-10-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 57,
+  "fields": {
+    "title": "James Webb Space Telescope first deep field observations",
+    "journal": 2,
+    "published": "2022-07-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 58,
+  "fields": {
+    "title": "Discovery of early universe galaxies with JWST NIRCam",
+    "journal": 2,
+    "published": "2022-09-02"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 59,
+  "fields": {
+    "title": "Global microplastic transport across atmospheric pathways",
+    "journal": 2,
+    "published": "2022-11-18"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 60,
+  "fields": {
+    "title": "Room-temperature ambient pressure metallic states in hydrides",
+    "journal": 2,
+    "published": "2023-01-20"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 61,
+  "fields": {
+    "title": "Neural encoding of social relationships in the prefrontal cortex",
+    "journal": 2,
+    "published": "2023-04-14"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 62,
+  "fields": {
+    "title": "Massive methane releases from warming Arctic permafrost lakes",
+    "journal": 2,
+    "published": "2023-08-04"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 63,
+  "fields": {
+    "title": "CRISPR-based gene drive efficacy in mosquito populations",
+    "journal": 2,
+    "published": "2023-11-10"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 64,
+  "fields": {
+    "title": "Quantum simulation of chemical reaction dynamics",
+    "journal": 2,
+    "published": "2024-02-16"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 65,
+  "fields": {
+    "title": "Global biodiversity loss driven by land-use intensification",
+    "journal": 2,
+    "published": "2024-05-03"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 66,
+  "fields": {
+    "title": "Ultra-high energy cosmic rays from starburst galaxies",
+    "journal": 2,
+    "published": "2024-08-09"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 67,
+  "fields": {
+    "title": "Single-cell RNA sequencing reveals cell fate choices in hematopoiesis",
+    "journal": 3,
+    "published": "2018-05-03"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 68,
+  "fields": {
+    "title": "Metabolic rewiring in cancer cells under nutrient stress",
+    "journal": 3,
+    "published": "2018-09-20"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 69,
+  "fields": {
+    "title": "Epigenetic reprogramming during early mammalian development",
+    "journal": 3,
+    "published": "2019-01-24"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 70,
+  "fields": {
+    "title": "Immune checkpoint blockade enhances anti-tumor T cell response",
+    "journal": 3,
+    "published": "2019-06-13"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 71,
+  "fields": {
+    "title": "Mitochondrial dynamics regulate stem cell pluripotency",
+    "journal": 3,
+    "published": "2019-10-17"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 72,
+  "fields": {
+    "title": "SARS-CoV-2 entry depends on ACE2 and TMPRSS2",
+    "journal": 3,
+    "published": "2020-04-16"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 73,
+  "fields": {
+    "title": "A compendium of human cell types and marker genes",
+    "journal": 3,
+    "published": "2020-07-23"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 74,
+  "fields": {
+    "title": "Structural biology of coronavirus replication-transcription machinery",
+    "journal": 3,
+    "published": "2020-11-12"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 75,
+  "fields": {
+    "title": "Spatial multi-omics mapping of the mammalian heart",
+    "journal": 3,
+    "published": "2021-03-04"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 76,
+  "fields": {
+    "title": "Liquid-liquid phase separation in chromatin organization",
+    "journal": 3,
+    "published": "2021-06-24"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 77,
+  "fields": {
+    "title": "CAR-T cell persistence and efficacy in solid tumors",
+    "journal": 3,
+    "published": "2021-09-30"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 78,
+  "fields": {
+    "title": "Microbiome metabolites modulate neuroinflammation in Parkinson's disease",
+    "journal": 3,
+    "published": "2022-02-17"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 79,
+  "fields": {
+    "title": "Age-related epigenetic clocks across mammalian tissues",
+    "journal": 3,
+    "published": "2022-05-12"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 80,
+  "fields": {
+    "title": "Autophagy regulation of cellular senescence and longevity",
+    "journal": 3,
+    "published": "2022-09-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 81,
+  "fields": {
+    "title": "CRISPR epigenome editing restores gene expression in muscular dystrophy",
+    "journal": 3,
+    "published": "2023-02-02"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 82,
+  "fields": {
+    "title": "Metabolic checkpoints in dendritic cell activation",
+    "journal": 3,
+    "published": "2023-06-08"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 83,
+  "fields": {
+    "title": "Senolytic therapies promote tissue rejuvenation in mice",
+    "journal": 3,
+    "published": "2023-10-12"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 84,
+  "fields": {
+    "title": "Direct reprogramming of fibroblasts into functional cardiomyocytes",
+    "journal": 3,
+    "published": "2024-03-14"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 85,
+  "fields": {
+    "title": "Spatial proteomics decodes tumor immune escape pathways",
+    "journal": 3,
+    "published": "2024-07-18"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 86,
+  "fields": {
+    "title": "Global burden of cardiovascular diseases and risk factors",
+    "journal": 4,
+    "published": "2018-03-17"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 87,
+  "fields": {
+    "title": "Efficacy of tenofovir for pre-exposure prophylaxis of HIV-1",
+    "journal": 4,
+    "published": "2018-07-28"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 88,
+  "fields": {
+    "title": "Lancet Commission on pollution and health: a comprehensive review",
+    "journal": 4,
+    "published": "2018-11-10"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 89,
+  "fields": {
+    "title": "Food in the Anthropocene: the EAT-Lancet Commission on healthy diets",
+    "journal": 4,
+    "published": "2019-02-02"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 90,
+  "fields": {
+    "title": "Global prevalence of depression and anxiety in adolescents",
+    "journal": 4,
+    "published": "2019-05-18"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 91,
+  "fields": {
+    "title": "Dementia prevention, intervention, and care: 2020 report",
+    "journal": 4,
+    "published": "2019-09-21"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 92,
+  "fields": {
+    "title": "Clinical features of patients infected with 2019 novel coronavirus in Wuhan",
+    "journal": 4,
+    "published": "2020-02-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 93,
+  "fields": {
+    "title": "Remdesivir in adults with severe COVID-19: a randomized double-blind trial",
+    "journal": 4,
+    "published": "2020-05-16"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 94,
+  "fields": {
+    "title": "Safety and immunogenicity of the ChAdOx1 nCoV-19 vaccine",
+    "journal": 4,
+    "published": "2020-08-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 95,
+  "fields": {
+    "title": "Effectiveness of face masks and physical distancing for COVID-19 prevention",
+    "journal": 4,
+    "published": "2020-10-24"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 96,
+  "fields": {
+    "title": "Safety and efficacy of the BNT162b2 mRNA COVID-19 vaccine",
+    "journal": 4,
+    "published": "2021-01-09"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 97,
+  "fields": {
+    "title": "Long-term sequelae in patients hospitalized with COVID-19",
+    "journal": 4,
+    "published": "2021-03-27"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 98,
+  "fields": {
+    "title": "Global incidence and mortality of tuberculosis: 2020 surveillance",
+    "journal": 4,
+    "published": "2021-05-22"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 99,
+  "fields": {
+    "title": "Global excess mortality associated with COVID-19 pandemic",
+    "journal": 4,
+    "published": "2021-08-07"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 100,
+  "fields": {
+    "title": "Evaluating the risk of breakthrough SARS-CoV-2 infections",
+    "journal": 4,
+    "published": "2021-10-30"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 101,
+  "fields": {
+    "title": "Antimicrobial resistance: global burden analysis across 204 countries",
+    "journal": 4,
+    "published": "2022-02-12"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 102,
+  "fields": {
+    "title": "Climate change impacts on heat-related mortality across 43 countries",
+    "journal": 4,
+    "published": "2022-05-28"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 103,
+  "fields": {
+    "title": "Maternal and child health outcomes during global humanitarian crises",
+    "journal": 4,
+    "published": "2022-08-20"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 104,
+  "fields": {
+    "title": "Cardiovascular outcomes after SGLT2 inhibitor therapy in diabetes",
+    "journal": 4,
+    "published": "2022-11-12"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 105,
+  "fields": {
+    "title": "Mental health crisis during pandemics: global prevalence estimation",
+    "journal": 4,
+    "published": "2023-03-18"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 106,
+  "fields": {
+    "title": "GLP-1 receptor agonists and cardiovascular risk reduction in obesity",
+    "journal": 4,
+    "published": "2023-07-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 107,
+  "fields": {
+    "title": "Malaria vaccine R21/Matrix-M phase 3 trial efficacy and safety",
+    "journal": 4,
+    "published": "2023-11-04"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 108,
+  "fields": {
+    "title": "Global cancer survival trends: CONCORD-4 program findings",
+    "journal": 4,
+    "published": "2024-02-24"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 109,
+  "fields": {
+    "title": "Cardiovascular benefits of combination lipid-lowering therapies",
+    "journal": 4,
+    "published": "2024-06-08"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 110,
+  "fields": {
+    "title": "Ultra-processed foods and long-term cardiometabolic disease risk",
+    "journal": 4,
+    "published": "2024-09-21"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 111,
+  "fields": {
+    "title": "Adam: A method for stochastic optimization analysis and convergence",
+    "journal": 5,
+    "published": "2018-02-10"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 112,
+  "fields": {
+    "title": "Understanding deep learning requires rethinking generalization",
+    "journal": 5,
+    "published": "2018-07-14"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 113,
+  "fields": {
+    "title": "Dropout as a Bayesian approximation: representing model uncertainty",
+    "journal": 5,
+    "published": "2019-01-18"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 114,
+  "fields": {
+    "title": "Attention mechanisms in transformer architectures: an empirical study",
+    "journal": 5,
+    "published": "2019-06-25"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 115,
+  "fields": {
+    "title": "Federated learning: strategies for privacy-preserving distributed optimization",
+    "journal": 5,
+    "published": "2019-11-08"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 116,
+  "fields": {
+    "title": "Exploring the limits of transfer learning with a unified text-to-text transformer",
+    "journal": 5,
+    "published": "2020-03-12"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 117,
+  "fields": {
+    "title": "Convex optimization algorithms with optimal convergence rates",
+    "journal": 5,
+    "published": "2020-08-20"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 118,
+  "fields": {
+    "title": "Implicit regularization in deep neural networks via stochastic gradient descent",
+    "journal": 5,
+    "published": "2020-12-05"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 119,
+  "fields": {
+    "title": "Theoretical foundations of contrastive self-supervised representations",
+    "journal": 5,
+    "published": "2021-04-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 120,
+  "fields": {
+    "title": "Diffusion probabilistic models for high-resolution generative synthesis",
+    "journal": 5,
+    "published": "2021-08-22"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 121,
+  "fields": {
+    "title": "Physics-informed neural networks for solving partial differential equations",
+    "journal": 5,
+    "published": "2021-11-19"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 122,
+  "fields": {
+    "title": "Generalization bounds for deep overparameterized neural networks",
+    "journal": 5,
+    "published": "2022-03-30"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 123,
+  "fields": {
+    "title": "Direct preference optimization: aligning language models without reinforcement learning",
+    "journal": 5,
+    "published": "2022-07-14"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 124,
+  "fields": {
+    "title": "Scaling laws for neural language models across model architectures",
+    "journal": 5,
+    "published": "2022-10-28"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 125,
+  "fields": {
+    "title": "Equivariant neural networks for 3D molecular conformation modeling",
+    "journal": 5,
+    "published": "2023-02-16"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 126,
+  "fields": {
+    "title": "Efficient fine-tuning via low-rank adaptation in large transformers",
+    "journal": 5,
+    "published": "2023-06-09"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 127,
+  "fields": {
+    "title": "Convergence analysis of diffusion samplers under non-log-concave priors",
+    "journal": 5,
+    "published": "2023-10-25"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 128,
+  "fields": {
+    "title": "Mechanistic interpretability of attention heads in multi-layer transformers",
+    "journal": 5,
+    "published": "2024-01-20"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 129,
+  "fields": {
+    "title": "Theoretical limits of retrieval-augmented generation and reasoning",
+    "journal": 5,
+    "published": "2024-05-18"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 130,
+  "fields": {
+    "title": "Scalable Bayesian optimization for high-dimensional combinatorial spaces",
+    "journal": 5,
+    "published": "2024-08-30"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 131,
+  "fields": {
+    "title": "Observation of topological phases in non-Hermitian photonics",
+    "journal": 6,
+    "published": "2018-03-09"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 132,
+  "fields": {
+    "title": "Direct detection constraints on dark matter from LUX-ZEPLIN",
+    "journal": 6,
+    "published": "2018-08-17"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 133,
+  "fields": {
+    "title": "Superconductivity in twisted bilayer graphene near the magic angle",
+    "journal": 6,
+    "published": "2019-02-22"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 134,
+  "fields": {
+    "title": "Precision measurement of the fine-structure constant using atom interferometry",
+    "journal": 6,
+    "published": "2019-06-07"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 135,
+  "fields": {
+    "title": "Evidence for Majorana fermions in superconductor-semiconductor nanowires",
+    "journal": 6,
+    "published": "2019-11-29"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 136,
+  "fields": {
+    "title": "Experimental observation of anyonic fractional statistics in 2D electron gas",
+    "journal": 6,
+    "published": "2020-04-10"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 137,
+  "fields": {
+    "title": "Measurement of the muon anomalous magnetic moment at Fermilab",
+    "journal": 6,
+    "published": "2020-09-18"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 138,
+  "fields": {
+    "title": "Search for sub-GeV dark matter with superconducting nanowire detectors",
+    "journal": 6,
+    "published": "2021-01-15"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 139,
+  "fields": {
+    "title": "Quantum simulation of lattice gauge theories on neutral-atom platforms",
+    "journal": 6,
+    "published": "2021-05-28"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 140,
+  "fields": {
+    "title": "Observation of time crystals in periodically driven quantum spin chains",
+    "journal": 6,
+    "published": "2021-10-08"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 141,
+  "fields": {
+    "title": "High-field magnetic resonance of fractional quantum Hall edge states",
+    "journal": 6,
+    "published": "2022-04-01"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 142,
+  "fields": {
+    "title": "Precision measurement of the W-boson mass by CDF II Collaboration",
+    "journal": 6,
+    "published": "2022-07-22"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 143,
+  "fields": {
+    "title": "Demonstration of fault-tolerant quantum error correction on a surface code",
+    "journal": 6,
+    "published": "2022-12-09"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 144,
+  "fields": {
+    "title": "Experimental proof of chiral anomaly in Weyl semimetals",
+    "journal": 6,
+    "published": "2023-03-24"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 145,
+  "fields": {
+    "title": "Non-local quantum correlations and Bell inequality violation across kilometers",
+    "journal": 6,
+    "published": "2023-08-18"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 146,
+  "fields": {
+    "title": "Observation of acoustic black hole analog radiation in Bose-Einstein condensates",
+    "journal": 6,
+    "published": "2024-02-09"
+  }
+},
+{
+  "model": "example.publication",
+  "pk": 147,
+  "fields": {
+    "title": "Evidence of pair-density waves in iron-based high-Tc superconductors",
+    "journal": 6,
+    "published": "2024-06-14"
+  }
+}
+]

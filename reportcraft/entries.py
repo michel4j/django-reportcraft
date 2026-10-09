@@ -15,7 +15,7 @@ import numpy
 
 from .utils import (
     regroup_data, MinMax, epoch, get_histogram_points, wrap_table,
-    prepare_data, debug_value
+    prepare_data, debug_value, ValueType, nice_sum
 )
 
 
@@ -65,13 +65,13 @@ def generate_table(entry, **kwargs) -> dict:
 
     if total_row:
         table_data.append(
-            ['Total'] + [sum([row[i] for row in table_data[1:]]) for i in range(1, num_columns + 1)]
+            ['Total'] + [nice_sum([row[i] for row in table_data[1:]]) for i in range(1, num_columns + 1)]
         )
 
     if total_column:
         table_data[0].append('All')
         for row in table_data[1:]:
-            row.append(sum(row[1:]))
+            row.append(nice_sum(row[1:]))
 
     if force_strings:
         table_data = [
@@ -119,7 +119,7 @@ def generate_bars(entry, kind='bars', **kwargs):
     sort_desc = entry.attrs.get('sort_desc', False)
     ticks_every = entry.attrs.get('ticks_every', 1)
     limit = entry.attrs.get('limit', None)
-    scheme = entry.attrs.get('scheme', 'Live8')
+    scheme = entry.attrs.get('scheme', None)
     vertical = (kind == "columns")
     scale = entry.attrs.get('scale', 'linear')
     normalize = entry.attrs.get('normalize', False)
@@ -186,6 +186,7 @@ def generate_bars(entry, kind='bars', **kwargs):
         'ticks-every': ticks_every,
         'scheme': scheme,
         'scale': scale,
+        'aspect-ratio': entry.aspect_ratio,
         'notes': entry.notes,
         'data': data,
     }
@@ -268,10 +269,19 @@ def generate_plot(entry, **kwargs):
     x_scale = entry.attrs.get('x_scale', 'linear')
     y_scale = entry.attrs.get('y_scale', 'linear')
     group_by = entry.attrs.get('group_by', None)
-    scheme = entry.attrs.get('scheme', 'Live8')
+    scheme = entry.attrs.get('scheme', None)
 
     if not (x_value and groups):
         return {}
+
+    raw_facets = {
+        'x': entry.attrs.get('x_facet', None),
+        'y': entry.attrs.get('y_facet', None),
+    }
+    facets = {
+        axis: labels.get(facet, facet)
+        for axis, facet in raw_facets.items() if facet
+    }
 
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     features = [
@@ -286,7 +296,8 @@ def generate_plot(entry, **kwargs):
 
     select_fields = {x_value} | ({group_by} if group_by else set())
     select_fields |= {group[k] for group in groups for k in ['y', 'z'] if k in group}
-    data = prepare_data(raw_data, select=select_fields, labels=labels, sort=x_value, sort_desc=False)
+    select_fields |= {facet for facet in raw_facets.values() if facet}
+    data = prepare_data(raw_data, select=select_fields, labels=labels, sort=x_value, sort_desc=False, default=0)
 
     return {
         'title': entry.title,
@@ -298,6 +309,8 @@ def generate_plot(entry, **kwargs):
         'y-scale': y_scale,
         'x-label': x_label,
         'y-label': y_label,
+        'aspect-ratio': entry.aspect_ratio,
+        'facets': facets,
         'features': features,
         'data': data,
         'notes': entry.notes
@@ -312,23 +325,42 @@ def generate_pie(entry, kind: Literal['pie', 'donut'] = 'pie', **kwargs):
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
 
-    colors = entry.attrs.get('colors', None)
+    # support legacy 'colors' attribute for backward compatibility
+    scheme = entry.attrs.get('scheme', entry.attrs.get('colors', None))
     value_field = entry.attrs.get('value', '')
     label_field = entry.attrs.get('label', '')
     labels = entry.source.get_labels()
 
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
-    data = defaultdict(int)
+    pre_data = defaultdict(int)
+    colors = {}
     for item in raw_data:
-        data[item.get(label_field)] += item.get(value_field, 0)
+        pre_data[item.get(label_field)] += item.get(value_field, 0)
+        if 'color' in item:
+            colors[item.get(label_field)] = item.get('color')
 
+    def _get_color(label):
+        if label in colors:
+            return {'Color': colors[label]}
+        else:
+            return {}
+
+    data = [
+        {
+            'label': labels.get(label, label),
+            'value': value,
+            **_get_color(label)
+        }
+        for label, value in pre_data.items()
+    ]
     return {
         'title': entry.title,
         'description': entry.description,
         'kind': kind,
+        'colors': 'label',
         'style': entry.style,
-        'scheme': colors,
-        'data': [{'label': labels.get(label, label), 'value': value} for label, value in data.items()],
+        'scheme': scheme,
+        'data': data,
         'notes': entry.notes
     }
 
@@ -357,11 +389,20 @@ def generate_histogram(entry, **kwargs):
     stack = entry.attrs.get('stack', True)
     scale = entry.attrs.get('scale', 'linear')
 
+    raw_facets = {
+        'x': entry.attrs.get('x_facet', None),
+        'y': entry.attrs.get('y_facet', None),
+    }
+    facets = {
+        axis: labels.get(facet, facet)
+        for axis, facet in raw_facets.items() if facet
+    }
+
     if not values:
         return {}
 
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
-    select_fields = [values, group_by]
+    select_fields = [values, group_by, *[facet for facet in raw_facets.values() if facet]]
     data = prepare_data(raw_data, select=select_fields, labels=labels)
 
     info = {
@@ -371,11 +412,14 @@ def generate_histogram(entry, **kwargs):
         'style': entry.style,
         'scheme': scheme,
         'scale': scale,
+        'facets': facets,
         'stack': stack,
         'values': labels.get(values, values),
+        'aspect-ratio': entry.aspect_ratio,
         'data': data,
         'notes': entry.notes
     }
+
     if group_by:
         info['groups'] = labels.get(group_by, group_by)
 
@@ -395,7 +439,7 @@ def generate_timeline(entry, **kwargs):
     end_value = entry.attrs.get('end_value', None)
     label_value = entry.attrs.get('labels', None)
     color_by = entry.attrs.get('color_by', None)
-    scheme = entry.attrs.get('scheme', 'Live8')
+    scheme = entry.attrs.get('scheme', None)
 
     if not start_value or not end_value:
         return {}
@@ -403,7 +447,6 @@ def generate_timeline(entry, **kwargs):
     select_fields = [field for field in [start_value, end_value, label_value, color_by] if field]
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     data = prepare_data(raw_data, select=select_fields, labels=labels, sort=start_value, sort_desc=False)
-
     return {
         'title': entry.title,
         'description': entry.description,
@@ -414,6 +457,7 @@ def generate_timeline(entry, **kwargs):
         'end': labels.get(end_value, end_value),
         'style': entry.style,
         'scheme': scheme,
+        'aspect-ratio': entry.aspect_ratio,
         'notes': entry.notes,
         'data': data
     }
@@ -451,7 +495,7 @@ def generate_geochart(entry, **kwargs):
     latitude = entry.attrs.get('latitude', None)
     longitude = entry.attrs.get('longitude', None)
     map_labels = entry.attrs.get('map_labels', None)
-    scheme = entry.attrs.get('scheme', 'Live8')
+    scheme = entry.attrs.get('scheme', None)
 
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     features = [
@@ -477,6 +521,7 @@ def generate_geochart(entry, **kwargs):
         'longitude': labels.get(longitude, longitude),
         'location': labels.get(location, location),
         'scheme': scheme,
+        'aspect-ratio': entry.aspect_ratio,
         'features': features,
         'style': entry.style,
         'notes': entry.notes,
@@ -486,33 +531,47 @@ def generate_geochart(entry, **kwargs):
 
 def generate_likert(entry, **kwargs):
     """
-    Generate a liker scale Bar charts
+    Generate a likert scale Bar charts
     :param entry: The report entry containing the configuration for the table
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
+
+    print(entry.attrs)
     labels = entry.source.get_labels()
-    scheme = entry.attrs.get('scheme', 'Live8')
+    scheme = entry.attrs.get('scheme', None)
+
+    raw_facets = {
+        'x': entry.attrs.get('x_facet', None),
+        'y': entry.attrs.get('y_facet', None),
+    }
+    facets = {
+        axis: labels.get(facet, facet)
+        for axis, facet in raw_facets.items() if facet
+    }
 
     settings = {
         key: entry.attrs.get(key, '')
-        for key in ['questions', 'answers', 'counts', 'scores', 'facets']
+        for key in ['questions', 'answers', 'counts', 'scores']
     }
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     domain = sorted({
         (item.get(settings['answers']), item.get(settings['scores']))
         for item in raw_data}, key=lambda x: x[1]
     )
-    data = prepare_data(raw_data, select=list(settings.values()), labels=labels)
+    selected = set(settings.values()) | {facet for facet in raw_facets.values() if facet}
+
+    data = prepare_data(raw_data, select=list(selected), labels=labels)
     info = {
         'title': entry.title,
         'description': entry.description,
         'kind': 'likert',
         'style': entry.style,
+        'facets': facets,
+        'aspect-ratio': entry.aspect_ratio,
         **{key: labels.get(value, value) for key, value in settings.items()},
         'domain': domain, #[(v[0], int(numpy.sign(v[1]))) for v in domain],
         'scheme': scheme,
         'notes': entry.notes,
         'data': data,
     }
-    print(info)
     return info

@@ -116,17 +116,29 @@ class DataSource(models.Model):
         return Report.objects.filter(pk__in=self.entries.values_list('report__pk', flat=True)).order_by('-modified')
 
     def groups_fields(self):
-        return self.fields.filter(name__in=self.group_by)
+        return self.fields.filter(name__in=self.group_by) if self.group_by else self.fields.none()
 
     def non_group_fields(self):
-        return self.fields.exclude(name__in=self.group_by)
+        return self.fields.exclude(name__in=self.group_by) if self.group_by else self.fields.all()
 
-    def get_filters(self):
+    def get_filters(self, queryset: QuerySet = None):
         parser = utils.FilterParser()
         if self.filters:
-            return parser.parse(self.filters, silent=True)
+            q = parser.parse(self.filters, silent=True)
+            if queryset is not None:
+                return utils.clean_q(q, queryset)
+            return q
         else:
             return Q()
+
+    def clean_q(self, q: Q, queryset: QuerySet) -> Q:
+        """
+        Clean a Q object to only retain filter conditions that are valid for the given queryset.
+        :param q: Q object to clean
+        :param queryset: queryset to validate against
+        :return: cleaned Q object
+        """
+        return utils.clean_q(q, queryset)
 
     def get_labels(self):
         return {field.name: field.label for field in self.fields.all()}
@@ -166,19 +178,23 @@ class DataSource(models.Model):
         field_names = [f.name for f in model._meta.get_fields()]
 
         # Add grouping
-        group_by = list(self.group_by)
+        group_by = list(self.group_by) if self.group_by else []
         annotate_filter = {'name__in': group_by} if group_by else {}
         annotations = {
-            field.name: field.get_expression()
+            field.name: expr
             for field in self.fields.exclude(name__in=field_names).filter(model__name=model_name, **annotate_filter)
+            if (expr := field.get_expression()) is not None
         }
 
         # Add aggregations and handle grouping
         aggregations = {}
         if group_by:
             aggregations = {
-                field.name: field.get_expression()
-                for field in self.fields.exclude(name__in=field_names).exclude(name__in=group_by).filter(model__name=model_name)
+                field.name: expr
+                for field in self.fields.exclude(name__in=field_names).exclude(name__in=group_by).filter(
+                    model__name=model_name
+                )
+                if (expr := field.get_expression()) is not None
             }
 
         # Ordering
@@ -187,17 +203,20 @@ class DataSource(models.Model):
         ).filter(ordering__isnull=False).order_by('order_by').values_list(Sign('ordering'), 'name', )
         order_by: list = order_by or [f'-{name}' if sign < 0 else name for sign, name in order_fields]
 
-        # Apply static filters
-        static_filters = self.get_filters()
-        select_filters = (select if select else Q())
-        dynamic_filters = Q(**self.clean_filters(filters))
-
         # generate the queryset
         queryset = model.objects.values(
+            *group_by,
             **annotations
         ).annotate(
             **aggregations
-        ).order_by(*order_by).filter(
+        ).order_by(*order_by)
+
+        # Apply static filters
+        static_filters = self.get_filters(queryset)
+        select_filters = utils.clean_q(select if select else Q(), queryset)
+        dynamic_filters = utils.clean_q(Q(**self.clean_filters(filters)), queryset)
+
+        queryset = queryset.filter(
             static_filters & dynamic_filters & select_filters
         )
 
@@ -223,8 +242,16 @@ class DataSource(models.Model):
             field_names = [field.name for field in self.fields.filter(model__name=model_name).all()]
             data.extend(list(queryset.values(*field_names)))
 
+        defaults = {
+            field.name: field.default
+            for field in self.fields.exclude(default__isnull=True).all()
+            if field.default is not None
+        }
+
         if self.group_by:
-            data = utils.merge_data(data, unique=self.group_by)
+            data = utils.merge_data(data, unique=self.group_by, defaults=defaults)
+        elif defaults:
+            data = utils.apply_defaults(data, defaults=defaults)
 
         return data
 
@@ -290,7 +317,7 @@ class DataModel(models.Model):
         return (self.code,)
 
     def get_group_fields(self):
-        group_names = list(self.source.group_by)
+        group_names = list(self.source.group_by) if self.source.group_by else []
         if group_names:
             fields = {
                 field.name: field for field in self.fields.all()
@@ -320,10 +347,11 @@ class DataModel(models.Model):
             'AutoField', 'BigAutoField', 'UUIDField', 'BinaryField', 'FileField', 'ImageField', 'ForeignKey',
             'GenericForeignKey', 'GenericRelation', 'OneToOneRel', 'ManyToManyField', 'ManyToOneRel', 'OneToOneField'
         ]
+        disallowed_names = ['id', 'pk', 'key', 'password']
 
         if isinstance(field, (models.OneToOneField, models.ForeignKey, models.ManyToManyField)):
             return self.get_model_specs(field.related_model, parent=spec, depth=depth + 1)
-        elif field_type not in disallowed_types:
+        elif field_type not in disallowed_types and field.name not in disallowed_names:
             return [(utils.sanitize_field(spec), utils.FIELD_TYPES.get(field_type, field_type.replace('Field', '')))]
         return []
 
@@ -349,7 +377,8 @@ class DataModel(models.Model):
 
     def __str__(self):
         app, name = self.name.split('.')
-        return f'{app}.{name.title()}'
+        model = self.model.model_class()
+        return f'{app}.{model.__name__}'
 
 
 class DataField(models.Model):
@@ -438,6 +467,30 @@ class Report(models.Model):
             entry.clone(report=clone)
         return clone
 
+    def generate(self, filters=None, select=None, order_by=None):
+        """
+        Generate the report payload by generating each entry's payload
+        :param filters: dynamic filters to apply to the data source
+        :param select: additional Q object to apply as filter to select a subset of data
+        :param order_by: order by fields
+        :return: a dictionary containing the report payload
+        """
+
+        section = {
+            'style': f"row",
+            'theme': self.theme,
+            'content': [entry.generate(filters=filters) for entry in self.entries.all()],
+            'notes': self.notes
+        }
+
+        return {
+            'title': self.title,
+            'description': self.description,
+            'theme': self.theme,
+            'notes': self.notes,
+            'sections':  [section],
+        }
+
 
 class Entry(models.Model):
     """
@@ -478,6 +531,7 @@ class Entry(models.Model):
     source = models.ForeignKey(DataSource, on_delete=models.CASCADE, related_name='entries', null=True, blank=True)
     report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name='entries')
     position = models.IntegerField(default=0)
+    aspect_ratio = models.FloatField(default=1.8)
     filters = models.TextField(default="", blank=True)
     attrs = models.JSONField(default=dict, blank=True)
 
@@ -534,7 +588,7 @@ class Entry(models.Model):
                 'notes': self.notes
             }
 
-    def clone(self, report: Report = None) -> Entry:
+    def clone(self, report: Report = None) -> 'Entry':
         """
         Clone this entry and associate it with a new report if provided, otherwise keep the same report
         :param report: the new report to associate the cloned entry with
