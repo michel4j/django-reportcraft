@@ -535,24 +535,38 @@ def generate_likert(entry, **kwargs):
     :param entry: The report entry containing the configuration for the table
     returns: A dictionary containing the table data and metadata suitable for rendering
     """
+
+    print(entry.attrs)
     labels = entry.source.get_labels()
     scheme = entry.attrs.get('scheme', None)
 
+    raw_facets = {
+        'x': entry.attrs.get('x_facet', None),
+        'y': entry.attrs.get('y_facet', None),
+    }
+    facets = {
+        axis: labels.get(facet, facet)
+        for axis, facet in raw_facets.items() if facet
+    }
+
     settings = {
         key: entry.attrs.get(key, '')
-        for key in ['questions', 'answers', 'counts', 'scores', 'facets']
+        for key in ['questions', 'answers', 'counts', 'scores']
     }
     raw_data = entry.source.get_data(select=entry.get_filters(), **kwargs)
     domain = sorted({
         (item.get(settings['answers']), item.get(settings['scores']))
         for item in raw_data}, key=lambda x: x[1]
     )
-    data = prepare_data(raw_data, select=list(settings.values()), labels=labels)
+    selected = set(settings.values()) | {facet for facet in raw_facets.values() if facet}
+
+    data = prepare_data(raw_data, select=list(selected), labels=labels)
     info = {
         'title': entry.title,
         'description': entry.description,
         'kind': 'likert',
         'style': entry.style,
+        'facets': facets,
         'aspect-ratio': entry.aspect_ratio,
         **{key: labels.get(value, value) for key, value in settings.items()},
         'domain': domain, #[(v[0], int(numpy.sign(v[1]))) for v in domain],

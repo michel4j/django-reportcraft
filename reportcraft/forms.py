@@ -973,23 +973,19 @@ class LikertForm(EntryConfigForm):
     answers = forms.ModelChoiceField(label='Answers', required=True, queryset=models.DataField.objects.none())
     counts = forms.ModelChoiceField(label='Counts', required=False, queryset=models.DataField.objects.none())
     scores = forms.ModelChoiceField(label='Scores', required=False, queryset=models.DataField.objects.none())
-
-    facets = forms.ModelChoiceField(label='Facets', required=False, queryset=models.DataField.objects.none())
     scheme = forms.ChoiceField(label=_('Palette'), required=False, choices=utils.DIVERGENT_SCHEMES, initial='RdBu')
+    x_facet = forms.ModelChoiceField(label='X Facet', required=False, queryset=models.DataField.objects.none())
+    y_facet = forms.ModelChoiceField(label='Y Facet', required=False, queryset=models.DataField.objects.none())
     normalize = forms.BooleanField(
         label='Normalize', required=False, initial=False, widget=forms.Select(choices=((True, 'Yes'), (False, 'No'))),
     )
 
-    SINGLE_FIELDS = ['questions', 'answers', 'counts', 'scores', 'facets']
-    OTHER_FIELDS = [
-        'scheme',
-    ]
+    SINGLE_FIELDS = ['questions', 'answers', 'counts', 'scores', 'x_facet', 'y_facet']
+    OTHER_FIELDS = ['scheme' ]
 
     class Meta:
         model = models.Entry
-        fields = (
-            'attrs',
-        )
+        fields = ('attrs',)
         widgets = {
             'attrs': forms.HiddenInput(),
         }
@@ -999,11 +995,10 @@ class LikertForm(EntryConfigForm):
         self.body.append(
             Row(
                 HalfWidth('questions'), HalfWidth('answers'),
-                HalfWidth('counts'), HalfWidth('scores'),
+                ThirdWidth('counts'), ThirdWidth('scores'), ThirdWidth('scheme')
             ),
             Row(
-
-                ThirdWidth('facets'), ThirdWidth('scheme'), ThirdWidth('normalize'),
+                ThirdWidth('x_facet'), ThirdWidth('y_facet'), ThirdWidth('normalize'),
             ),
             Div(
                 Field('attrs'),

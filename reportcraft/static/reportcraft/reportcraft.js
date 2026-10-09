@@ -1353,10 +1353,24 @@ function drawLikertChart(figure, chart, options) {
             Plot.ruleX([0])
         ]
     };
-
-    // Create the bar chart
     plotOptions.marginLeft = Math.max(30, maxLabelLength);
     plotOptions.marginBottom = 50;
+
+    if (chart.facets && (chart.facets.x || chart.facets.y)) {
+        plotOptions.facet = {
+            data: chart.data,
+        }
+        // Add x and y facets if they are defined in the chart configuration
+        if (chart.facets.x !== undefined) {
+            plotOptions.facet.x = chart.facets.x;
+            plotOptions.marginTop = 80;
+        }
+        if (chart.facets.y !== undefined) {
+            plotOptions.facet.y = chart.facets.y;
+            plotOptions.marginRight = 80;
+        }
+    }
+    console.log("Likert plot options:", plotOptions);
     const plot = Plot.plot(plotOptions);
     addFigurePlot(figure, plot);
 }
