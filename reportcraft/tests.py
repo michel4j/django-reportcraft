@@ -2059,7 +2059,135 @@ class TemporalAndBucketingTestCase(TestCase):
         self.assertEqual(qs.get(pk=p1.pk).b6, "2025-2030")
         self.assertEqual(qs.get(pk=p2.pk).b6, "2013-2018")
 
+    def test_year_month_func(self):
+        from demo.example.models import Journal, Publication
+        from reportcraft.functions import YearMonth
+        import datetime
+
+        j = Journal.objects.create(name="YearMonth Journal")
+        p1 = Publication.objects.create(journal=j, title="P2025-07", published=datetime.date(2025, 7, 15))
+        p2 = Publication.objects.create(journal=j, title="P2023-12", published=datetime.date(2023, 12, 1))
+
+        qs = Publication.objects.filter(journal=j).annotate(
+            ym=YearMonth('published')
+        )
+        self.assertEqual(qs.get(pk=p1.pk).ym, "2025-07")
+        self.assertEqual(qs.get(pk=p2.pk).ym, "2023-12")
+
+    def test_year_quarter_func(self):
+        from demo.example.models import Journal, Publication
+        from reportcraft.functions import YearQuarter
+        import datetime
+
+        j = Journal.objects.create(name="YearQuarter Journal")
+        p1 = Publication.objects.create(journal=j, title="P2025-Q3", published=datetime.date(2025, 8, 10))
+        p2 = Publication.objects.create(journal=j, title="P2024-Q1", published=datetime.date(2024, 2, 20))
+
+        qs = Publication.objects.filter(journal=j).annotate(
+            yq=YearQuarter('published')
+        )
+        self.assertEqual(qs.get(pk=p1.pk).yq, "2025-Q3")
+        self.assertEqual(qs.get(pk=p2.pk).yq, "2024-Q1")
 
 
+    def test_age_funcs(self):
+        from demo.example.models import Institution, Country, Person
+        from reportcraft.functions import Age, AgeInYears, AgeInMonths, AgeInDays
+        import datetime
+        from django.utils import timezone
 
+        c = Country.objects.create(name="Age Country", code="AC")
+        inst = Institution.objects.create(name="Age Inst", city="City", country=c)
+        now = timezone.now()
+        delta = datetime.timedelta(days=365*30 + 90)  # 30 years and ~3 months
+        created_dt = now - delta
+        Institution.objects.filter(pk=inst.pk).update(created=created_dt)
 
+        qs = Institution.objects.filter(pk=inst.pk).annotate(
+            age=Age('created'),
+            age_years=AgeInYears('created'),
+            age_months=AgeInMonths('created'),
+            age_days=AgeInDays('created')
+        ).first()
+        self.assertIsInstance(qs.age, datetime.timedelta)
+        self.assertEqual(qs.age.days, delta.days)
+        self.assertEqual(qs.age_years, 30)
+        self.assertTrue(30 <= qs.age_months // 12 <= 31)  # Allow for month rounding
+        self.assertTrue(10950 <= qs.age_days <= 11100)  # Allow for leap years
+
+        # Also verify with Person model using created
+        p = Person.objects.create(first_name="Test", last_name="Person", gender="female", age=30, bio="Test", institution=inst)
+        Person.objects.filter(pk=p.pk).update(created=created_dt)
+        qs_person = Person.objects.filter(pk=p.pk).annotate(
+            age_delta=Age('created'),
+            age_years=AgeInYears('created'),
+            age_months=AgeInMonths('created'),
+            age_days=AgeInDays('created')
+        ).first()
+        self.assertIsInstance(qs_person.age_delta, datetime.timedelta)
+        self.assertEqual(qs_person.age_delta.days, delta.days)
+        self.assertEqual(qs_person.age_years, 30)
+
+    def test_age_and_formatting_cross_database_compilation(self):
+        from reportcraft.functions import Age, AgeInYears, AgeInMonths, AgeInDays, YearQuarter, YearMonth
+        from django.db import connection
+
+        class MockCompiler:
+            def compile(self, expr):
+                return '"created"', ()
+
+        compiler = MockCompiler()
+
+        # Age
+        age = Age('created')
+        self.assertIn('AGE("created")', age.as_postgresql(compiler, connection)[0])
+        self.assertIn('TIMEDIFF(NOW(), "created")', age.as_mysql(compiler, connection)[0])
+        self.assertIn("julianday('now')", age.as_sqlite(compiler, connection)[0])
+        self.assertIn('NUMTODSINTERVAL', age.as_oracle(compiler, connection)[0])
+
+        # AgeInYears
+        aiy = AgeInYears('created')
+        self.assertIn('EXTRACT(YEAR FROM AGE("created"))', aiy.as_postgresql(compiler, connection)[0])
+        self.assertIn('TIMESTAMPDIFF(YEAR, "created", CURDATE())', aiy.as_mysql(compiler, connection)[0])
+        self.assertIn("strftime", aiy.as_sqlite(compiler, connection)[0])
+        self.assertIn('MONTHS_BETWEEN', aiy.as_oracle(compiler, connection)[0])
+
+        # AgeInMonths
+        aim = AgeInMonths('created')
+        self.assertIn('EXTRACT(MONTH FROM AGE("created"))', aim.as_postgresql(compiler, connection)[0])
+        self.assertIn('TIMESTAMPDIFF(MONTH, "created", CURDATE())', aim.as_mysql(compiler, connection)[0])
+        self.assertIn("strftime", aim.as_sqlite(compiler, connection)[0])
+        self.assertIn('TRUNC(MONTHS_BETWEEN', aim.as_oracle(compiler, connection)[0])
+
+        # AgeInDays
+        aid = AgeInDays('created')
+        self.assertIn('CURRENT_DATE - ("created")::date', aid.as_postgresql(compiler, connection)[0])
+        self.assertIn('DATEDIFF(CURDATE(), "created")', aid.as_mysql(compiler, connection)[0])
+        self.assertIn("julianday('now') - julianday(\"created\")", aid.as_sqlite(compiler, connection)[0])
+        self.assertIn('TRUNC(SYSDATE - "created")', aid.as_oracle(compiler, connection)[0])
+
+        # YearQuarter
+        yq = YearQuarter('created')
+        self.assertIn("TO_CHAR(\"created\", 'YYYY')", yq.as_postgresql(compiler, connection)[0])
+        self.assertIn("DATE_FORMAT(\"created\"", yq.as_mysql(compiler, connection)[0])
+        self.assertIn("strftime", yq.as_sqlite(compiler, connection)[0])
+        self.assertIn("TO_CHAR(\"created\", 'YYYY-\"Q\"Q')", yq.as_oracle(compiler, connection)[0])
+
+        # YearMonth
+        ym = YearMonth('created')
+        self.assertIn("TO_CHAR(\"created\", 'YYYY-MM')", ym.as_postgresql(compiler, connection)[0])
+        self.assertIn("DATE_FORMAT(\"created\"", ym.as_mysql(compiler, connection)[0])
+        self.assertIn("strftime", ym.as_sqlite(compiler, connection)[0])
+        self.assertIn("TO_CHAR(\"created\", 'YYYY-MM')", ym.as_oracle(compiler, connection)[0])
+
+    def test_expression_parser_with_age_and_formatting_funcs(self):
+        from reportcraft.utils import ExpressionParser
+        from reportcraft.functions import Age, AgeInYears, AgeInMonths, AgeInDays, YearQuarter, YearMonth
+
+        parser = ExpressionParser()
+        self.assertIsInstance(parser.parse("Age(Created)"), Age)
+        self.assertIsInstance(parser.parse("AgeInYears(Created)"), AgeInYears)
+        self.assertIsInstance(parser.parse("AgeInMonths(Created)"), AgeInMonths)
+        self.assertIsInstance(parser.parse("AgeInDays(Created)"), AgeInDays)
+        self.assertIsInstance(parser.parse("YearQuarter(Created)"), YearQuarter)
+        self.assertIsInstance(parser.parse("YearMonth(Created)"), YearMonth)

@@ -35,7 +35,8 @@ from . import countries
 from .functions import (
     DisplayName, Hours, Minutes, ShiftStart, ShiftEnd, Interval, CumSum, CumCount,
     ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now,
-    YearBucket, Decade, Lustrum, Quadrennial, Triennial, Biennial, Century
+    YearBucket, Decade, Lustrum, Quadrennial, Triennial, Biennial, Century,
+    Age, AgeInYears, AgeInMonths, AgeInDays, YearMonth, YearQuarter
 )
 
 FIELD_TYPES = {
@@ -114,6 +115,7 @@ ALLOWED_FUNCTIONS = {
     Interval, DisplayName, CumSum, Hours, Minutes, ShiftStart, ShiftEnd, CumCount,
     ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now,
     YearBucket, Decade, Lustrum, Quadrennial, Triennial, Biennial, Century,
+    Age, AgeInYears, AgeInMonths, AgeInDays, YearMonth, YearQuarter,
 }
 
 

@@ -103,6 +103,169 @@ class Now(models.Value):
         self._constructor_args = ((value,), {'output_field': self.output_field, **extra})
 
 
+class Age(models.Func):
+    """Calculates interval/duration from field to now."""
+    output_field = models.DurationField()
+
+    def as_postgresql(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, template="AGE(%(expressions)s)", **extra_context)
+
+    def as_mysql(self, compiler, connection, **extra_context):
+        # TIMEDIFF returns a time/duration interval up to ~838 hours
+        return self.as_sql(compiler, connection, template="TIMEDIFF(NOW(), %(expressions)s)", **extra_context)
+
+    def as_sqlite(self, compiler, connection, **extra_context):
+        # SQLite stores epoch differences; in microseconds to match Django DurationField conventions
+        return self.as_sql(
+            compiler,
+            connection,
+            template="CAST((julianday('now') - julianday(%(expressions)s)) * 86400000000 AS INTEGER)",
+            **extra_context,
+        )
+
+    def as_oracle(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, template="NUMTODSINTERVAL(SYSDATE - %(expressions)s, 'DAY')", **extra_context)
+
+
+class AgeInYears(models.Func):
+    """Calculates full years between field and current date."""
+    output_field = models.IntegerField()
+
+    def as_postgresql(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, template="EXTRACT(YEAR FROM AGE(%(expressions)s))::integer", **extra_context)
+
+    def as_mysql(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, template="TIMESTAMPDIFF(YEAR, %(expressions)s, CURDATE())", **extra_context)
+
+    def as_sqlite(self, compiler, connection, **extra_context):
+        return self.as_sql(
+            compiler,
+            connection,
+            template=(
+                "CAST(strftime('%%%%Y', 'now', 'localtime') AS INTEGER) - CAST(strftime('%%%%Y', %(expressions)s) AS INTEGER) - "
+                "(strftime('%%%%m-%%%%d', 'now', 'localtime') < strftime('%%%%m-%%%%d', %(expressions)s))"
+            ),
+            **extra_context,
+        )
+
+    def as_oracle(self, compiler, connection, **extra_context):
+        return self.as_sql(
+            compiler,
+            connection,
+            template="TRUNC(MONTHS_BETWEEN(TRUNC(SYSDATE), %(expressions)s) / 12)",
+            **extra_context,
+        )
+
+
+class AgeInMonths(models.Func):
+    """Calculates full months between field and current date."""
+    output_field = models.IntegerField()
+
+    def as_postgresql(self, compiler, connection, **extra_context):
+        return self.as_sql(
+            compiler,
+            connection,
+            template="(EXTRACT(YEAR FROM AGE(%(expressions)s)) * 12 + EXTRACT(MONTH FROM AGE(%(expressions)s)))::integer",
+            **extra_context,
+        )
+
+    def as_mysql(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, template="TIMESTAMPDIFF(MONTH, %(expressions)s, CURDATE())", **extra_context)
+
+    def as_sqlite(self, compiler, connection, **extra_context):
+        return self.as_sql(
+            compiler,
+            connection,
+            template=(
+                "(CAST(strftime('%%%%Y', 'now', 'localtime') AS INTEGER) - CAST(strftime('%%%%Y', %(expressions)s) AS INTEGER)) * 12 + "
+                "CAST(strftime('%%%%m', 'now', 'localtime') AS INTEGER) - CAST(strftime('%%%%m', %(expressions)s) AS INTEGER) - "
+                "(strftime('%%%%d', 'now', 'localtime') < strftime('%%%%d', %(expressions)s))"
+            ),
+            **extra_context,
+        )
+
+    def as_oracle(self, compiler, connection, **extra_context):
+        return self.as_sql(
+            compiler,
+            connection,
+            template="TRUNC(MONTHS_BETWEEN(TRUNC(SYSDATE), %(expressions)s))",
+            **extra_context,
+        )
+
+
+class AgeInDays(models.Func):
+    """Calculates total days between field and current date."""
+    output_field = models.IntegerField()
+
+    def as_postgresql(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, template="(CURRENT_DATE - (%(expressions)s)::date)", **extra_context)
+
+    def as_mysql(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, template="DATEDIFF(CURDATE(), %(expressions)s)", **extra_context)
+
+    def as_sqlite(self, compiler, connection, **extra_context):
+        return self.as_sql(
+            compiler,
+            connection,
+            template="CAST(julianday('now') - julianday(%(expressions)s) AS INTEGER)",
+            **extra_context,
+        )
+
+    def as_oracle(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, template="TRUNC(SYSDATE - %(expressions)s)", **extra_context)
+
+
+class YearQuarter(models.Func):
+    """Formats date/datetime into 'YYYY-QX' string."""
+    output_field = models.CharField(max_length=7)
+
+    def as_postgresql(self, compiler, connection, **extra_context):
+        return self.as_sql(
+            compiler,
+            connection,
+            template="CONCAT(TO_CHAR(%(expressions)s, 'YYYY'), '-Q', TO_CHAR(%(expressions)s, 'Q'))",
+            **extra_context,
+        )
+
+    def as_mysql(self, compiler, connection, **extra_context):
+        return self.as_sql(
+            compiler,
+            connection,
+            template="CONCAT(DATE_FORMAT(%(expressions)s, '%%%%Y-Q'), QUARTER(%(expressions)s))",
+            **extra_context,
+        )
+
+    def as_sqlite(self, compiler, connection, **extra_context):
+        return self.as_sql(
+            compiler,
+            connection,
+            template=(
+                "strftime('%%%%Y-Q', %(expressions)s) || "
+                "((CAST(strftime('%%%%m', %(expressions)s) AS INTEGER) + 2) / 3)"
+            ),
+            **extra_context,
+        )
+
+    def as_oracle(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, template="TO_CHAR(%(expressions)s, 'YYYY-\"Q\"Q')", **extra_context)
+
+
+class YearMonth(models.Func):
+    """Formats date/datetime into 'YYYY-MM' string."""
+    output_field = models.CharField(max_length=7)
+
+    def as_postgresql(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, template="TO_CHAR(%(expressions)s, 'YYYY-MM')", **extra_context)
+
+    def as_mysql(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, template="DATE_FORMAT(%(expressions)s, '%%%%Y-%%%%m')", **extra_context)
+
+    def as_sqlite(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, template="strftime('%%%%Y-%%%%m', %(expressions)s)", **extra_context)
+
+    def as_oracle(self, compiler, connection, **extra_context):
+        return self.as_sql(compiler, connection, template="TO_CHAR(%(expressions)s, 'YYYY-MM')", **extra_context)
+
 
 class CumSum(Window):
     """
