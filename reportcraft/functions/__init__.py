@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import datetime
 import itertools
-from datetime import datetime
 
 import numpy
 from django.apps import apps
+from django.conf import settings
 from django.db import models
 from django.db.models import Window, Sum, F, Case, When, Value as V, TextField, CharField, Count
 from django.db.models.expressions import RowRange
@@ -12,7 +13,95 @@ from django.utils import timezone
 
 SHIFT = 8
 SHIFT_DURATION = '{:d} hour'.format(SHIFT)
-OFFSET = -timezone.make_aware(datetime.now(), timezone.get_default_timezone()).utcoffset().total_seconds()
+OFFSET = -timezone.make_aware(datetime.datetime.now(), timezone.get_default_timezone()).utcoffset().total_seconds()
+
+
+def _get_active_datetime() -> datetime.datetime:
+    """Returns the current aware datetime in Django's active timezone."""
+    return timezone.localtime() if getattr(settings, 'USE_TZ', False) else timezone.now()
+
+
+def _get_active_date() -> datetime.date:
+    """Returns the current calendar date in Django's active timezone."""
+    return timezone.localdate() if getattr(settings, 'USE_TZ', False) else datetime.date.today()
+
+
+class ThisYear(models.Value):
+    """Current calendar year in Django's active timezone as an IntegerField Value."""
+    def __init__(self, value=None, output_field=None, **extra):
+        if value is None:
+            value = _get_active_date().year
+        if output_field is None:
+            output_field = models.IntegerField()
+        super().__init__(value, output_field=output_field, **extra)
+        self._constructor_args = ((value,), {'output_field': self.output_field, **extra})
+
+
+class ThisMonth(models.Value):
+    """Current calendar month (1-12) in Django's active timezone as an IntegerField Value."""
+    def __init__(self, value=None, output_field=None, **extra):
+        if value is None:
+            value = _get_active_date().month
+        if output_field is None:
+            output_field = models.IntegerField()
+        super().__init__(value, output_field=output_field, **extra)
+        self._constructor_args = ((value,), {'output_field': self.output_field, **extra})
+
+
+class ThisQuarter(models.Value):
+    """Current calendar quarter (1-4) in Django's active timezone as an IntegerField Value."""
+    def __init__(self, value=None, output_field=None, **extra):
+        if value is None:
+            value = (_get_active_date().month - 1) // 3 + 1
+        if output_field is None:
+            output_field = models.IntegerField()
+        super().__init__(value, output_field=output_field, **extra)
+        self._constructor_args = ((value,), {'output_field': self.output_field, **extra})
+
+
+class ThisDay(models.Value):
+    """Current day of the month (1-31) in Django's active timezone as an IntegerField Value."""
+    def __init__(self, value=None, output_field=None, **extra):
+        if value is None:
+            value = _get_active_date().day
+        if output_field is None:
+            output_field = models.IntegerField()
+        super().__init__(value, output_field=output_field, **extra)
+        self._constructor_args = ((value,), {'output_field': self.output_field, **extra})
+
+
+class ThisWeek(models.Value):
+    """Current ISO week number (1-53) in Django's active timezone as an IntegerField Value."""
+    def __init__(self, value=None, output_field=None, **extra):
+        if value is None:
+            value = _get_active_date().isocalendar().week
+        if output_field is None:
+            output_field = models.IntegerField()
+        super().__init__(value, output_field=output_field, **extra)
+        self._constructor_args = ((value,), {'output_field': self.output_field, **extra})
+
+
+class Today(models.Value):
+    """Current calendar date in Django's active timezone as a DateField Value."""
+    def __init__(self, value=None, output_field=None, **extra):
+        if value is None:
+            value = _get_active_date()
+        if output_field is None:
+            output_field = models.DateField()
+        super().__init__(value, output_field=output_field, **extra)
+        self._constructor_args = ((value,), {'output_field': self.output_field, **extra})
+
+
+class Now(models.Value):
+    """Current datetime in Django's active timezone as a DateTimeField Value."""
+    def __init__(self, value=None, output_field=None, **extra):
+        if value is None:
+            value = _get_active_datetime()
+        if output_field is None:
+            output_field = models.DateTimeField()
+        super().__init__(value, output_field=output_field, **extra)
+        self._constructor_args = ((value,), {'output_field': self.output_field, **extra})
+
 
 
 class CumSum(Window):

@@ -32,7 +32,10 @@ from django.http import HttpResponse
 from pyparsing.exceptions import ParseException
 
 from . import countries
-from .functions import DisplayName, Hours, Minutes, ShiftStart, ShiftEnd, Interval, CumSum, CumCount
+from .functions import (
+    DisplayName, Hours, Minutes, ShiftStart, ShiftEnd, Interval, CumSum, CumCount,
+    ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now
+)
 
 FIELD_TYPES = {
     'CharField': 'STRING',
@@ -107,8 +110,10 @@ ALLOWED_FUNCTIONS = {
     Upper, Lower, Length, Substr, LPad, RPad, Trim, LTrim, RTrim, JSONArray, Radians, Degrees, Q,
 
     # Custom functions
-    Interval, DisplayName, CumSum, Hours, Minutes, ShiftStart, ShiftEnd, CumCount
+    Interval, DisplayName, CumSum, Hours, Minutes, ShiftStart, ShiftEnd, CumCount,
+    ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now,
 }
+
 
 REPORTCRAFT_FUNCTIONS = getattr(settings, 'REPORTCRAFT_FUNCTIONS', [])  # list of string paths to importable functions
 for func_path in REPORTCRAFT_FUNCTIONS:

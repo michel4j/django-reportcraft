@@ -169,6 +169,65 @@ class UtilsTestCase(TestCase):
         expr_filter = field_filter.get_expression()
         self.assertTrue(compare_expressions(expr_filter, expected), f"Failed for DataField filter expr: {expr_filter!r}")
 
+    def test_current_temporal_functions(self):
+        from django.utils import timezone
+        from reportcraft.functions import ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now
+        parser = ExpressionParser()
+
+        active_date = timezone.localdate()
+
+        res_year = parser.parse("ThisYear()")
+        self.assertIsInstance(res_year, ThisYear)
+        self.assertEqual(res_year.value, active_date.year)
+
+        res_month = parser.parse("ThisMonth()")
+        self.assertIsInstance(res_month, ThisMonth)
+        self.assertEqual(res_month.value, active_date.month)
+
+        res_quarter = parser.parse("ThisQuarter()")
+        self.assertIsInstance(res_quarter, ThisQuarter)
+        self.assertEqual(res_quarter.value, (active_date.month - 1) // 3 + 1)
+
+        res_day = parser.parse("ThisDay()")
+        self.assertIsInstance(res_day, ThisDay)
+        self.assertEqual(res_day.value, active_date.day)
+
+        res_week = parser.parse("ThisWeek()")
+        self.assertIsInstance(res_week, ThisWeek)
+        self.assertEqual(res_week.value, active_date.isocalendar().week)
+
+        res_today = parser.parse("Today()")
+        self.assertIsInstance(res_today, Today)
+        self.assertEqual(res_today.value, active_date)
+
+        res_now = parser.parse("Now()")
+        self.assertIsInstance(res_now, Now)
+
+        # Compound expression
+        res_compound = parser.parse("ThisYear() - 1")
+        self.assertEqual(repr(res_compound), repr(ThisYear() - Value(1)))
+
+        # ORM QuerySet execution
+        from demo.example.models import Country
+        c = Country.objects.create(name="TemporalTestCountry", code="TTC")
+        annotated = Country.objects.filter(pk=c.pk).annotate(
+            cur_year=ThisYear(),
+            cur_month=ThisMonth(),
+            cur_quarter=ThisQuarter(),
+            cur_day=ThisDay(),
+            cur_week=ThisWeek(),
+            cur_today=Today(),
+            cur_now=Now(),
+        ).first()
+        self.assertEqual(annotated.cur_year, active_date.year)
+        self.assertEqual(annotated.cur_month, active_date.month)
+        self.assertEqual(annotated.cur_quarter, (active_date.month - 1) // 3 + 1)
+        self.assertEqual(annotated.cur_day, active_date.day)
+        self.assertEqual(annotated.cur_week, active_date.isocalendar().week)
+        self.assertEqual(annotated.cur_today, active_date)
+        self.assertIsNotNone(annotated.cur_now)
+
+
     def test_filter_parser_dotted_and_operators(self):
         parser = FilterParser()
         res1 = parser.parse("Journal.Metrics.ImpactFactor > 5")
