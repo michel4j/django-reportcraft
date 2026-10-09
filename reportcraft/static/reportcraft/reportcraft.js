@@ -883,7 +883,7 @@ function drawXYPlot(figure, chart, options) {
             markOptions.marker = mark.marker || 'circle-stroke';
             marks.push(new Plot.lineY(chart.data, markOptions));
         } else if (mark.type === 'points') {
-            markOptions.r = mark.z || 0.75;
+            markOptions.r = mark.z || 2;
             markOptions.stroke = colorValue;
             markOptions.strokeWidth = 1;
             marks.push(new Plot.dot(chart.data, markOptions));
@@ -1370,7 +1370,6 @@ function drawLikertChart(figure, chart, options) {
             plotOptions.marginRight = 80;
         }
     }
-    console.log("Likert plot options:", plotOptions);
     const plot = Plot.plot(plotOptions);
     addFigurePlot(figure, plot);
 }
