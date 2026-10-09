@@ -227,6 +227,101 @@ class UtilsTestCase(TestCase):
         self.assertEqual(annotated.cur_today, active_date)
         self.assertIsNotNone(annotated.cur_now)
 
+    def test_year_bucket_functions(self):
+        import datetime
+        from demo.example.models import Journal, Publication, Metric
+        from reportcraft.functions import (
+            YearBucket, Decade, Lustrum, Quadrennial, Triennial, Biennial, Century
+        )
+        parser = ExpressionParser()
+
+        # 1. Parser verification
+        res_dec = parser.parse("Decade(Published)")
+        self.assertIsInstance(res_dec, Decade)
+
+        res_lus = parser.parse("Lustrum(Published)")
+        self.assertIsInstance(res_lus, Lustrum)
+
+        res_tri = parser.parse("Triennial(Published)")
+        self.assertIsInstance(res_tri, Triennial)
+
+        res_bie = parser.parse("Biennial(Published)")
+        self.assertIsInstance(res_bie, Biennial)
+
+        res_qua = parser.parse("Quadrennial(Published)")
+        self.assertIsInstance(res_qua, Quadrennial)
+
+        res_cen = parser.parse("Century(Published)")
+        self.assertIsInstance(res_cen, Century)
+
+        res_yb = parser.parse("YearBucket(Published, size=5, anchor=2000)")
+        self.assertIsInstance(res_yb, YearBucket)
+
+        # 2. ORM execution with DateField (Polymorphic Date)
+        j = Journal.objects.create(name="Bucketing Journal")
+        p2026 = Publication.objects.create(journal=j, title="P2026", published=datetime.date(2026, 5, 15))
+        p2023 = Publication.objects.create(journal=j, title="P2023", published=datetime.date(2023, 11, 1))
+        p1995 = Publication.objects.create(journal=j, title="P1995", published=datetime.date(1995, 4, 20))
+        p1999 = Publication.objects.create(journal=j, title="P1999", published=datetime.date(1999, 12, 31))
+
+        qs = Publication.objects.filter(journal=j).annotate(
+            decade=Decade('published'),
+            lustrum=Lustrum('published'),
+            triennial=Triennial('published'),
+            biennial=Biennial('published'),
+            quadrennial=Quadrennial('published'),
+            century=Century('published'),
+            custom_yb=YearBucket('published', size=7, anchor=2020),
+            null_decade=Decade(Value(None, output_field=DateField())),
+        )
+
+        r2026 = qs.get(pk=p2026.pk)
+        self.assertEqual(r2026.decade, "2020s")
+        self.assertEqual(r2026.lustrum, "2025-2029")
+        self.assertEqual(r2026.triennial, "2025-2027")
+        self.assertEqual(r2026.biennial, "2026-2027")
+        self.assertEqual(r2026.quadrennial, "2024-2027")
+        self.assertEqual(r2026.century, "2000s")
+        self.assertEqual(r2026.custom_yb, "2020-2026")
+        self.assertIsNone(r2026.null_decade)
+
+        r2023 = qs.get(pk=p2023.pk)
+        self.assertEqual(r2023.decade, "2020s")
+        self.assertEqual(r2023.lustrum, "2020-2024")
+        self.assertEqual(r2023.triennial, "2022-2024")
+        self.assertEqual(r2023.biennial, "2022-2023")
+        self.assertEqual(r2023.quadrennial, "2020-2023")
+        self.assertEqual(r2023.century, "2000s")
+
+        # Historical dates before anchor 2000 (Floored division verification)
+        r1995 = qs.get(pk=p1995.pk)
+        self.assertEqual(r1995.decade, "1990s")
+        self.assertEqual(r1995.lustrum, "1995-1999")
+        self.assertEqual(r1995.triennial, "1995-1997")
+        self.assertEqual(r1995.biennial, "1994-1995")
+        self.assertEqual(r1995.quadrennial, "1992-1995")
+        self.assertEqual(r1995.century, "1900s")
+
+        r1999 = qs.get(pk=p1999.pk)
+        self.assertEqual(r1999.decade, "1990s")
+        self.assertEqual(r1999.lustrum, "1995-1999")
+        self.assertEqual(r1999.triennial, "1998-2000")
+        self.assertEqual(r1999.biennial, "1998-1999")
+        self.assertEqual(r1999.quadrennial, "1996-1999")
+        self.assertEqual(r1999.century, "1900s")
+
+        # 3. ORM execution with IntegerField (Polymorphic Integer Year)
+        m = Metric.objects.create(journal=j, year=2024, impact_factor=4.5)
+        m_res = Metric.objects.filter(pk=m.pk).annotate(
+            decade=Decade('year'),
+            lustrum=Lustrum('year'),
+            triennial=Triennial('year'),
+        ).first()
+        self.assertEqual(m_res.decade, "2020s")
+        self.assertEqual(m_res.lustrum, "2020-2024")
+        self.assertEqual(m_res.triennial, "2022-2024")
+
+
 
     def test_filter_parser_dotted_and_operators(self):
         parser = FilterParser()

@@ -34,7 +34,8 @@ from pyparsing.exceptions import ParseException
 from . import countries
 from .functions import (
     DisplayName, Hours, Minutes, ShiftStart, ShiftEnd, Interval, CumSum, CumCount,
-    ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now
+    ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now,
+    YearBucket, Decade, Lustrum, Quadrennial, Triennial, Biennial, Century
 )
 
 FIELD_TYPES = {
@@ -112,7 +113,9 @@ ALLOWED_FUNCTIONS = {
     # Custom functions
     Interval, DisplayName, CumSum, Hours, Minutes, ShiftStart, ShiftEnd, CumCount,
     ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now,
+    YearBucket, Decade, Lustrum, Quadrennial, Triennial, Biennial, Century,
 }
+
 
 
 REPORTCRAFT_FUNCTIONS = getattr(settings, 'REPORTCRAFT_FUNCTIONS', [])  # list of string paths to importable functions
