@@ -1906,5 +1906,160 @@ class MergeDataTestCase(TestCase):
         self.assertEqual(grouped_data[0]["avg_impact"], 3.5)
 
 
+class TemporalAndBucketingTestCase(TestCase):
+    def test_datasource_grouped_by_decade_and_lustrum(self):
+        from django.contrib.contenttypes.models import ContentType
+        from demo.example.models import Journal, Publication
+        from reportcraft.models import DataSource, DataModel, DataField
+        import datetime
+
+        j = Journal.objects.create(name="Temporal Test Journal")
+        Publication.objects.create(journal=j, title="P1", published=datetime.date(1995, 1, 1))
+        Publication.objects.create(journal=j, title="P2", published=datetime.date(1998, 6, 1))
+        Publication.objects.create(journal=j, title="P3", published=datetime.date(2021, 3, 1))
+        Publication.objects.create(journal=j, title="P4", published=datetime.date(2024, 9, 1))
+        Publication.objects.create(journal=j, title="P5", published=datetime.date(2026, 2, 1))
+
+        ds = DataSource.objects.create(name="Decade Grouped DS", group_by=["decade"])
+        ct = ContentType.objects.get_for_model(Publication)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Publication")
+        DataField.objects.create(source=ds, model=dm, name="decade", label="Decade", expression="Decade(published)")
+        DataField.objects.create(source=ds, model=dm, name="count", label="Count", expression="Count(id)")
+
+        data = ds.get_source_data()
+        by_decade = {item["decade"]: item["count"] for item in data}
+        self.assertEqual(by_decade["1990s"], 2)
+        self.assertEqual(by_decade["2020s"], 3)
+
+    def test_datasource_with_current_temporal_expressions(self):
+        from django.contrib.contenttypes.models import ContentType
+        from django.utils import timezone
+        from demo.example.models import Journal, Publication
+        from reportcraft.models import DataSource, DataModel, DataField
+        import datetime
+
+        j = Journal.objects.create(name="Current Temporal Journal")
+        Publication.objects.create(journal=j, title="Paper Recent", published=datetime.date(2026, 1, 1))
+        Publication.objects.create(journal=j, title="Paper Old", published=datetime.date(2010, 1, 1))
+
+        ds = DataSource.objects.create(name="Recent Papers DS")
+        ct = ContentType.objects.get_for_model(Publication)
+        dm = DataModel.objects.create(source=ds, model=ct, name="example.Publication")
+        DataField.objects.create(source=ds, model=dm, name="title", label="Title")
+        DataField.objects.create(
+            source=ds, model=dm, name="years_ago", label="Years Ago",
+            expression="ThisYear() - ExtractYear(published)"
+        )
+
+        data = ds.get_source_data()
+        by_title = {item["title"]: item["years_ago"] for item in data}
+        self.assertEqual(by_title["Paper Recent"], timezone.localdate().year - 2026)
+        self.assertEqual(by_title["Paper Old"], timezone.localdate().year - 2010)
+
+    def test_explicit_value_injection_and_constructor_args(self):
+        from reportcraft.functions import ThisYear, ThisMonth, ThisQuarter, ThisDay, ThisWeek, Today, Now
+        import datetime
+
+        custom_date = datetime.date(2030, 8, 15)
+        custom_dt = datetime.datetime(2030, 8, 15, 10, 30, 0)
+
+        ty = ThisYear(2030)
+        self.assertEqual(ty.value, 2030)
+        self.assertEqual(repr(ty), "ThisYear(2030)")
+
+        tm = ThisMonth(8)
+        self.assertEqual(tm.value, 8)
+        self.assertEqual(repr(tm), "ThisMonth(8)")
+
+        tq = ThisQuarter(3)
+        self.assertEqual(tq.value, 3)
+
+        td = ThisDay(15)
+        self.assertEqual(td.value, 15)
+
+        tw = ThisWeek(33)
+        self.assertEqual(tw.value, 33)
+
+        today = Today(custom_date)
+        self.assertEqual(today.value, custom_date)
+
+        now = Now(custom_dt)
+        self.assertEqual(now.value, custom_dt)
+
+    def test_timezone_activation_affects_defaults(self):
+        from zoneinfo import ZoneInfo
+        from django.utils import timezone
+        from reportcraft.functions import ThisYear, ThisMonth, Today
+
+        current_tz = timezone.get_current_timezone()
+        try:
+            timezone.activate(ZoneInfo('Pacific/Auckland'))
+            auckland_date = timezone.localdate()
+            self.assertEqual(ThisYear().value, auckland_date.year)
+            self.assertEqual(ThisMonth().value, auckland_date.month)
+            self.assertEqual(Today().value, auckland_date)
+        finally:
+            timezone.activate(current_tz)
+
+    def test_cross_database_compilation_templates(self):
+        from reportcraft.functions import Decade, Lustrum
+
+        class MockCompiler:
+            def compile(self, expr):
+                return '"published"', ()
+
+        compiler = MockCompiler()
+
+        # Decade PostgreSQL
+        dec = Decade('published')
+        sql_pg, params_pg = dec.as_postgresql(compiler, None)
+        self.assertIn('::text', sql_pg)
+        self.assertIn('FLOOR', sql_pg)
+        self.assertIn('::numeric', sql_pg)
+        self.assertIn("'s'", sql_pg)
+        self.assertEqual(params_pg, ())
+
+        # Lustrum PostgreSQL
+        lus = Lustrum('published')
+        sql_pg_lus, params_pg_lus = lus.as_postgresql(compiler, None)
+        self.assertIn("'-'", sql_pg_lus)
+        self.assertEqual(params_pg_lus, ())
+
+        # Decade MySQL
+        sql_my, params_my = dec.as_mysql(compiler, None)
+        self.assertIn('CONCAT', sql_my)
+        self.assertIn('CHAR', sql_my)
+        self.assertIn("'s'", sql_my)
+        self.assertEqual(params_my, ())
+
+        # Lustrum MySQL
+        sql_my_lus, params_my_lus = lus.as_mysql(compiler, None)
+        self.assertIn('CONCAT', sql_my_lus)
+        self.assertIn("'-'", sql_my_lus)
+        self.assertEqual(params_my_lus, ())
+
+        # ANSI Fallback as_sql
+        sql_ansi, params_ansi = dec.as_sql(compiler, None)
+        self.assertIn('VARCHAR(20)', sql_ansi)
+        self.assertIn("'s'", sql_ansi)
+        self.assertEqual(params_ansi, ())
+
+    def test_custom_anchor_and_size_bucketing(self):
+        from demo.example.models import Journal, Publication
+        from reportcraft.functions import YearBucket
+        import datetime
+
+        j = Journal.objects.create(name="Custom Bucket Journal")
+        p1 = Publication.objects.create(journal=j, title="P2025", published=datetime.date(2025, 1, 1))
+        p2 = Publication.objects.create(journal=j, title="P2018", published=datetime.date(2018, 1, 1))
+
+        qs = Publication.objects.filter(journal=j).annotate(
+            b6=YearBucket('published', size=6, anchor=2001)
+        )
+        self.assertEqual(qs.get(pk=p1.pk).b6, "2025-2030")
+        self.assertEqual(qs.get(pk=p2.pk).b6, "2013-2018")
+
+
+
 
 
