@@ -950,7 +950,7 @@ class GeoCharForm(EntryConfigForm):
         coordinates_required = any(
             group.get('type') in ['bubble', 'hex-bin', 'density', 'markers']
             for group in groups
-        )
+        ) and not location_defined
         location_required = any(
             group.get('type') in ['area']
             for group in groups
@@ -958,12 +958,9 @@ class GeoCharForm(EntryConfigForm):
         if location_required and not location_defined:
             self.add_error('location', _("Location is required for the selected Area features"))
 
-        # if coordinates_required and not coordinates_defined:
-        #     self.add_error('latitude', _("Latitude and Longitude are required for the selected feature types"))
-        #     self.add_error('longitude', _("Latitude and Longitude are required for the selected feature types"))
-        #
-        # if not location_defined and not coordinates_defined:
-        #     self.add_error('location', _("Either Location or Latitude and Longitude are required"))
+        if coordinates_required and not coordinates_defined:
+            self.add_error('latitude', _("Latitude and Longitude required if Location is not provided"))
+            self.add_error('longitude', _("Latitude and Longitude required if Location is not provided"))
 
         return cleaned_data
 

@@ -1169,14 +1169,14 @@ function drawTimeline(figure, chart, options) {
 
 function drawGeoChart(figure, chart, options) {
     let colorLegend = false;
-    const markerHeight = getFontSize(figure);
+    const markerHeight = getFontSize(figure) *  0.8;
     let markerOffset = chart.labels ? markerHeight : 0;
 
     let showLand = chart.map === '001' ? false : (chart["show-land"] || true);
     const plotOptions = {
         className: "rc-chart",
         style: {
-            fontSize: '1rem',
+            fontSize: '0.95rem',
         },
         width: options.width || 800,
         height: options.height || 600,
@@ -1194,8 +1194,11 @@ function drawGeoChart(figure, chart, options) {
         showLand ? d3.json(`${options.staticRoot}/maps/land.json`) : null,
     ]).then(function ([geoData, landData]) {
         const map = topojson.feature(geoData, geoData.objects["subunits"] || geoData.objects["countries"]);
-        const centroids = map.features.map(d => ({longitude: d.properties.longitude, latitude: d.properties.latitude}));
-        console.log(centroids);
+        const centroids = new Map(
+            map.features.map(
+                d => [d.id, {longitude: d.properties.longitude, latitude: d.properties.latitude}]
+            )
+        );
         if (chart.map === '001') {  // World map, no need to show land
             plotOptions.projection = {
                 type: "mercator",
@@ -1239,56 +1242,56 @@ function drawGeoChart(figure, chart, options) {
                 case 'bubble':
                     plotOptions.marks.push(
                         new Plot.dot(chart.data, {
-                            x: chart.longitude,
-                            y: chart.latitude,
+                            x: chart.longitude || (d => centroids.get(d[chart.location]).longitude),
+                            y: chart.latitude || (d => centroids.get(d[chart.location]).latitude),
                             r: feature.value,
                             strokeWidth: 0.5,
-                            stroke: feature.value,
+                            stroke: "var(--bs-body-color)",
+                            fill: feature.value,
                             opacity: 0.7
                         })
+                    );
+                    colorLegend = true;
+                    break;
+                case 'hex-bin':
+                    plotOptions.marks.push(
+                        new Plot.dot(chart.data,
+                            Plot.hexbin({
+                                r: feature.value,
+                                fill: feature.value,
+                            }, {
+                                x: chart.longitude || (d => centroids.get(d[chart.location]).longitude),
+                                y: chart.latitude || (d => centroids.get(d[chart.location]).latitude),
+                                fill: feature.value,
+                                opacity: 0.7
+                            })
+                        )
                     );
                     break;
                 case 'density':
                     plotOptions.marks.push(
                         new Plot.density(chart.data, {
-                            x: chart.longitude,
-                            y: chart.latitude,
+                            x: chart.longitude || (d => centroids.get(d[chart.location]).longitude),
+                            y: chart.latitude || (d => centroids.get(d[chart.location]).latitude),
                             weight: feature.value,
                             opacity: 0.7,
                         })
                     )
                     break;
                 case 'markers':
-                    if (chart.longitude && chart.latitude && feature.value) {
-                        plotOptions.marks.push(
-                            new Plot.text(chart.data, {
-                                x: chart.longitude,
-                                y: chart.latitude,
-                                text: feature.value,
-                                textAnchor: "middle",
-                                fill: "var(--bs-body-color)",
-                                stroke: options.theme === 'default' ? "var(--bs-body-bg)" : null,
-                                strokeOpacity: 0.5,
-                                dy: markerOffset
-                            })
-                        );
-                        markerOffset += markerHeight;
-                    } else {
-                        plotOptions.marks.push(
-                            Plot.text(
-                                map.features,
-                                Plot.centroid({
-                                    text:  d => locMap.get(d.id),
-                                    textAnchor: "middle",
-                                    tip: true,
-                                    fill: "var(--bs-body-color)",
-                                    stroke: options.theme === 'default' ? "var(--bs-body-bg)" : null,
-                                    strokeOpacity: 0.5,
-                                    dy: markerOffset
-                                })
-                            )
-                        );
-                    }
+                    plotOptions.marks.push(
+                        new Plot.text(chart.data, {
+                            x: chart.longitude || (d => centroids.get(d[chart.location]).longitude),
+                            y: chart.latitude || (d => centroids.get(d[chart.location]).latitude),
+                            text: feature.value,
+                            textAnchor: "middle",
+                            fill: "var(--bs-body-color)",
+                            stroke: options.theme === 'default' ? "var(--bs-body-bg)" : null,
+                            strokeOpacity: 0.5,
+                            dy: markerOffset
+                        })
+                    );
+                    markerOffset += markerHeight;
                     break;
             }
         });
@@ -1298,18 +1301,17 @@ function drawGeoChart(figure, chart, options) {
             case 'codes':
                 const isCode = (chart.labels === 'codes') || false;
                 plotOptions.marks.push(
-                    Plot.text(
-                        map.features,
-                        Plot.centroid({
-                            text: (d) => isCode ? d.id : d.properties.name,
-                            textAnchor: "middle",
-                            tip: true,
-                            fill: "var(--bs-body-color)",
-                            stroke: options.theme === 'default' ? "var(--bs-body-bg)" : null,
-                            strokeOpacity: 0.5,
-                            dy: 3
-                        })
-                    )
+                    Plot.text(map.features, {
+                        text: (d) => isCode ? d.id : d.properties.name,
+                        x: (d) => d.properties.longitude,
+                        y: (d) => d.properties.latitude,
+                        textAnchor: "middle",
+                        tip: true,
+                        fill: "var(--bs-body-color)",
+                        stroke: options.theme === 'default' ? "var(--bs-body-bg)" : null,
+                        strokeOpacity: 0.5,
+                        dy: 3
+                    })
                 );
                 break;
             case 'places':
